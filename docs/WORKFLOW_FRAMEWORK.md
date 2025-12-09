@@ -284,3 +284,111 @@ The workflow engine integrates with the Agent Dashboard for monitoring:
 - Event timeline with phase transitions
 
 Access the dashboard at `http://localhost:4200` after starting with `agent-dashboard --web`.
+
+## Implementation Status
+
+### Completed Components
+
+| Component | File | Status | Tests |
+|-----------|------|--------|-------|
+| Workflow Engine | `src/workflow_engine.py` | ✅ Complete | 39 tests |
+| Cost Circuit Breaker | `src/workflow_engine.py` | ✅ Complete | 12 tests |
+| Validation Stack | `src/workflow_engine.py` | ✅ Complete | 3 tests |
+| Token Tracking (tiktoken) | `hooks/send_event.py` | ✅ Complete | 6 tests |
+| Event Hooks | `hooks/send_event.py` | ✅ Complete | 16 tests |
+| Web Server Integration | `src/web_server.py` | ✅ Complete | Manual |
+| Agent Definitions | `agents/*.md` | ✅ Complete | N/A |
+
+### API Endpoints
+
+| Endpoint | Status | Description |
+|----------|--------|-------------|
+| `POST /api/workflow` | ✅ Live | Create workflow from task |
+| `GET /api/workflow` | ✅ Live | List workflows |
+| `GET /api/workflow/{id}` | ✅ Live | Get workflow status |
+| `GET /api/workflow/{id}/prompt` | ✅ Live | Get orchestrator prompt |
+| `GET /api/workflow/{id}/governance` | ✅ Live | Get CLAUDE.md |
+| `GET /api/budget` | ✅ Live | Get budget status |
+
+### Agent Registry (15 Agents)
+
+| Tier | Agents | Model |
+|------|--------|-------|
+| 1 (Strategic) | orchestrator, synthesis, critic, planner | Opus |
+| 2 (Analysis) | researcher, perplexity-researcher, research-judge, claude-md-auditor, implementer | Sonnet |
+| 3 (Execution) | web-search-researcher, summarizer, test-writer, installer, validator | Haiku |
+
+## Testing
+
+### Running Tests
+
+```bash
+# All tests (61 total)
+python3 -m pytest tests/ -v
+
+# Workflow engine tests only
+python3 -m pytest tests/test_workflow_engine.py -v
+
+# Event hook tests only
+python3 -m pytest tests/test_send_event.py -v
+
+# With coverage report
+python3 -m pytest tests/ --cov=src --cov=hooks --cov-report=html
+```
+
+### Test Categories
+
+**test_workflow_engine.py (39 tests):**
+- `TestCostCircuitBreaker` - Budget enforcement, token estimation, circuit breaking
+- `TestTask` - Task creation, serialization, status transitions
+- `TestWorkflow` - Phases, checkpoints, task dependencies
+- `TestWorkflowEngine` - Workflow creation, governance generation
+- `TestValidationLayerStack` - Four-layer validation
+- `TestAgentRegistry` - Tier assignments, pricing
+- `TestWorkflowPhase` - Phase ordering
+- `TestIntegration` - End-to-end workflow lifecycle
+
+**test_send_event.py (22 tests):**
+- `TestTokenEstimation` - Tiktoken and fallback estimation
+- `TestCostEstimation` - Model pricing calculations
+- `TestSummaryGeneration` - Tool summary generation
+- `TestProjectName` - Git and environment detection
+- `TestSessionId` - Session ID generation
+
+### Verification Commands
+
+```bash
+# Verify installation
+python3 -c "from src.workflow_engine import WorkflowEngine; print('OK')"
+
+# Test workflow creation
+python3 src/workflow_engine.py from-task "Test task"
+
+# Check budget
+python3 src/workflow_engine.py budget
+
+# Test API
+curl http://localhost:4200/health
+curl http://localhost:4200/api/budget
+```
+
+## Changelog
+
+### v2.0 - Multi-Agent Workflow Framework
+
+- Added workflow engine with six-phase execution
+- Implemented cost circuit breaker with budget enforcement
+- Added four-layer validation stack
+- Integrated tiktoken for accurate token counting
+- Added 3 new agents: planner, implementer, validator
+- Created comprehensive test suite (61 tests)
+- Added workflow API endpoints to web server
+- Updated documentation with project integration guides
+
+### v1.0 - Initial Release
+
+- Basic event tracking and monitoring
+- 11 agent definitions
+- Terminal TUI and web dashboard
+- SQLite event storage
+
