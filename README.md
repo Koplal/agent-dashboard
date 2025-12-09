@@ -1,4 +1,4 @@
-# Agent Dashboard v2.0
+# Agent Dashboard v2.5
 
 **Real-time monitoring and orchestration for Claude Code multi-agent workflows.**
 
@@ -44,7 +44,7 @@ A comprehensive multi-agent workflow framework with tiered model architecture (O
 | **Token Tracking** | Accurate counting via tiktoken (cl100k_base encoding) |
 | **Four-Layer Validation** | Static analysis, tests, integration sandbox, behavioral diff |
 
-### What's New in v2.0
+### What's New in v2.5
 
 - **Workflow Engine** - Multi-phase task execution (PLAN → TEST → IMPLEMENT → VALIDATE → REVIEW → DELIVER)
 - **Cost Circuit Breaker** - Automatic budget enforcement with warning thresholds
