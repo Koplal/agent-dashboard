@@ -35,6 +35,13 @@ except ImportError:
     HAS_AIOHTTP = False
     print("Warning: aiohttp not installed. Run: pip install aiohttp")
 
+# Import workflow engine for orchestration
+try:
+    from workflow_engine import WorkflowEngine, WorkflowPhase, TaskStatus
+    HAS_WORKFLOW_ENGINE = True
+except ImportError:
+    HAS_WORKFLOW_ENGINE = False
+
 # Theme colors matching claude-powerline.json
 THEME = {
     "directory": "#7dcfff",
@@ -598,7 +605,7 @@ DASHBOARD_HTML = """
 
 class WebDashboard:
     """Web dashboard server with WebSocket support."""
-    
+
     def __init__(self, db_path: str = "~/.claude/agent_dashboard.db", port: int = 4200):
         self.db_path = Path(db_path).expanduser()
         self.port = port
@@ -607,6 +614,12 @@ class WebDashboard:
         self.events: List[Dict] = []
         self._init_db()
         self._load_recent_data()
+
+        # Initialize workflow engine if available
+        if HAS_WORKFLOW_ENGINE:
+            self.workflow_engine = WorkflowEngine(budget_limit=10.0)
+        else:
+            self.workflow_engine = None
     
     def _init_db(self):
         """Initialize database."""
@@ -765,7 +778,121 @@ class WebDashboard:
     async def handle_health(self, request):
         """Health check."""
         return web.json_response({"status": "healthy"})
-    
+
+    # =========================================================================
+    # WORKFLOW ENGINE API ENDPOINTS
+    # =========================================================================
+
+    async def handle_workflow_create(self, request):
+        """Create a new workflow from a task description."""
+        if not self.workflow_engine:
+            return web.json_response(
+                {"error": "Workflow engine not available"},
+                status=503
+            )
+
+        try:
+            data = await request.json()
+            task = data.get("task", "")
+            budget = data.get("budget", 1.0)
+
+            if not task:
+                return web.json_response(
+                    {"error": "Task description required"},
+                    status=400
+                )
+
+            workflow = self.workflow_engine.create_workflow_from_task(task)
+            self.workflow_engine.circuit_breaker.reset(budget)
+
+            return web.json_response({
+                "workflow_id": workflow.id,
+                "name": workflow.name,
+                "tasks": workflow.to_todo_list(),
+                "status": workflow.get_status()
+            })
+        except Exception as e:
+            return web.json_response({"error": str(e)}, status=400)
+
+    async def handle_workflow_status(self, request):
+        """Get workflow status."""
+        if not self.workflow_engine:
+            return web.json_response(
+                {"error": "Workflow engine not available"},
+                status=503
+            )
+
+        workflow_id = request.match_info.get("workflow_id")
+        if workflow_id and workflow_id in self.workflow_engine.workflows:
+            workflow = self.workflow_engine.workflows[workflow_id]
+            return web.json_response({
+                "status": workflow.get_status(),
+                "tasks": workflow.to_todo_list(),
+                "governance": self.workflow_engine.generate_claude_md_governance(workflow)
+            })
+
+        # Return all workflows
+        workflows = {
+            wid: wf.get_status()
+            for wid, wf in self.workflow_engine.workflows.items()
+        }
+        return web.json_response({"workflows": workflows})
+
+    async def handle_workflow_prompt(self, request):
+        """Generate orchestrator prompt for a workflow."""
+        if not self.workflow_engine:
+            return web.json_response(
+                {"error": "Workflow engine not available"},
+                status=503
+            )
+
+        workflow_id = request.match_info.get("workflow_id")
+        if workflow_id not in self.workflow_engine.workflows:
+            return web.json_response(
+                {"error": f"Workflow not found: {workflow_id}"},
+                status=404
+            )
+
+        workflow = self.workflow_engine.workflows[workflow_id]
+        prompt = self.workflow_engine.generate_orchestrator_prompt(workflow)
+
+        return web.json_response({
+            "workflow_id": workflow_id,
+            "prompt": prompt
+        })
+
+    async def handle_workflow_budget(self, request):
+        """Get budget status."""
+        if not self.workflow_engine:
+            return web.json_response(
+                {"error": "Workflow engine not available"},
+                status=503
+            )
+
+        return web.json_response(
+            self.workflow_engine.circuit_breaker.get_status()
+        )
+
+    async def handle_workflow_governance(self, request):
+        """Get governance document for a workflow."""
+        if not self.workflow_engine:
+            return web.json_response(
+                {"error": "Workflow engine not available"},
+                status=503
+            )
+
+        workflow_id = request.match_info.get("workflow_id")
+        if workflow_id not in self.workflow_engine.workflows:
+            return web.json_response(
+                {"error": f"Workflow not found: {workflow_id}"},
+                status=404
+            )
+
+        workflow = self.workflow_engine.workflows[workflow_id]
+        governance = self.workflow_engine.generate_claude_md_governance(workflow)
+
+        return web.Response(text=governance, content_type="text/markdown")
+
     async def handle_websocket(self, request):
         """WebSocket handler for live updates."""
         ws = web.WebSocketResponse()
@@ -818,7 +945,8 @@ class WebDashboard:
     def create_app(self) -> web.Application:
         """Create the web application."""
         app = web.Application()
-        
+
+        # Core routes
         app.router.add_get("/", self.handle_index)
         app.router.add_post("/events", self.handle_events_post)
         app.router.add_get("/api/events", self.handle_events_get)
@@ -826,7 +954,16 @@ class WebDashboard:
         app.router.add_get("/api/stats", self.handle_stats)
         app.router.add_get("/health", self.handle_health)
         app.router.add_get("/ws", self.handle_websocket)
-        
+
+        # Workflow engine routes
+        if self.workflow_engine:
+            app.router.add_post("/api/workflow", self.handle_workflow_create)
+            app.router.add_get("/api/workflow", self.handle_workflow_status)
+            app.router.add_get("/api/workflow/{workflow_id}", self.handle_workflow_status)
+            app.router.add_get("/api/workflow/{workflow_id}/prompt", self.handle_workflow_prompt)
+            app.router.add_get("/api/workflow/{workflow_id}/governance", self.handle_workflow_governance)
+            app.router.add_get("/api/budget", self.handle_workflow_budget)
+
         return app
     
     async def run(self):
@@ -841,6 +978,9 @@ class WebDashboard:
         print(f"🚀 Agent Dashboard running at http://localhost:{self.port}")
         print(f"📡 Event endpoint: http://localhost:{self.port}/events")
         print(f"🔌 WebSocket: ws://localhost:{self.port}/ws")
+        if self.workflow_engine:
+            print(f"🔧 Workflow API: http://localhost:{self.port}/api/workflow")
+            print(f"💰 Budget API: http://localhost:{self.port}/api/budget")
         
         # Start stats broadcaster
         asyncio.create_task(self.stats_broadcaster())

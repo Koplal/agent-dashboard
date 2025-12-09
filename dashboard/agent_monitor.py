@@ -98,16 +98,19 @@ REGISTERED_AGENTS = [
     {"name": "orchestrator", "model": "opus", "emoji": "🎯", "tier": 1, "description": "Strategic coordinator"},
     {"name": "synthesis", "model": "opus", "emoji": "🔗", "tier": 1, "description": "Research synthesizer"},
     {"name": "critic", "model": "opus", "emoji": "⚔️", "tier": 1, "description": "Devil's advocate"},
+    {"name": "planner", "model": "opus", "emoji": "📐", "tier": 1, "description": "Strategic planner"},
     # Tier 2 - Sonnet (Analysis/Research)
     {"name": "researcher", "model": "sonnet", "emoji": "🔍", "tier": 2, "description": "Documentation research"},
     {"name": "perplexity-researcher", "model": "sonnet", "emoji": "⚡", "tier": 2, "description": "Real-time search"},
     {"name": "research-judge", "model": "sonnet", "emoji": "⚖️", "tier": 2, "description": "Quality evaluation"},
     {"name": "claude-md-auditor", "model": "sonnet", "emoji": "📝", "tier": 2, "description": "Doc auditing"},
+    {"name": "implementer", "model": "sonnet", "emoji": "🔨", "tier": 2, "description": "Code implementation"},
     # Tier 3 - Haiku (Execution)
     {"name": "web-search-researcher", "model": "haiku", "emoji": "🌐", "tier": 3, "description": "Web searches"},
     {"name": "summarizer", "model": "haiku", "emoji": "📋", "tier": 3, "description": "Compression"},
     {"name": "test-writer", "model": "haiku", "emoji": "🧪", "tier": 3, "description": "Test generation"},
     {"name": "installer", "model": "haiku", "emoji": "📦", "tier": 3, "description": "Setup tasks"},
+    {"name": "validator", "model": "haiku", "emoji": "✅", "tier": 3, "description": "Validation stack"},
 ]
 
 
