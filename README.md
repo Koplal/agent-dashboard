@@ -2,7 +2,7 @@
 
 **Real-time monitoring and orchestration for Claude Code multi-agent workflows.**
 
-A comprehensive multi-agent workflow framework with tiered model architecture (Opus/Sonnet/Haiku), cost governance, and four-layer validation. Built for production-grade AI workflows with quality-focused model selection.
+A comprehensive multi-agent workflow framework implementing **Test-Driven Development (TDD)** with tiered model architecture (Opus/Sonnet/Haiku), cost governance, and six-layer validation. Built for production-grade AI workflows where tests define correctness.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.9+-green.svg)
@@ -13,6 +13,7 @@ A comprehensive multi-agent workflow framework with tiered model architecture (O
 ## Table of Contents
 
 - [Features](#-features)
+- [TDD Philosophy](#-tdd-philosophy)
 - [Quick Start](#-quick-start)
 - [Architecture](#-architecture)
 - [Agent Registry](#-agent-registry-14-agents)
@@ -37,22 +38,72 @@ A comprehensive multi-agent workflow framework with tiered model architecture (O
 
 | Feature | Description |
 |---------|-------------|
+| **TDD Workflow** | Test-Driven Development with immutable tests |
 | **Multi-Agent Orchestration** | 14 specialized agents across 3 tiers (Opus/Sonnet/Haiku) |
 | **Real-time Monitoring** | Terminal TUI (Rich) and Web Dashboard with WebSocket updates |
-| **Workflow Engine** | Six-phase execution with locked-gate pattern |
+| **7-Phase Workflow** | SPEC → TEST_DESIGN → TEST_IMPL → IMPLEMENT → VALIDATE → REVIEW → DELIVER |
 | **Cost Governance** | Circuit breaker pattern with budget enforcement |
-| **Token Tracking** | Accurate counting via tiktoken (cl100k_base encoding) |
-| **Four-Layer Validation** | Static analysis, tests, integration sandbox, behavioral diff |
+| **Six-Layer Validation** | Static analysis, tests, TODO check, mock detection, integration, diff |
 
 ### What's New in v2.1
 
-- **Enhanced Documentation** - Comprehensive terminal and IDE integration guides
-- **14 Specialized Agents** - Complete multi-agent research and development framework
-- **Workflow Engine** - Multi-phase task execution (PLAN → TEST → IMPLEMENT → VALIDATE → REVIEW → DELIVER)
-- **Cost Circuit Breaker** - Automatic budget enforcement with warning thresholds
-- **61 Unit Tests** - Comprehensive test coverage across all components
-- **Tiktoken Integration** - Accurate token counting (with character-based fallback)
+- **TDD Workflow Integration** - Tests define correctness, code must pass ALL tests
+- **Test Immutability** - Tests become LOCKED after approval (cannot be modified)
+- **7-Phase TDD Workflow** - SPEC → TEST_DESIGN → TEST_IMPL → IMPLEMENT → VALIDATE → REVIEW → DELIVER
+- **TODO/Mock Detection** - Validation ensures NO TODOs and NO mocks in production code
+- **Enhanced Agent Definitions** - TDD-focused planner, test-writer, implementer, validator
 - **VS Code Integration** - Step-by-step instructions for IDE usage
+- **61 Unit Tests** - Comprehensive test coverage across all components
+
+---
+
+## TDD Philosophy
+
+The Agent Dashboard implements a strict Test-Driven Development workflow:
+
+### Core Principles
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    TDD CORE RULES                               │
+├─────────────────────────────────────────────────────────────────┤
+│  1. Tests define correctness - Code must pass ALL tests         │
+│  2. Tests are IMMUTABLE - After lock, tests CANNOT change       │
+│  3. NO TODOs - Production code must be complete                 │
+│  4. NO mocks in production - Mocks only in test files           │
+│  5. Auto-iterate - Keep implementing until ALL tests pass       │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### The TDD Cycle
+
+1. **Design the feature** - Define WHAT it does (SPEC phase)
+2. **Design tests** - Create test cases from specification (TEST_DESIGN phase)
+3. **Write tests FIRST** - Implement tests, they become IMMUTABLE (TEST_IMPL phase)
+4. **Implement code** - Must pass ALL tests, cannot modify tests (IMPLEMENT phase)
+5. **Validate** - Verify no TODOs, no mocks, all tests pass (VALIDATE phase)
+
+### TDD Workflow Diagram
+
+```
+SPEC → TEST_DESIGN → TEST_IMPL → IMPLEMENT → VALIDATE → REVIEW → DELIVER
+  │         │            │            │           │         │        │
+  ▼         ▼            ▼            ▼           ▼         ▼        ▼
+Define   Design      Write tests   Write code  Verify    Review   Ship
+WHAT     tests       (LOCK them)   (pass tests) TDD rules quality
+```
+
+### Test Immutability
+
+After the TEST_IMPL phase is approved, tests are **LOCKED**:
+
+- Tests CANNOT be modified
+- Tests CANNOT be deleted
+- Tests CANNOT be skipped
+- Implementation MUST make tests pass
+- If tests are wrong, start a NEW workflow cycle
+
+For detailed documentation, see [docs/WORKFLOW_FRAMEWORK.md](docs/WORKFLOW_FRAMEWORK.md).
 
 ---
 
@@ -386,23 +437,34 @@ export AGENT_PROJECT="my-project"
 
 ## Workflow Engine
 
-### Phases (Locked Gate Pattern)
+### TDD Phases (Locked Gate Pattern)
 
 ```
-PLAN → TEST → IMPLEMENT → VALIDATE → REVIEW → DELIVER
-  │      │        │          │         │        │
-  └──────┴────────┴──────────┴─────────┴────────┘
-         Human-in-the-Loop Checkpoints
+SPEC → TEST_DESIGN → TEST_IMPL → IMPLEMENT → VALIDATE → REVIEW → DELIVER
+  │         │            │            │           │         │        │
+  ▼         ▼            ▼            ▼           ▼         ▼        ▼
+Approval  Approval   LOCK TESTS   All Pass    TDD Check  Review   Done
+                    (immutable)   Required    Required
 ```
 
-| Phase | Agent | Model | Description |
-|-------|-------|-------|-------------|
-| PLAN | planner | Opus | Read-only exploration, create implementation plan |
-| TEST | test-writer | Haiku | Write test specifications (TDD pattern) |
-| IMPLEMENT | implementer | Sonnet | Execute approved plan, write code |
-| VALIDATE | validator | Haiku | Run four-layer validation stack |
-| REVIEW | critic | Opus | Challenge implementation, find weaknesses |
-| DELIVER | summarizer | Haiku | Generate behavioral diff summary |
+| Phase | Agent | Model | Description | Checkpoint |
+|-------|-------|-------|-------------|------------|
+| SPEC | planner | Opus | Define WHAT the feature does (not how) | Approval required |
+| TEST_DESIGN | test-writer | Sonnet | Design test cases from specification | Approval required |
+| TEST_IMPL | test-writer | Haiku | Write tests (become IMMUTABLE) | **LOCK approval** |
+| IMPLEMENT | implementer | Sonnet | Write code to pass locked tests | Auto (all tests pass) |
+| VALIDATE | validator | Haiku | Run six-layer TDD validation | Auto (all pass) |
+| REVIEW | critic | Opus | Critical review, verify spec compliance | Approval required |
+| DELIVER | summarizer | Haiku | Generate summary, document limitations | None |
+
+### TDD Rules (Enforced)
+
+| Rule | Requirement | Enforced By |
+|------|-------------|-------------|
+| Tests define correctness | Code must pass ALL tests | validator |
+| Tests are IMMUTABLE | After lock, cannot change | workflow engine |
+| NO TODOs | Zero in production code | validator |
+| NO mocks in production | Only in test files | validator |
 
 ### Cost Governance
 
@@ -410,9 +472,9 @@ PLAN → TEST → IMPLEMENT → VALIDATE → REVIEW → DELIVER
 
 | Model | Tier | Input | Output | Best For |
 |-------|------|-------|--------|----------|
-| Opus | 1 | $15.00 | $75.00 | Strategic planning, critical review |
-| Sonnet | 2 | $3.00 | $15.00 | Implementation, research |
-| Haiku | 3 | $0.25 | $1.25 | Validation, summarization, tests |
+| Opus | 1 | $15.00 | $75.00 | Spec, review |
+| Sonnet | 2 | $3.00 | $15.00 | Test design, implementation |
+| Haiku | 3 | $0.25 | $1.25 | Test impl, validation |
 
 #### Circuit Breaker Thresholds
 
@@ -423,14 +485,16 @@ PLAN → TEST → IMPLEMENT → VALIDATE → REVIEW → DELIVER
 | 90% | Final warning |
 | 100% | Circuit breaks (manual reset required) |
 
-### Four-Layer Validation Stack
+### Six-Layer TDD Validation Stack
 
-| Layer | Description | Tools |
-|-------|-------------|-------|
-| 1. Static Analysis | Type checking, linting | tsc, mypy, eslint |
-| 2. Unit Tests | Test suite execution | pytest, jest |
-| 3. Integration Sandbox | Isolated execution | Docker, fixtures |
-| 4. Behavioral Diff | Human-readable changes | git diff analysis |
+| Layer | Check | Requirement |
+|-------|-------|-------------|
+| 1. Static Analysis | Type checking, linting | Zero errors |
+| 2. Test Suite | All tests execution | 100% passing |
+| 3. TODO/FIXME Check | Production code scan | Zero found |
+| 4. Mock Detection | Production code scan | Zero found |
+| 5. Integration Sandbox | Isolated execution | Pass or skip |
+| 6. Behavioral Diff | Human-readable changes | Complete |
 
 ### CLI Usage
 
