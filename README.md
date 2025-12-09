@@ -1,4 +1,4 @@
-# Agent Dashboard v2.0
+# Agent Dashboard v2.1
 
 **Real-time monitoring and orchestration for Claude Code multi-agent workflows.**
 
@@ -44,14 +44,15 @@ A comprehensive multi-agent workflow framework with tiered model architecture (O
 | **Token Tracking** | Accurate counting via tiktoken (cl100k_base encoding) |
 | **Four-Layer Validation** | Static analysis, tests, integration sandbox, behavioral diff |
 
-### What's New in v2.0
+### What's New in v2.1
 
+- **Enhanced Documentation** - Comprehensive terminal and IDE integration guides
+- **14 Specialized Agents** - Complete multi-agent research and development framework
 - **Workflow Engine** - Multi-phase task execution (PLAN → TEST → IMPLEMENT → VALIDATE → REVIEW → DELIVER)
 - **Cost Circuit Breaker** - Automatic budget enforcement with warning thresholds
-- **3 New Agents** - planner, implementer, validator for structured workflows
 - **61 Unit Tests** - Comprehensive test coverage across all components
 - **Tiktoken Integration** - Accurate token counting (with character-based fallback)
-- **Enhanced API** - Workflow management endpoints
+- **VS Code Integration** - Step-by-step instructions for IDE usage
 
 ---
 
@@ -65,8 +66,20 @@ A comprehensive multi-agent workflow framework with tiered model architecture (O
 | pip or uv | Latest | `pip3 --version` or `uv --version` |
 | Claude Code CLI | Latest | `claude --version` |
 
+### Terminal Support
+
+| Terminal | Platform | Support |
+|----------|----------|---------|
+| Bash | Linux, macOS, WSL | Full |
+| Zsh | macOS (default), Linux | Full |
+| Git Bash | Windows | Full |
+| WSL2 | Windows | Full |
+| PowerShell | Windows | Not supported (use WSL2/Git Bash) |
+| CMD.exe | Windows | Not supported (use WSL2/Git Bash) |
+
 ### Installation
 
+**Bash/Zsh Terminal:**
 ```bash
 # Clone the repository
 git clone https://github.com/your-username/agent-dashboard.git
@@ -74,8 +87,16 @@ cd agent-dashboard
 
 # Run the automated installer
 ./scripts/install.sh
+```
 
-# Or install manually
+**VS Code Integrated Terminal:**
+1. Open VS Code in the agent-dashboard directory
+2. Open terminal: `Ctrl+`` (backtick) or `Cmd+`` on macOS
+3. Select Bash/Zsh from terminal dropdown (not PowerShell)
+4. Run: `./scripts/install.sh`
+
+**Manual Installation:**
+```bash
 pip install rich aiohttp tiktoken
 ```
 

@@ -1,6 +1,21 @@
-# Agent Dashboard Implementation Guide
+# Agent Dashboard v2.1 Implementation Guide
 
 Complete guide for deploying the Agent Dashboard multi-agent workflow framework on any project.
+
+## Terminal Requirements
+
+This guide assumes you are using a **Bash-compatible terminal**:
+
+| Terminal | Platform | Supported |
+|----------|----------|-----------|
+| Bash | Linux, macOS, WSL | Yes |
+| Zsh | macOS (default), Linux | Yes |
+| Git Bash | Windows | Yes |
+| WSL2 | Windows | Yes |
+| PowerShell | Windows | No (use WSL2 or Git Bash) |
+| CMD.exe | Windows | No (use WSL2 or Git Bash) |
+
+**VS Code Users:** Open the integrated terminal (`Ctrl+\`` or `Cmd+\``) and select Bash/Zsh from the terminal dropdown.
 
 ## Table of Contents
 
@@ -26,7 +41,7 @@ The Agent Dashboard is a multi-agent workflow orchestration system for Claude Co
 - **Cost Governance** - Budget enforcement with circuit breaker pattern
 - **Accurate Token Tracking** - Tiktoken-based token counting (cl100k_base encoding)
 - **Four-Layer Validation** - Automated quality assurance pipeline
-- **15 Specialized Agents** - Tiered by model (Opus/Sonnet/Haiku) for cost optimization
+- **14 Specialized Agents** - Tiered by model (Opus/Sonnet/Haiku) for cost optimization
 
 ### Architecture
 
@@ -104,7 +119,7 @@ cd agent-dashboard
 
 The installer will:
 1. Create `~/.claude/dashboard/` with all components
-2. Install 15 agent definitions to `~/.claude/agents/`
+2. Install 14 agent definitions to `~/.claude/agents/`
 3. Configure Claude Code hooks in `~/.claude/settings.json`
 4. Install Python dependencies (rich, aiohttp, tiktoken)
 5. Add `agent-dashboard` command to PATH
@@ -312,7 +327,7 @@ python3 workflow_engine.py governance <workflow_id> -o CLAUDE.md
 
 ## Agent Setup
 
-### Complete Agent Registry (15 Agents)
+### Complete Agent Registry (14 Agents)
 
 #### Tier 1 - Opus (Strategic/Quality)
 

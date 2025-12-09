@@ -1,6 +1,10 @@
-# Multi-Agent Workflow Framework
+# Multi-Agent Workflow Framework v2.1
 
 This document describes the workflow orchestration framework implemented in the Agent Dashboard, based on the design patterns for autonomous Claude Code platforms.
+
+> **Version:** 2.1.0
+> **Last Updated:** 2025-01-09
+> **Agents:** 14 specialized agents across 3 tiers
 
 ## Overview
 
@@ -310,7 +314,7 @@ Access the dashboard at `http://localhost:4200` after starting with `agent-dashb
 | `GET /api/workflow/{id}/governance` | ✅ Live | Get CLAUDE.md |
 | `GET /api/budget` | ✅ Live | Get budget status |
 
-### Agent Registry (15 Agents)
+### Agent Registry (14 Agents)
 
 | Tier | Agents | Model |
 |------|--------|-------|
@@ -373,6 +377,15 @@ curl http://localhost:4200/api/budget
 ```
 
 ## Changelog
+
+### v2.1 - Documentation and IDE Integration (Current)
+
+- Enhanced install.sh with comprehensive comments and terminal documentation
+- Added VS Code integration instructions throughout documentation
+- Clarified terminal support (Bash, Zsh, Git Bash, WSL2 vs PowerShell)
+- Fixed agent count consistency (14 agents across all docs)
+- Added terminal requirements section to all guides
+- Improved installation output with step numbering
 
 ### v2.0 - Multi-Agent Workflow Framework
 
