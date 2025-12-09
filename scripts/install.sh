@@ -186,6 +186,11 @@ if ! python3 -c "import rich" 2>/dev/null; then
     pip3 install --quiet rich
 fi
 
+if ! python3 -c "import tiktoken" 2>/dev/null; then
+    echo "Installing tiktoken..."
+    pip3 install --quiet tiktoken
+fi
+
 if $WEB_MODE; then
     if ! python3 -c "import aiohttp" 2>/dev/null; then
         echo "Installing aiohttp..."
@@ -210,13 +215,13 @@ echo -e "  ${GREEN}✓${NC} Created $BIN_DIR/agent-dashboard"
 # Install Python dependencies
 echo -e "\n${BLUE}Installing Python dependencies...${NC}"
 if [ "$PKG_MANAGER" = "uv" ]; then
-    uv pip install --system rich aiohttp 2>/dev/null || \
-    uv pip install rich aiohttp 2>/dev/null || \
-    pip3 install --user rich aiohttp
+    uv pip install --system rich aiohttp tiktoken 2>/dev/null || \
+    uv pip install rich aiohttp tiktoken 2>/dev/null || \
+    pip3 install --user rich aiohttp tiktoken
 else
-    pip3 install --user rich aiohttp
+    pip3 install --user rich aiohttp tiktoken
 fi
-echo -e "  ${GREEN}✓${NC} Dependencies installed"
+echo -e "  ${GREEN}✓${NC} Dependencies installed (rich, aiohttp, tiktoken)"
 
 # Update PATH if needed
 if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
