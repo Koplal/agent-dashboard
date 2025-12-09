@@ -1,318 +1,265 @@
-# Multi-Agent Workflow Framework v2.1
+# Multi-Agent TDD Workflow Framework v2.1
 
-This document describes the workflow orchestration framework implemented in the Agent Dashboard, based on the design patterns for autonomous Claude Code platforms.
+This document describes the Test-Driven Development (TDD) workflow framework implemented in the Agent Dashboard for autonomous Claude Code platforms.
 
 > **Version:** 2.1.0
 > **Last Updated:** 2025-01-09
 > **Agents:** 14 specialized agents across 3 tiers
+> **Philosophy:** Test-Driven Development
 
-## Overview
+## TDD Philosophy
 
-The framework implements five fundamental design shifts that enable reliable multi-agent workflows without requiring line-by-line code review:
+The framework implements a strict Test-Driven Development approach:
 
-1. **Constitutional Constraints** - Executable governance via positive framing
-2. **Ephemeral Task Sandboxes** - Context isolation per task
-3. **Verified Incrementalism** - Micro-generation with interleaved verification
-4. **Subagent Orchestration** - Multi-agent delegation patterns
-5. **Defense-in-Depth Validation** - Four-layer validation stack
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    TDD CORE PRINCIPLES                          │
+├─────────────────────────────────────────────────────────────────┤
+│  1. Tests define correctness - Code must pass ALL tests         │
+│  2. Tests are IMMUTABLE - After lock, tests CANNOT change       │
+│  3. NO TODOs - Production code must be complete                 │
+│  4. NO mocks in production - Mocks only in test files           │
+│  5. Auto-iterate - Keep implementing until ALL tests pass       │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### The TDD Cycle
+
+1. **Design the feature** - Define WHAT it does (not how)
+2. **Create specifications** - Detailed requirements and success criteria
+3. **Design tests** - Unit tests, integration tests, edge cases
+4. **Write tests FIRST** - Tests become IMMUTABLE after approval
+5. **Implement code** - Must pass ALL tests, cannot modify tests
+6. **Validate** - Verify no TODOs, no mocks, all tests pass
 
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    WORKFLOW ENGINE                               │
+│                    TDD WORKFLOW ENGINE                          │
 ├─────────────────────────────────────────────────────────────────┤
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │   PLANNER    │  │ IMPLEMENTER  │  │  VALIDATOR   │          │
-│  │   (Opus)     │──│   (Sonnet)   │──│   (Haiku)    │          │
-│  │  PLAN MODE   │  │IMPLEMENT MODE│  │VALIDATE MODE │          │
-│  └──────────────┘  └──────────────┘  └──────────────┘          │
-│         │                 │                 │                   │
-│  ┌──────┴─────────────────┴─────────────────┴──────┐           │
-│  │              COST CIRCUIT BREAKER                │           │
-│  │         Budget Enforcement & Tracking            │           │
-│  └──────────────────────────────────────────────────┘           │
-│                              │                                   │
-│  ┌──────────────────────────┴────────────────────────┐         │
-│  │            FOUR-LAYER VALIDATION STACK             │         │
-│  │  Layer 1: Static Analysis (types, lint)            │         │
-│  │  Layer 2: Unit Tests (coverage thresholds)         │         │
-│  │  Layer 3: Integration Sandbox (isolated exec)      │         │
-│  │  Layer 4: Behavioral Diff (human-readable)         │         │
-│  └────────────────────────────────────────────────────┘         │
+│                                                                 │
+│  SPEC → TEST_DESIGN → TEST_IMPL → IMPLEMENT → VALIDATE → ...   │
+│                            ↓                                    │
+│                      TESTS LOCKED                               │
+│                      (immutable)                                │
+│                                                                 │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐       │
+│  │ PLANNER  │  │TEST-WRITER│  │IMPLEMENTER│  │VALIDATOR │       │
+│  │  (Opus)  │  │(Sonnet/H) │  │ (Sonnet)  │  │ (Haiku)  │       │
+│  │SPEC MODE │  │TEST DESIGN│  │IMPL MODE  │  │VALIDATE  │       │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘       │
+│                                                                 │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌────────────────────────────────────────────────────────┐    │
+│  │              COST CIRCUIT BREAKER                       │    │
+│  │         Budget Enforcement & Tracking                   │    │
+│  └────────────────────────────────────────────────────────┘    │
+│                                                                 │
+│  ┌────────────────────────────────────────────────────────┐    │
+│  │           TDD VALIDATION STACK (6 Layers)               │    │
+│  │  Layer 1: Static Analysis (types, lint)                 │    │
+│  │  Layer 2: Test Suite (100% pass required)               │    │
+│  │  Layer 3: TODO/FIXME Check (must be zero)               │    │
+│  │  Layer 4: Mock Detection (must be zero in prod)         │    │
+│  │  Layer 5: Integration Sandbox                           │    │
+│  │  Layer 6: Behavioral Diff                               │    │
+│  └────────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## Workflow Phases (Locked Gate Pattern)
-
-Each workflow progresses through phases with explicit checkpoints:
+## Workflow Phases (TDD Locked Gate Pattern)
 
 ```
-PLAN → TEST → IMPLEMENT → VALIDATE → REVIEW → DELIVER
-  │      │        │          │         │        │
-  └──────┴────────┴──────────┴─────────┴────────┘
-         Human-in-the-Loop Checkpoints
+SPEC → TEST_DESIGN → TEST_IMPL → IMPLEMENT → VALIDATE → REVIEW → DELIVER
+  │         │            │            │           │         │        │
+  ▼         ▼            ▼            ▼           ▼         ▼        ▼
+Approval  Approval   LOCK TESTS   All Pass    TDD Check  Review   Done
+                    (immutable)   Required    Required
 ```
 
-### Phase 1: PLAN
-- **Agent**: planner (Opus)
-- **Mode**: Read-only exploration
-- **Actions**: Analyze requirements, explore codebase, create detailed plan
-- **Checkpoint**: Requires human approval of plan
+### Phase 1: SPEC (Feature Specification)
 
-### Phase 2: TEST
-- **Agent**: test-writer (Haiku)
-- **Mode**: Test-Driven Generation
-- **Actions**: Write test specifications before implementation
-- **Checkpoint**: Auto-proceed if test coverage meets threshold
+| Property | Value |
+|----------|-------|
+| Agent | planner (Opus) |
+| Mode | Read-only, SPEC MODE |
+| Actions | Analyze requirements, define WHAT (not how), create product spec |
+| Checkpoint | **Requires human approval** |
+| Output | Product specification document |
 
-### Phase 3: IMPLEMENT
-- **Agent**: implementer (Sonnet)
-- **Mode**: Execute approved plan
-- **Actions**: Write code to pass tests, follow existing patterns
-- **Checkpoint**: Requires approval for significant changes
+**Key Responsibilities:**
+- Define what the feature does (not how it's implemented)
+- Specify success criteria and acceptance requirements
+- Document edge cases and error conditions
+- Provide test design guidance
 
-### Phase 4: VALIDATE
-- **Agent**: validator (Haiku)
-- **Mode**: Four-layer validation stack
-- **Actions**: Static analysis, tests, integration, behavioral diff
-- **Checkpoint**: Auto-proceed if all validations pass
+### Phase 2: TEST_DESIGN (Test Case Design)
 
-### Phase 5: REVIEW
-- **Agent**: critic (Opus)
-- **Mode**: Quality assurance
-- **Actions**: Challenge implementation, find weaknesses
-- **Checkpoint**: Advisory (issues noted but not blocking)
+| Property | Value |
+|----------|-------|
+| Agent | test-writer (Sonnet) |
+| Mode | Design mode |
+| Actions | Design unit tests, integration tests, edge case tests from spec |
+| Checkpoint | **Requires human approval** |
+| Output | Test design document |
 
-### Phase 6: DELIVER
-- **Agent**: synthesis/summarizer (Opus/Haiku)
-- **Mode**: Final synthesis
-- **Actions**: Generate summary, recommendations
-- **Checkpoint**: None (delivery)
+**Key Responsibilities:**
+- Design test cases that guarantee requirements
+- Cover happy paths, edge cases, error conditions
+- Design integration tests for system boundaries
+- Create test coverage matrix
+
+### Phase 3: TEST_IMPL (Test Implementation)
+
+| Property | Value |
+|----------|-------|
+| Agent | test-writer (Haiku) |
+| Mode | Implementation mode |
+| Actions | Write tests exactly as designed, verify tests FAIL |
+| Checkpoint | **CRITICAL: Requires approval to LOCK TESTS** |
+| Output | Test files (become IMMUTABLE after approval) |
+
+**Key Responsibilities:**
+- Implement tests exactly as designed
+- Verify all tests FAIL (no implementation yet)
+- No TODOs or skipped tests
+- After approval: **TESTS ARE LOCKED AND IMMUTABLE**
+
+```
+⚠️ AFTER TEST_IMPL APPROVAL:
+   - Tests CANNOT be modified
+   - Tests CANNOT be deleted
+   - Tests CANNOT be skipped
+   - Implementation MUST make tests pass
+```
+
+### Phase 4: IMPLEMENT (Code Implementation)
+
+| Property | Value |
+|----------|-------|
+| Agent | implementer (Sonnet) |
+| Mode | IMPLEMENT MODE |
+| Actions | Write code to pass LOCKED tests |
+| Checkpoint | **Auto-proceed when ALL tests pass** |
+| Constraints | CANNOT modify tests, NO TODOs, NO mocks in production |
+
+**Key Responsibilities:**
+- Write minimum code to pass each test
+- Iterate until ALL tests pass (100% required)
+- Follow existing code patterns
+- **NEVER modify tests**
+- **NEVER add TODO comments**
+- **NEVER add mocks to production code**
+
+### Phase 5: VALIDATE (TDD Validation)
+
+| Property | Value |
+|----------|-------|
+| Agent | validator (Haiku) |
+| Mode | VALIDATE MODE |
+| Actions | Run 6-layer TDD validation stack |
+| Checkpoint | **Auto-proceed if all validations pass** |
+
+**Validation Layers:**
+
+| Layer | Check | Requirement |
+|-------|-------|-------------|
+| 1 | Static Analysis | Zero type errors |
+| 2 | Test Suite | 100% passing |
+| 3 | TODO/FIXME Check | Zero in production |
+| 4 | Mock Detection | Zero in production |
+| 5 | Integration Sandbox | Pass or skip |
+| 6 | Behavioral Diff | Complete |
+
+### Phase 6: REVIEW (Quality Assurance)
+
+| Property | Value |
+|----------|-------|
+| Agent | critic (Opus) |
+| Mode | Review mode |
+| Actions | Critical review, verify spec compliance |
+| Checkpoint | **Requires human approval** |
+
+### Phase 7: DELIVER (Final Delivery)
+
+| Property | Value |
+|----------|-------|
+| Agent | summarizer (Haiku) |
+| Mode | Delivery mode |
+| Actions | Generate summary, document limitations |
+| Checkpoint | None (completion) |
 
 ## Cost Governance
 
 ### Budget Circuit Breaker
 
-The framework enforces budget limits with automatic circuit breaking:
-
 ```python
 circuit_breaker = CostCircuitBreaker(budget_limit=1.0)
 
-# Check before operations
-allowed, message = circuit_breaker.check_budget(estimated_cost)
-if not allowed:
-    # Circuit broken - manual reset required
-    raise BudgetExhausted(message)
+# Warning thresholds
+WARNING_THRESHOLDS = [0.5, 0.75, 0.9]  # 50%, 75%, 90%
 
-# Record usage
-cost = circuit_breaker.record_usage(tokens_in, tokens_out, model)
+# Circuit breaks when budget exhausted
+if projected > budget_limit:
+    circuit_broken = True
+    # Manual reset required
 ```
 
-### Warning Thresholds
-- **50%**: First warning
-- **75%**: Second warning
-- **90%**: Final warning before circuit break
+### Model Pricing (per million tokens)
 
-### Tier-Based Cost Optimization
+| Model | Tier | Input | Output | Use Cases |
+|-------|------|-------|--------|-----------|
+| Opus | 1 | $15.00 | $75.00 | Spec, review |
+| Sonnet | 2 | $3.00 | $15.00 | Test design, implementation |
+| Haiku | 3 | $0.25 | $1.25 | Test impl, validation |
 
-| Tier | Model | Input ($/1M) | Output ($/1M) | Use For |
-|------|-------|--------------|---------------|---------|
-| 1 | Opus | $15.00 | $75.00 | Strategic, quality-critical |
-| 2 | Sonnet | $3.00 | $15.00 | Analysis, implementation |
-| 3 | Haiku | $0.25 | $1.25 | Routine, validation |
+### Agent Tier Assignments
 
-## Agent Roles
+| Phase | Agent | Tier | Rationale |
+|-------|-------|------|-----------|
+| SPEC | planner | Opus | Strategic thinking required |
+| TEST_DESIGN | test-writer | Sonnet | Design thinking required |
+| TEST_IMPL | test-writer | Haiku | Routine implementation |
+| IMPLEMENT | implementer | Sonnet | Code generation |
+| VALIDATE | validator | Haiku | Routine checks |
+| REVIEW | critic | Opus | Quality judgment |
+| DELIVER | summarizer | Haiku | Routine synthesis |
 
-### Tier 1 - Opus (Strategic)
-- **orchestrator** - Coordinates multi-agent workflows
-- **synthesis** - Combines research into coherent insights
-- **critic** - Challenges conclusions, finds weaknesses
-- **planner** - Creates detailed implementation plans
+## TDD Rules Summary
 
-### Tier 2 - Sonnet (Analysis)
-- **researcher** - Documentation and structured research
-- **perplexity-researcher** - Real-time search with citations
-- **research-judge** - Evaluates research quality
-- **claude-md-auditor** - Audits documentation files
-- **implementer** - Executes approved implementation plans
+### NON-NEGOTIABLE Rules
 
-### Tier 3 - Haiku (Execution)
-- **web-search-researcher** - Broad web searches
-- **summarizer** - Compression and distillation
-- **test-writer** - Test generation
-- **installer** - Setup and configuration
-- **validator** - Four-layer validation stack
+| Rule | Description | Enforced By |
+|------|-------------|-------------|
+| Tests define correctness | Code must pass ALL tests | validator |
+| Tests are IMMUTABLE | After lock, cannot change | workflow engine |
+| NO TODOs | Zero in production code | validator |
+| NO mocks in production | Only in test files | validator |
+| Auto-iterate | Continue until all pass | implementer |
 
-## Usage
+### Validation Requirements
 
-### Creating a Workflow
+| Check | Requirement | Failure Action |
+|-------|-------------|----------------|
+| Test Suite | 100% passing | Block delivery |
+| TODOs | Zero count | Block delivery |
+| Mocks in prod | Zero count | Block delivery |
+| Static Analysis | Zero errors | Block delivery |
 
-```python
-from workflow_engine import WorkflowEngine
+## API Reference
 
-# Initialize with budget limit
-engine = WorkflowEngine(budget_limit=1.0)
+### Workflow Endpoints
 
-# Create workflow from task description
-workflow = engine.create_workflow_from_task(
-    "Add user authentication to the API"
-)
-
-# Generate governance document
-governance = engine.generate_claude_md_governance(workflow)
-
-# Generate orchestrator prompt
-prompt = engine.generate_orchestrator_prompt(workflow)
-```
-
-### CLI Usage
-
-```bash
-# Create a workflow from task
-python workflow_engine.py from-task "Add user authentication"
-
-# Check budget status
-python workflow_engine.py budget
-
-# Generate governance file
-python workflow_engine.py governance <workflow_id> -o CLAUDE.md
-```
-
-### Running the Orchestrator
-
-1. Start the dashboard:
-```bash
-agent-dashboard --web
-```
-
-2. Set the orchestrator as active agent:
-```bash
-export AGENT_NAME=orchestrator
-export AGENT_MODEL=opus
-```
-
-3. Provide the workflow prompt to Claude:
-```
-Execute this workflow: [paste orchestrator prompt]
-```
-
-## Constitutional Constraints (CLAUDE.md)
-
-The framework generates CLAUDE.md governance documents with positive framing:
-
-### Positive Action Patterns (Effective)
-```markdown
-ALWAYS explore the codebase before proposing changes
-ALWAYS create a detailed plan before implementation
-ALWAYS wait for plan approval before proceeding
-ALWAYS run type checks after each file modification
-```
-
-### Negative Prohibition Patterns (Avoid)
-```markdown
-NEVER commit without testing        ← Less effective
-NEVER push directly to main         ← Less effective
-```
-
-## Hook Configuration
-
-The framework provides hook configurations for automatic governance:
-
-```json
-{
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 -m py_compile \"$CLAUDE_FILE_PATHS\""
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
-## Four-Layer Validation Stack
-
-### Layer 1: Static Analysis
-- TypeScript: `npx tsc --noEmit`
-- Python: `python -m py_compile`
-- ESLint/Prettier checks
-
-### Layer 2: Unit Tests
-- pytest / jest / npm test
-- Coverage threshold enforcement
-
-### Layer 3: Integration Sandbox
-- Isolated execution environment
-- Network restrictions
-- Database fixtures
-
-### Layer 4: Behavioral Diff
-- Human-readable change summary
-- Functional impact description
-- Git diff analysis
-
-## Best Practices
-
-### For Orchestrators
-1. Always start with a plan
-2. Delegate to appropriate tiers
-3. Use checkpoints for human oversight
-4. Monitor budget throughout workflow
-
-### For Implementers
-1. Read tests before implementing
-2. Match existing patterns exactly
-3. Validate after every file change
-4. Never deviate from approved plan
-
-### For Validators
-1. Run all four layers
-2. Collect all issues (don't stop at first)
-3. Provide actionable recommendations
-4. Distinguish blocking vs warning issues
-
-## Integration with Agent Dashboard
-
-The workflow engine integrates with the Agent Dashboard for monitoring:
-
-- Real-time task status tracking
-- Token usage per agent/phase
-- Cost accumulation visualization
-- Event timeline with phase transitions
-
-Access the dashboard at `http://localhost:4200` after starting with `agent-dashboard --web`.
-
-## Implementation Status
-
-### Completed Components
-
-| Component | File | Status | Tests |
-|-----------|------|--------|-------|
-| Workflow Engine | `src/workflow_engine.py` | ✅ Complete | 39 tests |
-| Cost Circuit Breaker | `src/workflow_engine.py` | ✅ Complete | 12 tests |
-| Validation Stack | `src/workflow_engine.py` | ✅ Complete | 3 tests |
-| Token Tracking (tiktoken) | `hooks/send_event.py` | ✅ Complete | 6 tests |
-| Event Hooks | `hooks/send_event.py` | ✅ Complete | 16 tests |
-| Web Server Integration | `src/web_server.py` | ✅ Complete | Manual |
-| Agent Definitions | `agents/*.md` | ✅ Complete | N/A |
-
-### API Endpoints
-
-| Endpoint | Status | Description |
+| Endpoint | Method | Description |
 |----------|--------|-------------|
-| `POST /api/workflow` | ✅ Live | Create workflow from task |
-| `GET /api/workflow` | ✅ Live | List workflows |
-| `GET /api/workflow/{id}` | ✅ Live | Get workflow status |
-| `GET /api/workflow/{id}/prompt` | ✅ Live | Get orchestrator prompt |
-| `GET /api/workflow/{id}/governance` | ✅ Live | Get CLAUDE.md |
-| `GET /api/budget` | ✅ Live | Get budget status |
+| `POST /api/workflow` | Create | Create TDD workflow from task |
+| `GET /api/workflow` | List | List all workflows |
+| `GET /api/workflow/{id}` | Status | Get workflow status |
+| `GET /api/workflow/{id}/prompt` | Prompt | Get orchestrator prompt |
+| `GET /api/workflow/{id}/governance` | Governance | Get CLAUDE.md |
+| `GET /api/budget` | Budget | Get budget status |
 
 ### Agent Registry (14 Agents)
 
@@ -322,70 +269,86 @@ Access the dashboard at `http://localhost:4200` after starting with `agent-dashb
 | 2 (Analysis) | researcher, perplexity-researcher, research-judge, claude-md-auditor, implementer | Sonnet |
 | 3 (Execution) | web-search-researcher, summarizer, test-writer, installer, validator | Haiku |
 
+## CLI Usage
+
+```bash
+# Create TDD workflow from task
+python3 src/workflow_engine.py from-task "Add user authentication"
+
+# Check budget status
+python3 src/workflow_engine.py budget
+
+# Generate governance document
+python3 src/workflow_engine.py governance <workflow_id> -o CLAUDE.md
+```
+
 ## Testing
 
 ### Running Tests
 
 ```bash
-# All tests (61 total)
+# Run all tests
 python3 -m pytest tests/ -v
 
-# Workflow engine tests only
+# Run specific test file
 python3 -m pytest tests/test_workflow_engine.py -v
 
-# Event hook tests only
-python3 -m pytest tests/test_send_event.py -v
-
-# With coverage report
-python3 -m pytest tests/ --cov=src --cov=hooks --cov-report=html
+# Run with coverage
+python3 -m pytest tests/ --cov=src --cov-report=html
 ```
 
-### Test Categories
+### Test Coverage Areas
 
-**test_workflow_engine.py (39 tests):**
-- `TestCostCircuitBreaker` - Budget enforcement, token estimation, circuit breaking
-- `TestTask` - Task creation, serialization, status transitions
-- `TestWorkflow` - Phases, checkpoints, task dependencies
-- `TestWorkflowEngine` - Workflow creation, governance generation
-- `TestValidationLayerStack` - Four-layer validation
-- `TestAgentRegistry` - Tier assignments, pricing
-- `TestWorkflowPhase` - Phase ordering
-- `TestIntegration` - End-to-end workflow lifecycle
+| Module | Tests | Coverage Areas |
+|--------|-------|----------------|
+| workflow_engine | 39 | Circuit breaker, tasks, phases, validation |
+| send_event | 22 | Token estimation, cost calculation |
 
-**test_send_event.py (22 tests):**
-- `TestTokenEstimation` - Tiktoken and fallback estimation
-- `TestCostEstimation` - Model pricing calculations
-- `TestSummaryGeneration` - Tool summary generation
-- `TestProjectName` - Git and environment detection
-- `TestSessionId` - Session ID generation
+## Troubleshooting
+
+### Common Issues
+
+**Tests not locking:**
+- Ensure TEST_IMPL phase is approved
+- Check workflow status via API
+
+**Implementation failing:**
+- Read test failure messages carefully
+- DO NOT modify tests
+- Iterate until all pass
+
+**Validation failing:**
+- Check for TODOs: `grep -rn "TODO" src/`
+- Check for mocks: `grep -rn "Mock" src/`
+- Run full test suite
 
 ### Verification Commands
 
 ```bash
-# Verify installation
-python3 -c "from src.workflow_engine import WorkflowEngine; print('OK')"
+# Verify TDD compliance
+python3 -m pytest -v                           # All tests pass
+grep -rn "TODO\|FIXME" src/                    # Zero TODOs
+grep -rn "Mock\|MagicMock" src/ --include="*.py"  # Zero mocks in prod
 
-# Test workflow creation
-python3 src/workflow_engine.py from-task "Test task"
-
-# Check budget
-python3 src/workflow_engine.py budget
-
-# Test API
+# Check API
 curl http://localhost:4200/health
 curl http://localhost:4200/api/budget
 ```
 
 ## Changelog
 
-### v2.1 - Documentation and IDE Integration (Current)
+### v2.1 - TDD Workflow Integration (Current)
 
-- Enhanced install.sh with comprehensive comments and terminal documentation
-- Added VS Code integration instructions throughout documentation
-- Clarified terminal support (Bash, Zsh, Git Bash, WSL2 vs PowerShell)
-- Fixed agent count consistency (14 agents across all docs)
-- Added terminal requirements section to all guides
-- Improved installation output with step numbering
+- Implemented Test-Driven Development philosophy
+- Added 7-phase TDD workflow (SPEC → TEST_DESIGN → TEST_IMPL → IMPLEMENT → VALIDATE → REVIEW → DELIVER)
+- Added test immutability after TEST_IMPL approval
+- Added TODO/FIXME detection in validation
+- Added mock detection in production code
+- Updated planner for SPEC MODE (define WHAT, not HOW)
+- Updated test-writer for TDD design and implementation
+- Updated implementer with strict TDD rules (cannot modify tests)
+- Updated validator with 6-layer TDD validation stack
+- Enhanced governance generation with TDD rules
 
 ### v2.0 - Multi-Agent Workflow Framework
 
@@ -395,8 +358,6 @@ curl http://localhost:4200/api/budget
 - Integrated tiktoken for accurate token counting
 - Added 3 new agents: planner, implementer, validator
 - Created comprehensive test suite (61 tests)
-- Added workflow API endpoints to web server
-- Updated documentation with project integration guides
 
 ### v1.0 - Initial Release
 
@@ -404,4 +365,3 @@ curl http://localhost:4200/api/budget
 - 11 agent definitions
 - Terminal TUI and web dashboard
 - SQLite event storage
-

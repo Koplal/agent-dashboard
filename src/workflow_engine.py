@@ -1,15 +1,27 @@
 #!/usr/bin/env python3
 """
-workflow_engine.py - Multi-Agent Workflow Orchestration Engine
+workflow_engine.py - Multi-Agent Workflow Orchestration Engine v2.1
 
-Implements the design patterns from "Fundamental Design Shifts for Autonomous
-Claude Code Platforms":
+Implements a Test-Driven Development (TDD) workflow for autonomous Claude Code:
 
-1. Constitutional Constraints - Executable governance via positive framing
-2. Ephemeral Task Sandboxes - Context isolation per task
-3. Verified Incrementalism - Micro-generation with interleaved verification
-4. Subagent Orchestration - Multi-agent delegation patterns
-5. Defense-in-Depth Validation - Four-layer validation stack
+CORE PHILOSOPHY:
+  1. Design what you want the feature to do
+  2. Flesh out requirements and specifications
+  3. Design unit tests and integration tests that GUARANTEE functionality
+  4. Write tests FIRST from the test spec
+  5. Then write code - it MUST pass all tests, CANNOT change tests
+  6. NO TODOs, NO mocks in production code
+
+Design Patterns Implemented:
+  1. Constitutional Constraints - Executable governance via positive framing
+  2. Ephemeral Task Sandboxes - Context isolation per task
+  3. Verified Incrementalism - Micro-generation with interleaved verification
+  4. Subagent Orchestration - Multi-agent delegation patterns
+  5. Defense-in-Depth Validation - Four-layer validation stack
+  6. Test-Driven Development - Tests define correctness, code follows
+
+Workflow Phases:
+  SPEC → TEST_DESIGN → TEST_IMPL → IMPLEMENT → VALIDATE → REVIEW → DELIVER
 
 Usage:
     from workflow_engine import WorkflowEngine, Task, WorkflowPhase
@@ -49,13 +61,25 @@ except (ImportError, Exception):
 # ============================================================================
 
 class WorkflowPhase(Enum):
-    """Phases that enforce the Locked Gate Pattern."""
-    PLAN = auto()       # Read-only exploration, no code changes
-    TEST = auto()       # Write tests first (TDG pattern)
-    IMPLEMENT = auto()  # Execute approved plan
-    VALIDATE = auto()   # Run validation layers
-    REVIEW = auto()     # Critic and quality assessment
-    DELIVER = auto()    # Final synthesis and delivery
+    """
+    Phases that enforce the TDD Locked Gate Pattern.
+
+    The workflow follows strict TDD principles:
+    1. SPEC: Define what the feature does (product spec)
+    2. TEST_DESIGN: Design tests that guarantee requirements
+    3. TEST_IMPL: Write tests FIRST (tests are immutable after this)
+    4. IMPLEMENT: Write code to pass tests (cannot modify tests)
+    5. VALIDATE: Run full validation stack
+    6. REVIEW: Critical review and quality assessment
+    7. DELIVER: Final synthesis and delivery
+    """
+    SPEC = auto()         # Feature specification and requirements
+    TEST_DESIGN = auto()  # Design test cases and scenarios
+    TEST_IMPL = auto()    # Write tests first (TDD - tests become immutable)
+    IMPLEMENT = auto()    # Write code to pass tests (cannot change tests)
+    VALIDATE = auto()     # Run validation layers
+    REVIEW = auto()       # Critic and quality assessment
+    DELIVER = auto()      # Final synthesis and delivery
 
 
 class TaskStatus(Enum):
@@ -505,12 +529,21 @@ class ValidationLayerStack:
 
 class Workflow:
     """
-    Represents a complete workflow with tasks, phases, and checkpoints.
+    Represents a complete TDD workflow with tasks, phases, and checkpoints.
 
     Implements:
-    - Locked Gate Pattern (plan -> test -> implement -> validate)
+    - TDD Locked Gate Pattern (spec -> test_design -> test_impl -> implement -> validate)
+    - Test-First Development (tests are written before implementation)
+    - Test Immutability (tests cannot be modified during implementation)
     - Checklist-Scratchpad Pattern
     - Human-in-the-Loop Checkpoints
+
+    TDD Rules:
+    - Tests define correctness - code must pass ALL tests
+    - Tests are IMMUTABLE after TEST_IMPL phase
+    - NO TODOs in production code
+    - NO mocks in production code (only in tests)
+    - Implementation auto-iterates until all tests pass
     """
 
     def __init__(
@@ -697,7 +730,17 @@ class WorkflowEngine:
         description: str = "",
         budget_override: Optional[float] = None
     ) -> Workflow:
-        """Create a new workflow with proper initialization."""
+        """
+        Create a new TDD workflow with proper initialization.
+
+        Implements TDD Locked Gate Pattern with checkpoints:
+        1. SPEC approval - Human reviews feature specification
+        2. TEST_DESIGN approval - Human reviews test design
+        3. TEST_IMPL lock - Tests become IMMUTABLE after this
+        4. IMPLEMENT - Auto-iterate until all tests pass
+        5. VALIDATE - Auto-proceed if all validations pass
+        6. REVIEW - Human reviews final implementation
+        """
         if budget_override:
             self.circuit_breaker.reset(budget_override)
 
@@ -708,28 +751,38 @@ class WorkflowEngine:
             project_root=str(self.project_root)
         )
 
-        # Add default checkpoints (Locked Gate Pattern)
+        # Add TDD-specific checkpoints (Locked Gate Pattern)
         workflow.add_checkpoint(
-            "Plan Review",
-            WorkflowPhase.PLAN,
+            "Specification Review",
+            WorkflowPhase.SPEC,
             requires_approval=True
         )
         workflow.add_checkpoint(
-            "Test Review",
-            WorkflowPhase.TEST,
-            requires_approval=False,
-            auto_proceed_conditions=["all_tests_pass"]
+            "Test Design Review",
+            WorkflowPhase.TEST_DESIGN,
+            requires_approval=True  # Critical: approve test design before writing
         )
         workflow.add_checkpoint(
-            "Implementation Review",
+            "Test Implementation Lock",
+            WorkflowPhase.TEST_IMPL,
+            requires_approval=True  # CRITICAL: Tests become IMMUTABLE after approval
+        )
+        workflow.add_checkpoint(
+            "Implementation Complete",
             WorkflowPhase.IMPLEMENT,
-            requires_approval=True
+            requires_approval=False,
+            auto_proceed_conditions=["all_tests_pass"]  # Auto-proceed when all tests pass
         )
         workflow.add_checkpoint(
             "Validation Review",
             WorkflowPhase.VALIDATE,
             requires_approval=False,
             auto_proceed_conditions=["all_validations_pass"]
+        )
+        workflow.add_checkpoint(
+            "Final Review",
+            WorkflowPhase.REVIEW,
+            requires_approval=True
         )
 
         self.workflows[workflow.id] = workflow
@@ -738,106 +791,230 @@ class WorkflowEngine:
 
     def create_workflow_from_task(self, task_description: str) -> Workflow:
         """
-        Decompose a task description into a full workflow.
+        Decompose a task description into a TDD workflow.
 
-        Implements the Checklist-Scratchpad Pattern:
-        1. Analyze task complexity
-        2. Break into phases
-        3. Assign agents by tier
-        4. Add checkpoints
+        Implements Test-Driven Development:
+        1. SPEC: Design what you want the feature to do
+        2. TEST_DESIGN: Design tests that guarantee requirements
+        3. TEST_IMPL: Write tests FIRST (tests become IMMUTABLE)
+        4. IMPLEMENT: Write code to pass tests (cannot change tests)
+        5. VALIDATE: Run full validation stack
+        6. REVIEW: Critical review
+        7. DELIVER: Final synthesis
+
+        TDD RULES:
+        - Tests define correctness
+        - Tests are IMMUTABLE after TEST_IMPL
+        - NO TODOs in production code
+        - NO mocks in production code
+        - Auto-iterate until ALL tests pass
         """
         workflow = self.create_workflow(
-            name=f"Workflow: {task_description[:50]}",
+            name=f"TDD Workflow: {task_description[:50]}",
             description=task_description
         )
 
-        # Phase 1: PLAN - Exploration and planning tasks
+        # =====================================================================
+        # Phase 1: SPEC - Feature specification and requirements
+        # =====================================================================
         workflow.add_task(
-            "Analyze task requirements and scope",
-            "Analyzing task requirements",
-            phase=WorkflowPhase.PLAN,
+            "Analyze task requirements and define feature scope",
+            "Analyzing requirements",
+            phase=WorkflowPhase.SPEC,
             assigned_agent="planner",
-            priority=10
+            priority=100
         )
         workflow.add_task(
-            "Explore codebase for existing patterns",
+            "Explore codebase for existing patterns and conventions",
             "Exploring codebase",
-            phase=WorkflowPhase.PLAN,
+            phase=WorkflowPhase.SPEC,
             assigned_agent="researcher",
-            priority=9
+            priority=99
         )
         workflow.add_task(
-            "Create detailed implementation plan",
-            "Creating implementation plan",
-            phase=WorkflowPhase.PLAN,
+            "Create detailed product specification document",
+            "Creating specification",
+            phase=WorkflowPhase.SPEC,
             assigned_agent="planner",
-            priority=8
+            priority=98
+        )
+        workflow.add_task(
+            "Define success criteria and acceptance requirements",
+            "Defining success criteria",
+            phase=WorkflowPhase.SPEC,
+            assigned_agent="planner",
+            priority=97
         )
 
-        # Phase 2: TEST - Test-Driven Generation
+        # =====================================================================
+        # Phase 2: TEST_DESIGN - Design tests that guarantee requirements
+        # =====================================================================
         workflow.add_task(
-            "Write test specifications for requirements",
-            "Writing test specifications",
-            phase=WorkflowPhase.TEST,
+            "Design unit test cases from specification",
+            "Designing unit tests",
+            phase=WorkflowPhase.TEST_DESIGN,
             assigned_agent="test-writer",
-            priority=7
+            priority=90
         )
         workflow.add_task(
-            "Review test coverage for edge cases",
-            "Reviewing test coverage",
-            phase=WorkflowPhase.TEST,
+            "Design integration test cases for system boundaries",
+            "Designing integration tests",
+            phase=WorkflowPhase.TEST_DESIGN,
+            assigned_agent="test-writer",
+            priority=89
+        )
+        workflow.add_task(
+            "Design edge case and error condition tests",
+            "Designing edge case tests",
+            phase=WorkflowPhase.TEST_DESIGN,
+            assigned_agent="test-writer",
+            priority=88
+        )
+        workflow.add_task(
+            "Review test design for completeness and correctness",
+            "Reviewing test design",
+            phase=WorkflowPhase.TEST_DESIGN,
             assigned_agent="critic",
-            priority=6
+            priority=87
         )
 
-        # Phase 3: IMPLEMENT - Execute approved plan
+        # =====================================================================
+        # Phase 3: TEST_IMPL - Write tests FIRST (tests become IMMUTABLE)
+        # =====================================================================
         workflow.add_task(
-            "Implement code to pass tests",
-            "Implementing solution",
+            "Implement unit tests from test design spec",
+            "Implementing unit tests",
+            phase=WorkflowPhase.TEST_IMPL,
+            assigned_agent="test-writer",
+            priority=80
+        )
+        workflow.add_task(
+            "Implement integration tests from test design spec",
+            "Implementing integration tests",
+            phase=WorkflowPhase.TEST_IMPL,
+            assigned_agent="test-writer",
+            priority=79
+        )
+        workflow.add_task(
+            "Verify all tests fail (code not yet written)",
+            "Verifying tests fail",
+            phase=WorkflowPhase.TEST_IMPL,
+            assigned_agent="validator",
+            priority=78
+        )
+        workflow.add_task(
+            "LOCK TESTS: Mark tests as immutable for implementation phase",
+            "Locking tests",
+            phase=WorkflowPhase.TEST_IMPL,
+            assigned_agent="validator",
+            priority=77
+        )
+
+        # =====================================================================
+        # Phase 4: IMPLEMENT - Write code to pass tests (CANNOT change tests)
+        # =====================================================================
+        workflow.add_task(
+            "Implement minimum code to pass first test",
+            "Implementing code",
             phase=WorkflowPhase.IMPLEMENT,
             assigned_agent="implementer",
-            priority=5
+            priority=70
+        )
+        workflow.add_task(
+            "Iterate implementation until ALL tests pass",
+            "Iterating until tests pass",
+            phase=WorkflowPhase.IMPLEMENT,
+            assigned_agent="implementer",
+            priority=69
+        )
+        workflow.add_task(
+            "Verify NO TODOs in production code",
+            "Checking for TODOs",
+            phase=WorkflowPhase.IMPLEMENT,
+            assigned_agent="validator",
+            priority=68
+        )
+        workflow.add_task(
+            "Verify NO mocks in production code",
+            "Checking for mocks",
+            phase=WorkflowPhase.IMPLEMENT,
+            assigned_agent="validator",
+            priority=67
         )
 
-        # Phase 4: VALIDATE - Run validation layers
+        # =====================================================================
+        # Phase 5: VALIDATE - Run full validation stack
+        # =====================================================================
         workflow.add_task(
-            "Run static analysis checks",
+            "Run static analysis (type check, lint)",
             "Running static analysis",
             phase=WorkflowPhase.VALIDATE,
             assigned_agent="validator",
-            priority=4
+            priority=60
         )
         workflow.add_task(
-            "Run test suite",
-            "Running tests",
+            "Run complete test suite (must be 100% passing)",
+            "Running test suite",
             phase=WorkflowPhase.VALIDATE,
             assigned_agent="validator",
-            priority=4
+            priority=59
+        )
+        workflow.add_task(
+            "Run integration tests in sandbox",
+            "Running integration tests",
+            phase=WorkflowPhase.VALIDATE,
+            assigned_agent="validator",
+            priority=58
+        )
+        workflow.add_task(
+            "Generate behavioral diff report",
+            "Generating diff report",
+            phase=WorkflowPhase.VALIDATE,
+            assigned_agent="validator",
+            priority=57
         )
 
-        # Phase 5: REVIEW - Quality assessment
+        # =====================================================================
+        # Phase 6: REVIEW - Critical review and quality assessment
+        # =====================================================================
         workflow.add_task(
-            "Critical review of implementation",
+            "Critical review of implementation quality",
             "Reviewing implementation",
             phase=WorkflowPhase.REVIEW,
             assigned_agent="critic",
-            priority=3
+            priority=50
+        )
+        workflow.add_task(
+            "Verify implementation matches specification",
+            "Verifying spec compliance",
+            phase=WorkflowPhase.REVIEW,
+            assigned_agent="critic",
+            priority=49
         )
         workflow.add_task(
             "Synthesize findings and recommendations",
             "Synthesizing findings",
             phase=WorkflowPhase.REVIEW,
             assigned_agent="synthesis",
-            priority=2
+            priority=48
         )
 
-        # Phase 6: DELIVER - Final output
+        # =====================================================================
+        # Phase 7: DELIVER - Final synthesis and delivery
+        # =====================================================================
         workflow.add_task(
-            "Generate behavioral diff summary",
+            "Generate final implementation summary",
             "Generating summary",
             phase=WorkflowPhase.DELIVER,
             assigned_agent="summarizer",
-            priority=1
+            priority=40
+        )
+        workflow.add_task(
+            "Document any follow-up tasks or known limitations",
+            "Documenting follow-ups",
+            phase=WorkflowPhase.DELIVER,
+            assigned_agent="summarizer",
+            priority=39
         )
 
         return workflow
@@ -901,7 +1078,7 @@ class WorkflowEngine:
         """
         Get the appropriate agent for a task.
 
-        Implements Subagent Orchestration pattern:
+        Implements Subagent Orchestration pattern for TDD workflow:
         - Match task type to agent role
         - Select appropriate tier for cost efficiency
         """
@@ -913,10 +1090,11 @@ class WorkflowEngine:
                 "role": agent_info["role"]
             }
 
-        # Default mapping based on phase
+        # Default mapping based on TDD phase
         phase_defaults = {
-            WorkflowPhase.PLAN: ("planner", AgentTier.OPUS),
-            WorkflowPhase.TEST: ("test-writer", AgentTier.HAIKU),
+            WorkflowPhase.SPEC: ("planner", AgentTier.OPUS),
+            WorkflowPhase.TEST_DESIGN: ("test-writer", AgentTier.SONNET),  # Upgraded for design
+            WorkflowPhase.TEST_IMPL: ("test-writer", AgentTier.HAIKU),
             WorkflowPhase.IMPLEMENT: ("implementer", AgentTier.SONNET),
             WorkflowPhase.VALIDATE: ("validator", AgentTier.HAIKU),
             WorkflowPhase.REVIEW: ("critic", AgentTier.OPUS),
@@ -932,42 +1110,76 @@ class WorkflowEngine:
 
     def generate_claude_md_governance(self, workflow: Workflow) -> str:
         """
-        Generate CLAUDE.md governance content.
+        Generate CLAUDE.md governance content for TDD workflow.
 
-        Implements Constitutional Constraints with positive framing.
+        Implements Constitutional Constraints with TDD philosophy.
         """
-        return f"""# Workflow Governance: {workflow.name}
+        return f"""# TDD Workflow Governance: {workflow.name}
 
 ## Current Phase: {workflow.current_phase.name}
 
-## Positive Action Constraints
+## TDD PHILOSOPHY - CORE RULES
 
-COMPLIANCE CONFIRMED: Follow these action sequences:
+These rules are NON-NEGOTIABLE:
 
-### Planning Phase
-ALWAYS explore the codebase before proposing changes
-ALWAYS create a detailed plan before implementation
-ALWAYS wait for plan approval before proceeding to implementation
+1. **Tests define correctness** - Code must pass ALL tests
+2. **Tests are IMMUTABLE** - After TEST_IMPL phase, tests CANNOT be modified
+3. **NO TODOs** - Production code must have zero TODO comments
+4. **NO mocks in production** - Mocks are only allowed in test files
+5. **Auto-iterate** - Implementation continues until ALL tests pass
 
-### Test Phase
-ALWAYS write tests before implementation code
-ALWAYS cover edge cases in test specifications
-ALWAYS verify test coverage meets requirements
+## TDD Workflow Phases
 
-### Implementation Phase
-ALWAYS implement the minimum code to pass tests
-ALWAYS follow existing code patterns in the project
-ALWAYS run type checks after each file modification
+```
+SPEC → TEST_DESIGN → TEST_IMPL → IMPLEMENT → VALIDATE → REVIEW → DELIVER
+                          ↓
+                    TESTS LOCKED
+                    (immutable)
+```
 
-### Validation Phase
-ALWAYS run the full test suite before committing
+## Phase-Specific Constraints
+
+### SPEC Phase (Current: {'✓' if workflow.current_phase == WorkflowPhase.SPEC else '○'})
+ALWAYS define what the feature does before how
+ALWAYS create a detailed product specification
+ALWAYS define success criteria and acceptance requirements
+ALWAYS get approval before proceeding to test design
+
+### TEST_DESIGN Phase (Current: {'✓' if workflow.current_phase == WorkflowPhase.TEST_DESIGN else '○'})
+ALWAYS design tests that guarantee requirements from spec
+ALWAYS include unit tests, integration tests, and edge cases
+ALWAYS design tests BEFORE thinking about implementation
+ALWAYS get approval before writing tests
+
+### TEST_IMPL Phase (Current: {'✓' if workflow.current_phase == WorkflowPhase.TEST_IMPL else '○'})
+ALWAYS write tests exactly as designed
+ALWAYS verify tests FAIL before implementation (no code yet)
+ALWAYS get approval to LOCK tests before implementation
+⚠️ AFTER APPROVAL: Tests become IMMUTABLE
+
+### IMPLEMENT Phase (Current: {'✓' if workflow.current_phase == WorkflowPhase.IMPLEMENT else '○'})
+ALWAYS write minimum code to pass tests
+ALWAYS iterate until ALL tests pass
+NEVER modify tests - they are LOCKED
+NEVER add TODO comments
+NEVER add mocks to production code
+ALWAYS match existing code patterns
+
+### VALIDATE Phase (Current: {'✓' if workflow.current_phase == WorkflowPhase.VALIDATE else '○'})
+ALWAYS run full test suite (must be 100% passing)
 ALWAYS run static analysis checks
-ALWAYS generate a diff summary for review
+ALWAYS verify NO TODOs in production code
+ALWAYS verify NO mocks in production code
+ALWAYS generate behavioral diff report
 
-### Review Phase
-ALWAYS request critical review of significant changes
-ALWAYS address critical issues before delivery
-ALWAYS synthesize findings into actionable recommendations
+### REVIEW Phase (Current: {'✓' if workflow.current_phase == WorkflowPhase.REVIEW else '○'})
+ALWAYS verify implementation matches specification
+ALWAYS check for missed requirements
+ALWAYS synthesize findings and recommendations
+
+### DELIVER Phase (Current: {'✓' if workflow.current_phase == WorkflowPhase.DELIVER else '○'})
+ALWAYS generate final summary
+ALWAYS document any known limitations
 
 ## Budget Constraints
 
@@ -977,27 +1189,45 @@ Remaining: ${workflow.circuit_breaker.budget.remaining:.4f}
 
 ALWAYS check budget before spawning subagents
 ALWAYS prefer Haiku for routine tasks to conserve budget
+ALWAYS use Sonnet for test design (critical thinking required)
 ALWAYS escalate to Opus only for strategic decisions
 
 ## Checkpoint Protocol
 
-{chr(10).join(f"- {cp.name} ({cp.phase.name}): {'Requires approval' if cp.requires_approval else 'Auto-proceed if: ' + ', '.join(cp.auto_proceed_conditions)}" for cp in workflow.checkpoints)}
+{chr(10).join(f"- {cp.name} ({cp.phase.name}): {'⚠️ REQUIRES APPROVAL' if cp.requires_approval else 'Auto-proceed if: ' + ', '.join(cp.auto_proceed_conditions)}" for cp in workflow.checkpoints)}
 
-## Task List
+## Task List by Phase
 
-{chr(10).join(f"- [{t.status.value}] {t.content} (Agent: {t.assigned_agent or 'unassigned'})" for t in workflow.tasks)}
+{chr(10).join(f"### {phase.name}" + chr(10) + chr(10).join(f"- [{t.status.value}] {t.content} → {t.assigned_agent or 'unassigned'}" for t in workflow.tasks if t.phase == phase) for phase in WorkflowPhase)}
 """
 
     def generate_orchestrator_prompt(self, workflow: Workflow) -> str:
-        """Generate a prompt for the orchestrator to execute the workflow."""
-        return f"""# Orchestrator Workflow Execution
+        """Generate a prompt for the orchestrator to execute the TDD workflow."""
+        return f"""# TDD Orchestrator Workflow Execution
 
-You are executing workflow: **{workflow.name}**
+You are executing TDD workflow: **{workflow.name}**
+
+## TDD PHILOSOPHY - CRITICAL RULES
+
+**These rules are NON-NEGOTIABLE:**
+
+1. **Tests define correctness** - Code must pass ALL tests
+2. **Tests are IMMUTABLE** - After TEST_IMPL, tests CANNOT be changed
+3. **NO TODOs** - Production code must have zero TODO comments
+4. **NO mocks in production** - Mocks only in test files
+5. **Auto-iterate** - Keep implementing until ALL tests pass
 
 ## Workflow Status
 {json.dumps(workflow.get_status(), indent=2)}
 
 ## Current Phase: {workflow.current_phase.name}
+
+## TDD Workflow Phases
+```
+SPEC → TEST_DESIGN → TEST_IMPL → IMPLEMENT → VALIDATE → REVIEW → DELIVER
+                          ↓
+                    TESTS LOCKED
+```
 
 ## Tasks for This Phase
 {json.dumps([t.to_dict() for t in workflow.get_tasks_for_phase(workflow.current_phase)], indent=2)}
@@ -1007,16 +1237,42 @@ You are executing workflow: **{workflow.name}**
 1. **Check Budget First**
    Current budget status: {json.dumps(workflow.circuit_breaker.get_status(), indent=2)}
 
-2. **Execute Tasks Sequentially**
-   For each task in the current phase:
-   - Mark as in_progress using TodoWrite
-   - Spawn appropriate subagent using Task tool
-   - Record results and token usage
-   - Mark as completed
+2. **Phase-Specific Execution**
+
+   **SPEC Phase:**
+   - Create detailed feature specification
+   - Define what the feature does (not how)
+   - Define success criteria
+   - Get approval before TEST_DESIGN
+
+   **TEST_DESIGN Phase:**
+   - Design unit tests from specification
+   - Design integration tests
+   - Design edge case tests
+   - Get approval before TEST_IMPL
+
+   **TEST_IMPL Phase:**
+   - Write tests exactly as designed
+   - Verify all tests FAIL (no implementation yet)
+   - Get approval to LOCK TESTS
+   - ⚠️ AFTER APPROVAL: Tests are IMMUTABLE
+
+   **IMPLEMENT Phase:**
+   - Write minimum code to pass first test
+   - Iterate until ALL tests pass
+   - CANNOT modify tests
+   - NO TODOs allowed
+   - NO mocks in production code
+
+   **VALIDATE Phase:**
+   - Run full test suite (100% must pass)
+   - Run static analysis
+   - Check for TODOs (must be zero)
+   - Check for mocks in production (must be zero)
 
 3. **Checkpoint Protocol**
    At phase completion, check for approval requirements:
-   {json.dumps([{"name": cp.name, "requires_approval": cp.requires_approval} for cp in workflow.checkpoints if cp.phase == workflow.current_phase], indent=2)}
+   {json.dumps([{{"name": cp.name, "requires_approval": cp.requires_approval}} for cp in workflow.checkpoints if cp.phase == workflow.current_phase], indent=2)}
 
 4. **Phase Transition**
    After completing all tasks in current phase:
@@ -1026,21 +1282,19 @@ You are executing workflow: **{workflow.name}**
 
 ## Agent Delegation Guide
 
-| Task Type | Agent | Model | Cost Tier |
-|-----------|-------|-------|-----------|
-| Strategic planning | planner | opus | High |
-| Research | researcher | sonnet | Medium |
-| Test writing | test-writer | haiku | Low |
-| Implementation | implementer | sonnet | Medium |
-| Validation | validator | haiku | Low |
-| Critical review | critic | opus | High |
-| Synthesis | synthesis | opus | High |
-| Summarization | summarizer | haiku | Low |
+| Phase | Agent | Model | Role |
+|-------|-------|-------|------|
+| SPEC | planner | opus | Feature specification |
+| TEST_DESIGN | test-writer | sonnet | Test case design |
+| TEST_IMPL | test-writer | haiku | Test implementation |
+| IMPLEMENT | implementer | sonnet | Code implementation |
+| VALIDATE | validator | haiku | Validation checks |
+| REVIEW | critic | opus | Quality review |
+| DELIVER | summarizer | haiku | Final summary |
 
 ## Output Format
 
-After executing each task, update the workflow status and report:
-
+After executing each task:
 ```
 TASK COMPLETED: [task_id]
 Agent: [agent_name]
@@ -1056,7 +1310,14 @@ Tasks: [completed]/[total]
 Phase Cost: $[amount]
 Next Phase: [phase_name]
 Checkpoint: [approval_status]
+Tests Status: [passing/failing count] (if applicable)
 ```
+
+## CRITICAL REMINDERS
+
+- In TEST_IMPL: Verify tests fail BEFORE approving lock
+- In IMPLEMENT: NEVER modify tests, iterate until ALL pass
+- In VALIDATE: Check for TODOs and mocks (must be zero)
 """
 
 
