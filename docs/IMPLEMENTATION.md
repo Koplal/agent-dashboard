@@ -95,7 +95,7 @@ pytest>=7.0.0     # Testing (development)
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/agent-dashboard.git
+git clone https://github.com/Koplal/agent-dashboard.git
 cd agent-dashboard
 
 # Run installer
