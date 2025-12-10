@@ -177,6 +177,18 @@ agent-dashboard test
 curl http://localhost:4200/health
 ```
 
+### See It In Action
+
+Want to see how a simple prompt becomes a parallel multi-agent workflow?
+
+**Example:** Turn "Help me create a microcontroller-based environmental monitoring project" into:
+- 6 parallel workstreams with dependency management
+- 7 specialized agents (planner, implementer, test-writer, validator, critic, summarizer, orchestrator)
+- 42 TDD phase completions (6 components × 7 phases)
+- 45 minutes wall-clock time (vs ~121min sequential)
+
+See the [Complete Workflow Example](docs/WORKFLOW_FRAMEWORK.md#-end-to-end-example-from-prompt-to-parallel-execution)
+
 ---
 
 ## Architecture
@@ -225,6 +237,51 @@ Claude Code Session
             ├─► SQLite Database (persist events)
             ├─► WebSocket Broadcast (live updates)
             └─► REST API (query data)
+```
+
+### Workflow: From Prompt to Parallel Execution
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         USER PROMPT                                      │
+│   "Help me create a microcontroller-based environmental monitoring"     │
+└─────────────────────────────────────┬───────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    ORCHESTRATOR (Tier 1 - Opus)                         │
+│   • Analyzes prompt & gathers requirements                              │
+│   • Identifies components & dependencies                                │
+│   • Creates dependency graph                                            │
+│   • Allocates budget per component                                      │
+└─────────────────────────────────────┬───────────────────────────────────┘
+                                      │
+                    ┌─────────────────┼─────────────────┐
+                    ▼                 ▼                 ▼
+        ┌───────────────────┐ ┌───────────────────┐ ┌───────────────────┐
+        │   WORKTREE 1      │ │   WORKTREE 2      │ │   WORKTREE 3      │
+        │   hw-design       │ │   backend-api     │ │   dashboard       │
+        │   (planner)       │ │   (implementer)   │ │   (implementer)   │
+        │                   │ │                   │ │                   │
+        │ SPEC → TEST →     │ │ SPEC → TEST →     │ │ SPEC → TEST →     │
+        │ IMPL → VALIDATE   │ │ IMPL → VALIDATE   │ │ IMPL → VALIDATE   │
+        └─────────┬─────────┘ └─────────┬─────────┘ └─────────┬─────────┘
+                  │                     │                     │
+        ┌─────────▼─────────┐ ┌─────────▼─────────┐           │
+        │   WORKTREE 4      │ │   WORKTREE 5      │           │
+        │   firmware        │ │   alerting        │           │
+        │   (implementer)   │ │   (implementer)   │           │
+        └─────────┬─────────┘ └─────────┬─────────┘           │
+                  │                     │                     │
+                  └──────────┬──────────┴─────────────────────┘
+                             ▼
+              ┌─────────────────────────────────────┐
+              │         INTEGRATION                  │
+              │   (orchestrator - main worktree)    │
+              │   • Merge all branches              │
+              │   • End-to-end testing              │
+              │   • Final delivery                  │
+              └─────────────────────────────────────┘
 ```
 
 ---
