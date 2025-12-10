@@ -7,7 +7,7 @@ Features:
 - Token usage and cost monitoring
 - Event timeline with color-coded agents
 - Session management across multiple projects
-- Support for 11 agents including orchestration layer
+- Support for 14 agents across 3 tiers (Opus/Sonnet/Haiku)
 
 Updated: Added Tier 1 Opus agents (orchestrator, synthesis, critic)
 """

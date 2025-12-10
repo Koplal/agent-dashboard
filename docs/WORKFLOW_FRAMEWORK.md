@@ -362,6 +362,6 @@ curl http://localhost:4200/api/budget
 ### v1.0 - Initial Release
 
 - Basic event tracking and monitoring
-- 11 agent definitions
+- 14 agent definitions
 - Terminal TUI and web dashboard
 - SQLite event storage

@@ -1,0 +1,86 @@
+# =============================================================================
+# Agent Dashboard - Docker Build Exclusions
+# =============================================================================
+# These files are not needed in the container and excluding them
+# speeds up builds and reduces image size.
+
+# Git
+.git
+.gitignore
+.github
+
+# Documentation (not needed in runtime container)
+*.md
+!agents/*.md
+docs/
+
+# Development and testing
+tests/
+scripts/
+.pytest_cache/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.eggs/
+dist/
+build/
+.tox/
+.nox/
+.coverage
+htmlcov/
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# Environment and secrets
+.env
+.env.*
+*.pem
+*.key
+*.crt
+.secrets/
+credentials/
+
+# Docker files (prevent recursive includes)
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Logs and databases (will be in volumes)
+*.log
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+
+# Package manager caches
+.pip/
+.cache/
+node_modules/
+
+# Local configuration
+*.local
+.envrc

@@ -8,132 +8,63 @@
 #   Installs 14 specialized agents, dashboard components, and configures
 #   Claude Code hooks for real-time monitoring.
 #
-# SUPPORTED TERMINALS:
-#   - Bash (Linux, macOS, WSL) - Primary support
-#   - Zsh (macOS default, Linux) - Full support
-#   - Git Bash (Windows) - Full support
-#   - WSL2 (Windows Subsystem for Linux) - Full support
-#
-# NOT SUPPORTED:
-#   - PowerShell (Windows) - Use WSL2 or Git Bash instead
-#   - CMD.exe (Windows) - Use WSL2 or Git Bash instead
+# CROSS-PLATFORM SUPPORT:
+#   - Windows: Git Bash, WSL2 (not PowerShell/CMD)
+#   - macOS: Bash, Zsh (Intel & Apple Silicon)
+#   - Linux: All major distributions
+#   - Docker: Containerized deployment
 #
 # USAGE:
-#   Terminal (Bash/Zsh):
-#     chmod +x scripts/install.sh
-#     ./scripts/install.sh
-#
-#   VS Code Integrated Terminal:
-#     1. Open VS Code in the agent-dashboard directory
-#     2. Open integrated terminal: Ctrl+` (backtick) or Cmd+` on macOS
-#     3. Ensure terminal is set to Bash/Zsh (not PowerShell):
-#        - Click the dropdown arrow next to the + icon in terminal
-#        - Select "Git Bash" or "bash" or "zsh"
-#     4. Run: ./scripts/install.sh
-#
-#   Windows (via WSL2):
-#     wsl -d Ubuntu
-#     cd /path/to/agent-dashboard
-#     ./scripts/install.sh
-#
-# PREREQUISITES:
-#   Required:
-#     - Python 3.9 or higher
-#     - pip3 or uv package manager
-#
-#   Optional but Recommended:
-#     - Claude Code CLI (for agent integration)
-#     - uv package manager (faster than pip)
-#     - tmux (for background dashboard operation)
-#
-# WHAT THIS SCRIPT DOES:
-#   1. Verifies Python 3.9+ is installed
-#   2. Checks for uv or pip package manager
-#   3. Creates directory structure:
-#      - ~/.claude/dashboard/     (dashboard files)
-#      - ~/.claude/dashboard/hooks/ (event hooks)
-#      - ~/.claude/agents/        (agent definitions)
-#      - ~/.local/bin/            (CLI launcher)
-#   4. Copies dashboard Python modules
-#   5. Installs 14 agent definition files (.md)
-#   6. Creates 'agent-dashboard' CLI command
-#   7. Installs Python dependencies (rich, aiohttp, tiktoken)
-#   8. Optionally configures Claude Code hooks
-#
-# POST-INSTALLATION:
-#   Start the dashboard:
-#     agent-dashboard --web
-#
-#   Use with an agent:
-#     export AGENT_NAME=orchestrator
-#     export AGENT_MODEL=opus
-#     claude
-#
-# TROUBLESHOOTING:
-#   "command not found: agent-dashboard"
-#     - Run: source ~/.bashrc  (or source ~/.zshrc)
-#     - Or open a new terminal window
-#
-#   "Permission denied"
-#     - Run: chmod +x scripts/install.sh
-#
-#   "Python not found"
-#     - Install Python 3.9+: https://www.python.org/downloads/
+#   ./scripts/install.sh
 #
 # VERSION: 2.1.0
-# UPDATED: 2025-01-09
 # =============================================================================
 
-# -----------------------------------------------------------------------------
-# SHELL CONFIGURATION
-# -----------------------------------------------------------------------------
-# Exit immediately if any command fails (prevents partial installations)
+# Exit immediately if any command fails
 set -e
 
-# -----------------------------------------------------------------------------
+# =============================================================================
+# LINE ENDING NORMALIZATION (Windows Fix)
+# =============================================================================
+# Ensure this script has Unix line endings (LF, not CRLF)
+# This fixes "command not found" errors on Windows when files have CRLF
+
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
+    IS_WINDOWS=true
+    # Check for CRLF line endings
+    if head -1 "$0" 2>/dev/null | grep -q $'\r'; then
+        echo "Converting line endings to Unix format..."
+        sed -i 's/\r$//' "$0" 2>/dev/null || true
+        echo "Please re-run the script: ./scripts/install.sh"
+        exit 0
+    fi
+else
+    IS_WINDOWS=false
+fi
+
+# =============================================================================
 # COLOR DEFINITIONS
-# -----------------------------------------------------------------------------
-# ANSI color codes for terminal output formatting
-# These colors improve readability of installation progress
-# Note: Colors may not display correctly in all terminals (e.g., basic CMD.exe)
-RED='\033[0;31m'      # Errors
-GREEN='\033[0;32m'    # Success messages
-YELLOW='\033[1;33m'   # Warnings
-BLUE='\033[0;34m'     # Section headers
-CYAN='\033[0;36m'     # Information
-MAGENTA='\033[0;35m'  # Tier 1 agents (Opus)
-NC='\033[0m'          # No Color - reset to default
+# =============================================================================
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+MAGENTA='\033[0;35m'
+NC='\033[0m'
 
-# -----------------------------------------------------------------------------
+# =============================================================================
 # DIRECTORY CONFIGURATION
-# -----------------------------------------------------------------------------
-# Define installation directories using $HOME for cross-platform compatibility
-# These paths follow XDG Base Directory specification where applicable
-
-# Primary dashboard installation directory
-# Contains: agent_monitor.py, web_server.py, cli.py, workflow_engine.py
+# =============================================================================
 INSTALL_DIR="$HOME/.claude/dashboard"
-
-# Agent definitions directory
-# Contains: 14 agent .md files (orchestrator.md, researcher.md, etc.)
 AGENTS_DIR="$HOME/.claude/agents"
-
-# Claude Code configuration directory
-# Contains: settings.json (hooks configuration)
 CONFIG_DIR="$HOME/.claude"
-
-# User binary directory for CLI command
-# The 'agent-dashboard' command will be installed here
 BIN_DIR="$HOME/.local/bin"
-
-# Source directory (where this script is located)
-# Uses BASH_SOURCE to handle symlinks correctly
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-# -----------------------------------------------------------------------------
+# =============================================================================
 # INSTALLATION BANNER
-# -----------------------------------------------------------------------------
-# Display installation header with version and agent tier information
+# =============================================================================
 echo -e "${MAGENTA}"
 echo "============================================================================="
 echo "                    Agent Dashboard v2.1 Installer                           "
@@ -148,155 +79,318 @@ echo ""
 echo "============================================================================="
 echo -e "${NC}"
 
-# -----------------------------------------------------------------------------
-# DEPENDENCY CHECKS
-# -----------------------------------------------------------------------------
-# Verify all required dependencies are installed before proceeding
+# =============================================================================
+# PLATFORM DETECTION
+# =============================================================================
+echo -e "${BLUE}[1/8] Detecting platform...${NC}"
 
-echo -e "${BLUE}[1/7] Checking dependencies...${NC}"
+IS_MACOS=false
+IS_LINUX=false
+IS_HEADLESS=false
+MACOS_ARCH=""
+LINUX_DISTRO=""
+HOMEBREW_PREFIX="/usr/local"
 
-# -----------------------------------------------------------------------------
-# Check: Python Installation
-# -----------------------------------------------------------------------------
-# Python 3.9+ is required for:
-#   - asyncio features used in web_server.py
-#   - Type hints syntax used throughout codebase
-#   - dataclasses used in workflow_engine.py
-if ! command -v python3 &> /dev/null; then
-    echo -e "${RED}ERROR: Python 3 is required but not installed.${NC}"
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    IS_MACOS=true
+    if [[ $(uname -m) == "arm64" ]]; then
+        MACOS_ARCH="Apple Silicon"
+        HOMEBREW_PREFIX="/opt/homebrew"
+    else
+        MACOS_ARCH="Intel"
+    fi
+    echo -e "  ${GREEN}[OK]${NC} macOS ($MACOS_ARCH)"
+
+    # Check for Xcode Command Line Tools
+    if ! xcode-select -p &> /dev/null; then
+        echo -e "  ${YELLOW}[WARN]${NC} Xcode Command Line Tools not installed"
+        echo "         Some pip packages may fail to build."
+        echo "         Install with: xcode-select --install"
+    fi
+
+elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    IS_LINUX=true
+
+    # Detect distro
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        LINUX_DISTRO="$ID"
+        echo -e "  ${GREEN}[OK]${NC} Linux ($LINUX_DISTRO)"
+    else
+        LINUX_DISTRO="unknown"
+        echo -e "  ${GREEN}[OK]${NC} Linux"
+    fi
+
+    # Check if headless (no display)
+    if [ -z "$DISPLAY" ] && [ -z "$WAYLAND_DISPLAY" ]; then
+        IS_HEADLESS=true
+        echo -e "  ${CYAN}[INFO]${NC} Headless server detected"
+    fi
+
+elif [ "$IS_WINDOWS" = true ]; then
+    echo -e "  ${GREEN}[OK]${NC} Windows (Git Bash/MSYS)"
+else
+    echo -e "  ${YELLOW}[WARN]${NC} Unknown platform: $OSTYPE"
+fi
+
+# =============================================================================
+# PYTHON DETECTION - Cross-Platform Compatible
+# =============================================================================
+# Finds Python 3.9+ on any platform:
+#   - Linux/macOS: typically 'python3'
+#   - Windows Git Bash: typically 'python'
+#   - pyenv/conda: may use versioned names
+
+find_python() {
+    local cmd version major minor
+
+    # Priority order: python3 (Unix standard), python (Windows), versioned
+    for cmd in python3 python python3.12 python3.11 python3.10 python3.9; do
+        if command -v "$cmd" &> /dev/null; then
+            # Verify it's actually Python and get version
+            version=$("$cmd" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null) || continue
+            major=$("$cmd" -c 'import sys; print(sys.version_info.major)' 2>/dev/null) || continue
+            minor=$("$cmd" -c 'import sys; print(sys.version_info.minor)' 2>/dev/null) || continue
+
+            # Check version >= 3.9
+            if [ "$major" -ge 3 ] && [ "$minor" -ge 9 ]; then
+                echo "$cmd"
+                return 0
+            fi
+        fi
+    done
+    return 1
+}
+
+find_pip() {
+    local cmd
+
+    # Try pip commands in order of preference
+    for cmd in pip3 pip; do
+        if command -v "$cmd" &> /dev/null; then
+            if "$cmd" --version &> /dev/null; then
+                echo "$cmd"
+                return 0
+            fi
+        fi
+    done
+
+    # Fallback to python -m pip
+    if [ -n "$PYTHON_CMD" ]; then
+        if "$PYTHON_CMD" -m pip --version &> /dev/null; then
+            echo "$PYTHON_CMD -m pip"
+            return 0
+        fi
+    fi
+
+    return 1
+}
+
+echo -e "\n${BLUE}[2/8] Checking Python installation...${NC}"
+
+# Ensure Homebrew Python is in PATH (macOS)
+if [ "$IS_MACOS" = true ] && [ -d "$HOMEBREW_PREFIX/bin" ]; then
+    export PATH="$HOMEBREW_PREFIX/bin:$PATH"
+fi
+
+PYTHON_CMD=$(find_python)
+if [ -z "$PYTHON_CMD" ]; then
+    echo -e "${RED}ERROR: Python 3.9+ is required but not found.${NC}"
     echo ""
-    echo "Installation instructions:"
-    echo "  macOS:   brew install python3"
-    echo "  Ubuntu:  sudo apt install python3 python3-pip"
-    echo "  Windows: Download from https://www.python.org/downloads/"
+    echo "Commands checked: python3, python, python3.12, python3.11, python3.10, python3.9"
+    echo ""
+    echo "Installation instructions by platform:"
+    echo ""
+    if [ "$IS_WINDOWS" = true ]; then
+        echo "  Windows (Git Bash):"
+        echo "    1. Download from https://www.python.org/downloads/"
+        echo "    2. Run installer - CHECK 'Add Python to PATH'"
+        echo "    3. Restart Git Bash"
+    elif [ "$IS_MACOS" = true ]; then
+        echo "  macOS (Homebrew):"
+        echo "    brew install python@3.11"
+    elif [ "$IS_LINUX" = true ]; then
+        case "$LINUX_DISTRO" in
+            ubuntu|debian|pop)
+                echo "  Ubuntu/Debian:"
+                echo "    sudo apt update && sudo apt install python3 python3-pip python3-venv"
+                ;;
+            fedora)
+                echo "  Fedora:"
+                echo "    sudo dnf install python3 python3-pip"
+                ;;
+            centos|rhel|rocky|alma)
+                echo "  RHEL/CentOS:"
+                echo "    sudo dnf install python3 python3-pip"
+                ;;
+            arch|manjaro)
+                echo "  Arch Linux:"
+                echo "    sudo pacman -S python python-pip"
+                ;;
+            *)
+                echo "  Linux:"
+                echo "    Use your package manager to install python3 and python3-pip"
+                ;;
+        esac
+    else
+        echo "  Visit: https://www.python.org/downloads/"
+    fi
     echo ""
     exit 1
 fi
 
-# Get Python version for display and validation
-PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
-echo -e "  ${GREEN}[OK]${NC} Python $PYTHON_VERSION detected"
+PYTHON_VERSION=$($PYTHON_CMD -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+echo -e "  ${GREEN}[OK]${NC} Python $PYTHON_VERSION (command: $PYTHON_CMD)"
 
-# -----------------------------------------------------------------------------
-# Check: Python Version >= 3.9
-# -----------------------------------------------------------------------------
-# Validate Python version meets minimum requirements
-# Python 3.9+ required for:
-#   - dict union operator (|)
-#   - Type hint improvements (list instead of List)
-#   - asyncio.to_thread()
-PYTHON_MAJOR=$(python3 -c 'import sys; print(sys.version_info.major)')
-PYTHON_MINOR=$(python3 -c 'import sys; print(sys.version_info.minor)')
-if [ "$PYTHON_MAJOR" -lt 3 ] || ([ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" -lt 9 ]); then
-    echo -e "${RED}ERROR: Python 3.9+ required, found $PYTHON_VERSION${NC}"
-    echo ""
-    echo "Please upgrade Python:"
-    echo "  macOS:   brew upgrade python3"
-    echo "  Ubuntu:  sudo apt install python3.11"
-    echo "  pyenv:   pyenv install 3.11 && pyenv global 3.11"
-    echo ""
-    exit 1
+# Store for use in generated scripts
+export PYTHON_CMD
+export PYTHON_VERSION
+
+# =============================================================================
+# VIRTUAL ENVIRONMENT DETECTION
+# =============================================================================
+echo -e "\n${BLUE}[3/8] Checking Python environment...${NC}"
+
+IN_VENV=false
+
+if [ -n "$VIRTUAL_ENV" ]; then
+    echo -e "  ${GREEN}[OK]${NC} Virtual environment: $VIRTUAL_ENV"
+    IN_VENV=true
+elif [ -n "$CONDA_PREFIX" ]; then
+    echo -e "  ${GREEN}[OK]${NC} Conda environment: $CONDA_PREFIX"
+    IN_VENV=true
+    if [ "$CONDA_DEFAULT_ENV" = "base" ]; then
+        echo -e "  ${YELLOW}[WARN]${NC} Installing to conda 'base' environment"
+        echo "         Consider: conda create -n claude-dashboard python=3.11"
+    fi
+elif $PYTHON_CMD -c "import sys; sys.exit(0 if sys.prefix != sys.base_prefix else 1)" 2>/dev/null; then
+    echo -e "  ${GREEN}[OK]${NC} Virtual environment detected"
+    IN_VENV=true
+else
+    echo -e "  ${CYAN}[INFO]${NC} No virtual environment (installing to user site-packages)"
 fi
 
-# -----------------------------------------------------------------------------
-# Check: Package Manager (uv or pip)
-# -----------------------------------------------------------------------------
-# Determine which package manager to use for installing dependencies
-# uv is preferred (10-100x faster than pip) but pip works as fallback
+# Warn about pyenv
+if command -v pyenv &> /dev/null; then
+    PYENV_VERSION=$(pyenv version-name 2>/dev/null)
+    echo -e "  ${CYAN}[INFO]${NC} pyenv detected (version: $PYENV_VERSION)"
+fi
+
+# =============================================================================
+# PACKAGE MANAGER CHECK
+# =============================================================================
+echo -e "\n${BLUE}[4/8] Checking package manager...${NC}"
+
+PKG_MANAGER=""
+PIP_CMD=""
+
+# Check for uv first (10-100x faster than pip)
 if command -v uv &> /dev/null; then
     PKG_MANAGER="uv"
-    echo -e "  ${GREEN}[OK]${NC} uv package manager detected (recommended)"
-elif command -v pip3 &> /dev/null; then
-    PKG_MANAGER="pip"
-    echo -e "  ${YELLOW}[WARN]${NC} pip3 detected (uv recommended for faster installs)"
-    echo -e "         Install uv: ${CYAN}curl -LsSf https://astral.sh/uv/install.sh | sh${NC}"
+    echo -e "  ${GREEN}[OK]${NC} uv package manager (recommended)"
 else
-    echo -e "${RED}ERROR: No package manager found (uv or pip required).${NC}"
-    echo ""
-    echo "Installation instructions:"
-    echo "  uv (recommended): curl -LsSf https://astral.sh/uv/install.sh | sh"
-    echo "  pip:              Usually comes with Python"
-    echo ""
-    exit 1
+    PIP_CMD=$(find_pip)
+    if [ -z "$PIP_CMD" ]; then
+        echo -e "${RED}ERROR: No package manager found.${NC}"
+        echo ""
+        echo "Install pip:"
+        echo "  $PYTHON_CMD -m ensurepip --upgrade"
+        echo ""
+        echo "Or install uv (recommended - much faster):"
+        echo "  curl -LsSf https://astral.sh/uv/install.sh | sh"
+        echo ""
+        exit 1
+    fi
+    PKG_MANAGER="pip"
+    echo -e "  ${YELLOW}[OK]${NC} $PIP_CMD (consider installing uv for faster installs)"
 fi
 
-# -----------------------------------------------------------------------------
-# Check: Claude Code CLI (Optional)
-# -----------------------------------------------------------------------------
-# Claude Code CLI is needed to use the agents but not required for installation
+# Check Claude Code CLI (optional)
 if command -v claude &> /dev/null; then
-    CLAUDE_VERSION=$(claude --version 2>/dev/null || echo "unknown")
     echo -e "  ${GREEN}[OK]${NC} Claude Code CLI detected"
 else
     echo -e "  ${YELLOW}[WARN]${NC} Claude Code CLI not found"
     echo -e "         Install from: ${CYAN}https://docs.anthropic.com/claude-code${NC}"
-    echo -e "         (Required to use agents, but not for dashboard installation)"
 fi
 
-# -----------------------------------------------------------------------------
+# =============================================================================
 # CREATE DIRECTORY STRUCTURE
-# -----------------------------------------------------------------------------
-echo -e "\n${BLUE}[2/7] Creating directory structure...${NC}"
+# =============================================================================
+echo -e "\n${BLUE}[5/8] Creating directory structure...${NC}"
 
-# Create all required directories with parent directories (-p flag)
-# Directory structure:
-#   ~/.claude/
-#   ├── dashboard/
-#   │   └── hooks/
-#   ├── agents/
-#   └── settings.json
 mkdir -p "$INSTALL_DIR/hooks"
 mkdir -p "$AGENTS_DIR"
 mkdir -p "$BIN_DIR"
+mkdir -p "$CONFIG_DIR/logs"
 
 echo -e "  ${GREEN}[OK]${NC} $INSTALL_DIR"
 echo -e "  ${GREEN}[OK]${NC} $INSTALL_DIR/hooks"
 echo -e "  ${GREEN}[OK]${NC} $AGENTS_DIR"
 echo -e "  ${GREEN}[OK]${NC} $BIN_DIR"
 
-# -----------------------------------------------------------------------------
+# =============================================================================
 # INSTALL DASHBOARD FILES
-# -----------------------------------------------------------------------------
-echo -e "\n${BLUE}[3/7] Installing dashboard files...${NC}"
+# =============================================================================
+echo -e "\n${BLUE}[6/8] Installing dashboard files...${NC}"
 
-# Copy core Python modules to installation directory
-# Each file serves a specific purpose in the dashboard system:
-
-# agent_monitor.py - Terminal TUI dashboard using Rich library
-# Provides: Real-time event timeline, session tracking, token visualization
+# Core Python modules
 cp "$SCRIPT_DIR/dashboard/agent_monitor.py" "$INSTALL_DIR/"
-echo -e "  ${GREEN}[OK]${NC} agent_monitor.py (Terminal TUI dashboard)"
+echo -e "  ${GREEN}[OK]${NC} agent_monitor.py (Terminal TUI)"
 
-# web_server.py - Web dashboard server using aiohttp
-# Provides: HTTP server, REST API, WebSocket updates, HTML dashboard
 cp "$SCRIPT_DIR/src/web_server.py" "$INSTALL_DIR/"
-echo -e "  ${GREEN}[OK]${NC} web_server.py (Web dashboard + REST API)"
+echo -e "  ${GREEN}[OK]${NC} web_server.py (Web dashboard)"
 
-# cli.py - Unified command-line interface
-# Provides: Subcommands for web, terminal, test, status
 cp "$SCRIPT_DIR/src/cli.py" "$INSTALL_DIR/"
 echo -e "  ${GREEN}[OK]${NC} cli.py (CLI interface)"
 
-# workflow_engine.py - Multi-agent orchestration engine
-# Provides: Workflow phases, cost circuit breaker, validation stack
 cp "$SCRIPT_DIR/src/workflow_engine.py" "$INSTALL_DIR/"
 echo -e "  ${GREEN}[OK]${NC} workflow_engine.py (Workflow orchestration)"
 
-# send_event.py - Event capture hook for Claude Code
-# Provides: Token counting (tiktoken), cost estimation, event transmission
 cp "$SCRIPT_DIR/hooks/send_event.py" "$INSTALL_DIR/hooks/"
 echo -e "  ${GREEN}[OK]${NC} hooks/send_event.py (Event capture)"
 
-# -----------------------------------------------------------------------------
-# INSTALL AGENT DEFINITIONS
-# -----------------------------------------------------------------------------
-echo -e "\n${BLUE}[4/7] Installing agent definitions...${NC}"
+# Create cross-platform hook wrapper
+cat > "$INSTALL_DIR/hooks/run_hook.sh" << 'HOOK_WRAPPER_EOF'
+#!/usr/bin/env bash
+# =============================================================================
+# run_hook.sh - Cross-Platform Hook Wrapper
+# =============================================================================
+# Finds the correct Python command and executes send_event.py
+# Works on: Windows Git Bash, macOS, Linux, WSL2
 
-# Copy all agent definition files (.md) to agents directory
-# Each agent file contains:
-#   - YAML frontmatter with name, description, model tier
-#   - System prompt defining agent behavior
-#   - Tool permissions and constraints
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Find Python (same logic as installer)
+find_python() {
+    for cmd in python3 python python3.11 python3.10 python3.9; do
+        if command -v "$cmd" &> /dev/null; then
+            local major minor
+            major=$("$cmd" -c 'import sys; print(sys.version_info.major)' 2>/dev/null) || continue
+            minor=$("$cmd" -c 'import sys; print(sys.version_info.minor)' 2>/dev/null) || continue
+            if [ "$major" -ge 3 ] && [ "$minor" -ge 9 ]; then
+                echo "$cmd"
+                return 0
+            fi
+        fi
+    done
+    return 1
+}
+
+PYTHON_CMD=$(find_python)
+
+# Silently exit if no Python (don't break Claude Code)
+if [ -z "$PYTHON_CMD" ]; then
+    exit 0
+fi
+
+# Execute the hook
+exec "$PYTHON_CMD" "$SCRIPT_DIR/send_event.py" "$@"
+HOOK_WRAPPER_EOF
+
+chmod +x "$INSTALL_DIR/hooks/run_hook.sh"
+echo -e "  ${GREEN}[OK]${NC} hooks/run_hook.sh (Cross-platform wrapper)"
+
+# Install agent definitions
 AGENT_COUNT=0
 for agent_file in "$SCRIPT_DIR/agents/"*.md; do
     if [ -f "$agent_file" ]; then
@@ -306,96 +400,88 @@ for agent_file in "$SCRIPT_DIR/agents/"*.md; do
 done
 echo -e "  ${GREEN}[OK]${NC} Installed $AGENT_COUNT agent definitions"
 
-# Display installed agents organized by tier
-# Tier determines model (Opus/Sonnet/Haiku) and relative cost
+# Display agent summary
 echo ""
 echo -e "  ${CYAN}Installed Agents by Tier:${NC}"
 echo ""
-echo -e "  ${MAGENTA}Tier 1 - Opus (Strategic/Quality) [\$\$\$]:${NC}"
-echo -e "    [diamond] orchestrator    - Multi-agent workflow coordinator"
-echo -e "    [diamond] synthesis       - Research output synthesizer"
-echo -e "    [diamond] critic          - Quality assurance, devil's advocate"
-echo -e "    [diamond] planner         - Strategic planner (PLAN MODE)"
+echo -e "  ${MAGENTA}Tier 1 - Opus (Strategic) [\$\$\$]:${NC}"
+echo "    orchestrator, synthesis, critic, planner"
 echo ""
-echo -e "  ${BLUE}Tier 2 - Sonnet (Analysis/Research) [\$\$]:${NC}"
-echo -e "    [circle]  researcher          - Documentation-based research"
-echo -e "    [circle]  perplexity-researcher - Real-time web search"
-echo -e "    [circle]  research-judge      - Quality evaluation"
-echo -e "    [circle]  claude-md-auditor   - Documentation auditing"
-echo -e "    [circle]  implementer         - Code execution (IMPLEMENT MODE)"
+echo -e "  ${BLUE}Tier 2 - Sonnet (Analysis) [\$\$]:${NC}"
+echo "    researcher, perplexity-researcher, research-judge,"
+echo "    claude-md-auditor, implementer"
 echo ""
-echo -e "  ${CYAN}Tier 3 - Haiku (Execution/Routine) [\$]:${NC}"
-echo -e "    [ring]    web-search-researcher - Broad web searches"
-echo -e "    [ring]    summarizer          - Output compression"
-echo -e "    [ring]    test-writer         - Test generation"
-echo -e "    [ring]    installer           - Setup and configuration"
-echo -e "    [ring]    validator           - Four-layer validation (VALIDATE MODE)"
+echo -e "  ${CYAN}Tier 3 - Haiku (Execution) [\$]:${NC}"
+echo "    web-search-researcher, summarizer, test-writer,"
+echo "    installer, validator"
 
-# -----------------------------------------------------------------------------
+# =============================================================================
 # CREATE CLI LAUNCHER SCRIPT
-# -----------------------------------------------------------------------------
-echo -e "\n${BLUE}[5/7] Creating CLI launcher script...${NC}"
+# =============================================================================
+echo -e "\n${BLUE}[7/8] Creating CLI launcher...${NC}"
 
-# Create the 'agent-dashboard' command
-# This script provides a user-friendly interface to launch the dashboard
-# It handles argument parsing, dependency checking, and mode selection
 cat > "$BIN_DIR/agent-dashboard" << 'LAUNCHER_EOF'
 #!/usr/bin/env bash
 # =============================================================================
-# agent-dashboard - Launch the Agent Dashboard v2.1
-# =============================================================================
-#
-# DESCRIPTION:
-#   CLI launcher for the Agent Dashboard. Supports terminal TUI and web modes.
-#
-# USAGE:
-#   agent-dashboard              # Launch terminal TUI dashboard
-#   agent-dashboard --web        # Launch web dashboard (http://localhost:4200)
-#   agent-dashboard --web -p 8080  # Launch on custom port
-#   agent-dashboard status       # Show system status
-#   agent-dashboard test         # Send a test event
-#
-# TERMINALS:
-#   Works in: Bash, Zsh, Git Bash, WSL2
-#   Does not work in: PowerShell, CMD.exe (use WSL2 instead)
-#
-# VS CODE USAGE:
-#   1. Open integrated terminal (Ctrl+` or Cmd+`)
-#   2. Ensure terminal type is Bash/Zsh (not PowerShell)
-#   3. Run: agent-dashboard --web
-#   4. Ctrl+Click the URL to open dashboard in browser
-#
+# agent-dashboard - Cross-Platform CLI Launcher v2.1
 # =============================================================================
 
 DASHBOARD_DIR="$HOME/.claude/dashboard"
 
-# -----------------------------------------------------------------------------
-# Argument Parsing
-# -----------------------------------------------------------------------------
+# Detect platform
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
+    IS_WINDOWS=true
+else
+    IS_WINDOWS=false
+fi
+
+# Find Python
+find_python() {
+    for cmd in python3 python python3.11 python3.10 python3.9; do
+        if command -v "$cmd" &> /dev/null; then
+            local major minor
+            major=$("$cmd" -c 'import sys; print(sys.version_info.major)' 2>/dev/null) || continue
+            minor=$("$cmd" -c 'import sys; print(sys.version_info.minor)' 2>/dev/null) || continue
+            if [ "$major" -ge 3 ] && [ "$minor" -ge 9 ]; then
+                echo "$cmd"
+                return 0
+            fi
+        fi
+    done
+    return 1
+}
+
+PYTHON_CMD=$(find_python)
+if [ -z "$PYTHON_CMD" ]; then
+    echo "ERROR: Python 3.9+ not found"
+    echo ""
+    echo "Install Python from https://python.org"
+    if [ "$IS_WINDOWS" = true ]; then
+        echo "  - Make sure to check 'Add Python to PATH' during installation"
+        echo "  - Restart Git Bash after installing"
+    fi
+    exit 1
+fi
+
+# Parse arguments
 WEB_MODE=false
 PORT=4200
+COMMAND=""
 
 while [[ $# -gt 0 ]]; do
     case $1 in
         --web|-w)
-            # Web mode: Launch aiohttp server with HTML dashboard
             WEB_MODE=true
             shift
             ;;
         --port|-p)
-            # Custom port for web server (default: 4200)
             PORT="$2"
             shift 2
             ;;
-        status)
-            # Display system status (running processes, database info)
-            python3 "$DASHBOARD_DIR/cli.py" status
-            exit 0
-            ;;
-        test)
-            # Send a test event to verify connectivity
-            python3 "$DASHBOARD_DIR/cli.py" test "${@:2}"
-            exit 0
+        doctor|status|test|uninstall|upgrade|logs|config)
+            COMMAND="$1"
+            shift
+            break
             ;;
         --help|-h)
             echo "Agent Dashboard v2.1 - Multi-Agent Workflow Monitor"
@@ -409,125 +495,157 @@ while [[ $# -gt 0 ]]; do
             echo "  --help, -h    Show this help message"
             echo ""
             echo "COMMANDS:"
+            echo "  doctor        Diagnose installation issues"
             echo "  status        Show system status"
-            echo "  test          Send a test event to the dashboard"
+            echo "  test          Send a test event"
+            echo "  uninstall     Remove Agent Dashboard"
+            echo "  upgrade       Update to latest version"
+            echo "  logs          View recent logs"
+            echo "  config        Show configuration"
             echo ""
             echo "EXAMPLES:"
             echo "  agent-dashboard              # Terminal TUI dashboard"
             echo "  agent-dashboard --web        # Web dashboard on port 4200"
-            echo "  agent-dashboard --web -p 8080  # Web dashboard on port 8080"
-            echo "  agent-dashboard status       # Check system status"
-            echo "  agent-dashboard test         # Send test event"
-            echo ""
-            echo "TERMINAL SUPPORT:"
-            echo "  Supported:     Bash, Zsh, Git Bash, WSL2"
-            echo "  Not supported: PowerShell, CMD.exe"
-            echo ""
-            echo "VS CODE:"
-            echo "  1. Open terminal with Ctrl+\` (backtick)"
-            echo "  2. Select Bash/Zsh from terminal dropdown"
-            echo "  3. Run: agent-dashboard --web"
+            echo "  agent-dashboard doctor       # Check installation"
             echo ""
             exit 0
             ;;
         *)
-            # Unknown argument, skip
             shift
             ;;
     esac
 done
 
-# -----------------------------------------------------------------------------
-# Dependency Check and Auto-Install
-# -----------------------------------------------------------------------------
-# Check and install required Python packages if missing
+# Handle commands
+case "$COMMAND" in
+    doctor)
+        $PYTHON_CMD "$DASHBOARD_DIR/cli.py" doctor "$@"
+        exit $?
+        ;;
+    status)
+        $PYTHON_CMD "$DASHBOARD_DIR/cli.py" status "$@"
+        exit $?
+        ;;
+    test)
+        $PYTHON_CMD "$DASHBOARD_DIR/cli.py" test "$@"
+        exit $?
+        ;;
+    uninstall)
+        if [ -f "$HOME/.claude/scripts/uninstall.sh" ]; then
+            bash "$HOME/.claude/scripts/uninstall.sh"
+        else
+            echo "Uninstall script not found. Manual removal:"
+            echo "  rm -rf ~/.claude/dashboard ~/.claude/agents ~/.local/bin/agent-dashboard"
+        fi
+        exit $?
+        ;;
+    upgrade)
+        if [ -f "$HOME/.claude/scripts/upgrade.sh" ]; then
+            bash "$HOME/.claude/scripts/upgrade.sh"
+        else
+            echo "Upgrade script not found. Manual upgrade:"
+            echo "  cd agent-dashboard && git pull && ./scripts/install.sh"
+        fi
+        exit $?
+        ;;
+    logs)
+        $PYTHON_CMD "$DASHBOARD_DIR/cli.py" logs "$@"
+        exit $?
+        ;;
+    config)
+        $PYTHON_CMD "$DASHBOARD_DIR/cli.py" config "$@"
+        exit $?
+        ;;
+esac
 
-# rich - Required for terminal TUI dashboard
-if ! python3 -c "import rich" 2>/dev/null; then
-    echo "Installing rich (terminal UI library)..."
-    pip3 install --quiet rich
-fi
-
-# tiktoken - Required for accurate token counting
-# Falls back to character-based estimation if unavailable
-if ! python3 -c "import tiktoken" 2>/dev/null; then
-    echo "Installing tiktoken (token counting)..."
-    pip3 install --quiet tiktoken
-fi
-
-# aiohttp - Required only for web mode
-if $WEB_MODE; then
-    if ! python3 -c "import aiohttp" 2>/dev/null; then
-        echo "Installing aiohttp (web server)..."
-        pip3 install --quiet aiohttp
+# Auto-install missing dependencies
+for pkg in rich aiohttp; do
+    if ! $PYTHON_CMD -c "import $pkg" 2>/dev/null; then
+        echo "Installing missing dependency: $pkg"
+        $PYTHON_CMD -m pip install --quiet --user "$pkg" 2>/dev/null || \
+        $PYTHON_CMD -m pip install --quiet "$pkg"
     fi
-fi
+done
 
-# -----------------------------------------------------------------------------
-# Launch Dashboard
-# -----------------------------------------------------------------------------
-if $WEB_MODE; then
+# Launch dashboard
+if [ "$WEB_MODE" = true ]; then
     echo ""
     echo "Starting Agent Dashboard v2.1 (Web Mode)"
     echo "==========================================="
     echo ""
-    echo "  URL:  http://localhost:$PORT"
+    echo "  URL: http://localhost:$PORT"
     echo ""
-    echo "  Terminal: Open the URL above in your browser"
-    echo "  VS Code:  Ctrl+Click (Cmd+Click on macOS) the URL"
+    if [ "$IS_WINDOWS" = true ]; then
+        echo "  Windows: Firewall may prompt - click 'Allow access'"
+    fi
+    echo "  Press Ctrl+C to stop"
     echo ""
-    echo "  Press Ctrl+C to stop the server"
-    echo ""
-    python3 "$DASHBOARD_DIR/web_server.py" --port "$PORT"
+    $PYTHON_CMD "$DASHBOARD_DIR/web_server.py" --port "$PORT"
 else
     echo ""
-    echo "Starting Agent Dashboard v2.1 (Terminal TUI Mode)"
-    echo "==================================================="
+    echo "Starting Agent Dashboard v2.1 (Terminal TUI)"
+    echo "============================================="
     echo ""
     echo "  Press 'q' to quit"
     echo ""
-    python3 "$DASHBOARD_DIR/agent_monitor.py" --port "$PORT"
+    $PYTHON_CMD "$DASHBOARD_DIR/agent_monitor.py" --port "$PORT"
 fi
 LAUNCHER_EOF
 
-# Make the launcher executable
 chmod +x "$BIN_DIR/agent-dashboard"
 echo -e "  ${GREEN}[OK]${NC} Created $BIN_DIR/agent-dashboard"
 
-# -----------------------------------------------------------------------------
+# =============================================================================
 # INSTALL PYTHON DEPENDENCIES
-# -----------------------------------------------------------------------------
-echo -e "\n${BLUE}[6/7] Installing Python dependencies...${NC}"
+# =============================================================================
+echo -e "\n${BLUE}[8/8] Installing Python dependencies...${NC}"
 
-# Install required Python packages:
-#   - rich: Terminal UI rendering (TUI dashboard)
-#   - aiohttp: Async web server (web dashboard, WebSocket)
-#   - tiktoken: Token counting using OpenAI's tiktoken (cost estimation)
-echo -e "  Installing: rich, aiohttp, tiktoken"
+install_with_pip() {
+    echo "  Using pip..."
+
+    if [ "$IN_VENV" = true ]; then
+        # In virtual environment - install directly
+        $PYTHON_CMD -m pip install --quiet rich aiohttp tiktoken 2>/dev/null || \
+        $PYTHON_CMD -m pip install rich aiohttp tiktoken || \
+        {
+            echo -e "${RED}ERROR: pip install failed${NC}"
+            exit 1
+        }
+    else
+        # Not in venv - use --user to avoid permission issues
+        $PYTHON_CMD -m pip install --quiet --user rich aiohttp tiktoken 2>/dev/null || \
+        $PYTHON_CMD -m pip install --user rich aiohttp tiktoken || \
+        {
+            echo -e "${RED}ERROR: pip install failed${NC}"
+            echo ""
+            echo "Try creating a virtual environment:"
+            echo "  $PYTHON_CMD -m venv ~/.claude-venv"
+            echo "  source ~/.claude-venv/bin/activate"
+            echo "  ./scripts/install.sh"
+            exit 1
+        }
+    fi
+}
 
 if [ "$PKG_MANAGER" = "uv" ]; then
-    # uv is 10-100x faster than pip
-    # Try --system first (installs globally), fall back to user install
+    echo "  Using uv (fast mode)..."
     uv pip install --system rich aiohttp tiktoken 2>/dev/null || \
     uv pip install rich aiohttp tiktoken 2>/dev/null || \
-    pip3 install --user rich aiohttp tiktoken
+    { echo "  uv failed, falling back to pip..."; install_with_pip; }
 else
-    # Standard pip installation with --user flag (no sudo required)
-    pip3 install --user rich aiohttp tiktoken
+    install_with_pip
 fi
 
 echo -e "  ${GREEN}[OK]${NC} rich (terminal UI)"
 echo -e "  ${GREEN}[OK]${NC} aiohttp (web server)"
 echo -e "  ${GREEN}[OK]${NC} tiktoken (token counting)"
 
-# -----------------------------------------------------------------------------
-# UPDATE PATH (if needed)
-# -----------------------------------------------------------------------------
-# Ensure ~/.local/bin is in PATH so 'agent-dashboard' command works
+# =============================================================================
+# UPDATE PATH
+# =============================================================================
 if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
     echo -e "\n${YELLOW}[PATH]${NC} Adding $BIN_DIR to PATH..."
 
-    # Detect shell configuration file
     SHELL_RC=""
     if [ -n "$ZSH_VERSION" ] || [ -f "$HOME/.zshrc" ]; then
         SHELL_RC="$HOME/.zshrc"
@@ -535,25 +653,23 @@ if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
         SHELL_RC="$HOME/.bashrc"
     fi
 
-    # Add PATH export to shell configuration
     if [ -n "$SHELL_RC" ]; then
         if ! grep -q "Agent Dashboard" "$SHELL_RC" 2>/dev/null; then
             echo "" >> "$SHELL_RC"
-            echo "# Agent Dashboard v2.1 - Added by install.sh" >> "$SHELL_RC"
+            echo "# Agent Dashboard v2.1" >> "$SHELL_RC"
             echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$SHELL_RC"
             echo -e "  ${GREEN}[OK]${NC} Added to $SHELL_RC"
-            echo -e "  ${YELLOW}[NOTE]${NC} Run 'source $SHELL_RC' or open a new terminal"
         fi
     fi
 fi
 
-# -----------------------------------------------------------------------------
-# CONFIGURE CLAUDE CODE HOOKS (Optional)
-# -----------------------------------------------------------------------------
-echo -e "\n${BLUE}[7/7] Configure Claude Code hooks?${NC}"
+# =============================================================================
+# CONFIGURE CLAUDE CODE HOOKS
+# =============================================================================
+echo -e "\n${BLUE}Configure Claude Code hooks?${NC}"
 echo ""
 echo "  This will update ~/.claude/settings.json to send events to the dashboard."
-echo "  Events captured: PreToolUse, PostToolUse, UserPromptSubmit, Stop, SubagentStop"
+echo "  Events: PreToolUse, PostToolUse, UserPromptSubmit, Stop, SubagentStop"
 echo ""
 read -p "  Proceed with hook configuration? [y/N] " -n 1 -r
 echo ""
@@ -561,15 +677,14 @@ echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     SETTINGS_FILE="$CONFIG_DIR/settings.json"
 
-    # Backup existing settings if present
+    # Backup existing settings
     if [ -f "$SETTINGS_FILE" ]; then
         BACKUP_FILE="$SETTINGS_FILE.backup.$(date +%Y%m%d_%H%M%S)"
         cp "$SETTINGS_FILE" "$BACKUP_FILE"
-        echo -e "  ${GREEN}[OK]${NC} Backed up existing settings to $BACKUP_FILE"
+        echo -e "  ${GREEN}[OK]${NC} Backed up to $BACKUP_FILE"
     fi
 
-    # Create new settings.json with hook configuration
-    # These hooks capture Claude Code events and send them to the dashboard
+    # Create settings with cross-platform hook wrapper
     cat > "$SETTINGS_FILE" << 'SETTINGS_EOF'
 {
   "hooks": {
@@ -579,7 +694,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ~/.claude/dashboard/hooks/send_event.py --event-type PreToolUse --agent-name ${AGENT_NAME:-claude} --model ${AGENT_MODEL:-sonnet}"
+            "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type PreToolUse --agent-name ${AGENT_NAME:-claude} --model ${AGENT_MODEL:-sonnet}"
           }
         ]
       }
@@ -590,7 +705,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ~/.claude/dashboard/hooks/send_event.py --event-type PostToolUse --agent-name ${AGENT_NAME:-claude} --model ${AGENT_MODEL:-sonnet}"
+            "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type PostToolUse --agent-name ${AGENT_NAME:-claude} --model ${AGENT_MODEL:-sonnet}"
           }
         ]
       }
@@ -600,7 +715,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ~/.claude/dashboard/hooks/send_event.py --event-type UserPromptSubmit --agent-name ${AGENT_NAME:-claude}"
+            "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type UserPromptSubmit --agent-name ${AGENT_NAME:-claude}"
           }
         ]
       }
@@ -610,7 +725,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ~/.claude/dashboard/hooks/send_event.py --event-type Stop --agent-name ${AGENT_NAME:-claude}"
+            "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type Stop --agent-name ${AGENT_NAME:-claude}"
           }
         ]
       }
@@ -620,7 +735,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ~/.claude/dashboard/hooks/send_event.py --event-type SubagentStop --agent-name ${AGENT_NAME:-claude}"
+            "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type SubagentStop --agent-name ${AGENT_NAME:-claude}"
           }
         ]
       }
@@ -631,7 +746,6 @@ SETTINGS_EOF
     echo -e "  ${GREEN}[OK]${NC} Configured hooks in $SETTINGS_FILE"
 else
     echo -e "  ${YELLOW}[SKIP]${NC} Hook configuration skipped"
-    echo -e "         See docs/IMPLEMENTATION.md for manual setup instructions"
 fi
 
 # =============================================================================
@@ -642,66 +756,61 @@ echo -e "${GREEN}===============================================================
 echo -e "${GREEN}                    Installation Complete!                                   ${NC}"
 echo -e "${GREEN}=============================================================================${NC}"
 echo ""
+
+# Platform-specific notes
+if [ "$IS_WINDOWS" = true ]; then
+    echo -e "${YELLOW}WINDOWS NOTE:${NC}"
+    echo "  Windows Firewall may prompt when starting the dashboard."
+    echo "  Click 'Allow access' to enable network connections."
+    echo ""
+fi
+
+if [ "$IS_MACOS" = true ]; then
+    echo -e "${CYAN}macOS NOTE:${NC}"
+    echo "  If you see 'cannot be opened because the developer cannot be verified':"
+    echo "    Right-click the script -> Open -> Open"
+    echo "  Or run: xattr -d com.apple.quarantine scripts/install.sh"
+    echo ""
+fi
+
+if [ "$IS_HEADLESS" = true ]; then
+    echo -e "${CYAN}HEADLESS SERVER:${NC}"
+    echo "  To access the web dashboard from your local machine:"
+    echo ""
+    echo "  1. On your local machine, create SSH tunnel:"
+    echo "     ssh -L 4200:localhost:4200 user@your-server"
+    echo ""
+    echo "  2. Start dashboard on server:"
+    echo "     agent-dashboard --web"
+    echo ""
+    echo "  3. Open in local browser:"
+    echo "     http://localhost:4200"
+    echo ""
+fi
+
 echo -e "${CYAN}QUICK START${NC}"
 echo -e "${CYAN}===========${NC}"
 echo ""
 echo "  1. Start the dashboard:"
-echo ""
 echo -e "     ${GREEN}agent-dashboard --web${NC}"
 echo ""
 echo "  2. Open in browser:"
-echo ""
 echo -e "     ${GREEN}http://localhost:4200${NC}"
 echo ""
-echo "  3. In a new terminal, use an agent:"
-echo ""
+echo "  3. Use with an agent:"
 echo -e "     ${GREEN}export AGENT_NAME=orchestrator${NC}"
 echo -e "     ${GREEN}export AGENT_MODEL=opus${NC}"
 echo -e "     ${GREEN}claude${NC}"
 echo ""
-echo -e "${CYAN}VS CODE INTEGRATION${NC}"
-echo -e "${CYAN}===================${NC}"
+echo -e "${CYAN}AVAILABLE COMMANDS${NC}"
+echo -e "${CYAN}==================${NC}"
 echo ""
-echo "  1. Open VS Code integrated terminal: Ctrl+\` (Cmd+\` on macOS)"
+echo "  agent-dashboard --web     # Web dashboard"
+echo "  agent-dashboard           # Terminal TUI"
+echo "  agent-dashboard doctor    # Diagnose issues"
+echo "  agent-dashboard test      # Send test event"
+echo "  agent-dashboard status    # Check status"
 echo ""
-echo "  2. Ensure terminal is Bash/Zsh (not PowerShell):"
-echo "     Click dropdown arrow next to + in terminal panel"
-echo "     Select 'Git Bash' or 'bash' or 'zsh'"
-echo ""
-echo "  3. Run the dashboard:"
-echo -e "     ${GREEN}agent-dashboard --web${NC}"
-echo ""
-echo "  4. Ctrl+Click the URL to open in browser"
-echo ""
-echo "  5. Open another terminal (click +) for Claude:"
-echo -e "     ${GREEN}export AGENT_NAME=orchestrator AGENT_MODEL=opus && claude${NC}"
-echo ""
-echo -e "${CYAN}AVAILABLE AGENTS (14 total)${NC}"
-echo -e "${CYAN}============================${NC}"
-echo ""
-echo -e "  ${MAGENTA}Tier 1 - Opus (\$\$\$):${NC} orchestrator, synthesis, critic, planner"
-echo -e "  ${BLUE}Tier 2 - Sonnet (\$\$):${NC} researcher, perplexity-researcher, research-judge,"
-echo "                       claude-md-auditor, implementer"
-echo -e "  ${CYAN}Tier 3 - Haiku (\$):${NC}  web-search-researcher, summarizer, test-writer,"
-echo "                       installer, validator"
-echo ""
-echo -e "${CYAN}WORKFLOW MODES${NC}"
-echo -e "${CYAN}==============${NC}"
-echo ""
-echo "  PLAN MODE      - Read-only exploration (planner agent)"
-echo "  IMPLEMENT MODE - Execute approved plans (implementer agent)"
-echo "  VALIDATE MODE  - Four-layer validation (validator agent)"
-echo ""
-echo -e "${CYAN}DOCUMENTATION${NC}"
-echo -e "${CYAN}=============${NC}"
-echo ""
-echo "  README.md                  - Quick start guide"
-echo "  docs/IMPLEMENTATION.md     - Detailed deployment guide"
-echo "  docs/WORKFLOW_FRAMEWORK.md - Design patterns and governance"
-echo ""
-echo -e "${YELLOW}NOTE:${NC} You may need to run one of the following commands"
-echo "      or open a new terminal for PATH changes to take effect:"
-echo ""
-echo -e "      ${GREEN}source ~/.bashrc${NC}   (Bash users)"
-echo -e "      ${GREEN}source ~/.zshrc${NC}    (Zsh users)"
+echo -e "${YELLOW}NOTE:${NC} Open a new terminal or run:"
+echo -e "      ${GREEN}source ~/.bashrc${NC}  (Bash) or ${GREEN}source ~/.zshrc${NC}  (Zsh)"
 echo ""

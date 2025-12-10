@@ -1,0 +1,19 @@
+# =============================================================================
+# Agent Dashboard v2.1 - Python Dependencies
+# =============================================================================
+# Install: pip install -r requirements.txt
+# Or with uv: uv pip install -r requirements.txt
+
+# Core dependencies (required)
+rich>=13.0.0                    # Terminal TUI rendering
+aiohttp>=3.9.0                  # Async web server + WebSocket
+
+# Optional but recommended
+tiktoken>=0.5.0                 # Accurate token counting (falls back to estimation)
+
+# Development dependencies
+pytest>=7.0.0                   # Testing framework
+pytest-asyncio>=0.21.0          # Async test support
+
+# Platform-specific optimizations
+uvloop>=0.19.0; platform_system != "Windows"  # Faster event loop on Unix
