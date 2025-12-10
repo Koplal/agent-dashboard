@@ -1,5 +1,10 @@
 # Agent Dashboard v2.1
 
+> **Quick Install:** `git clone https://github.com/Koplal/agent-dashboard.git && cd agent-dashboard && ./scripts/install.sh`
+>
+> **Platform-specific instructions:** See [INSTALL.md](INSTALL.md)
+> **Troubleshooting:** See [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+
 **Real-time monitoring and orchestration for Claude Code multi-agent workflows.**
 
 A comprehensive multi-agent workflow framework implementing **Test-Driven Development (TDD)** with tiered model architecture (Opus/Sonnet/Haiku), cost governance, and six-layer validation. Built for production-grade AI workflows where tests define correctness.

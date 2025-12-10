@@ -1,0 +1,60 @@
+# =============================================================================
+# Agent Dashboard - Docker Compose Configuration
+# =============================================================================
+# Usage:
+#   docker-compose up -d        # Start in background
+#   docker-compose logs -f      # View logs
+#   docker-compose down         # Stop and remove
+#   docker-compose restart      # Restart services
+#
+# Environment variables can be set in .env file or passed directly.
+
+version: '3.8'
+
+services:
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: agent-dashboard:latest
+    container_name: agent-dashboard
+    ports:
+      - "${DASHBOARD_PORT:-4200}:4200"
+    volumes:
+      # Persist database and configuration
+      - dashboard-data:/home/appuser/.claude
+      # Optional: Mount local agents for development (uncomment below)
+      # - ./agents:/home/appuser/.claude/agents:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TZ=${TZ:-UTC}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4200/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Resource limits (adjust as needed)
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+volumes:
+  dashboard-data:
+    driver: local
+    name: agent-dashboard-data
+
+networks:
+  default:
+    name: agent-dashboard-network
