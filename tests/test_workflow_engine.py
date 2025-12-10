@@ -168,7 +168,7 @@ class TestTask:
         assert task.id == "test-001"
         assert task.content == "Test task"
         assert task.status == TaskStatus.PENDING
-        assert task.phase == WorkflowPhase.PLAN
+        assert task.phase == WorkflowPhase.SPEC
 
     def test_task_to_dict(self):
         """Test task serialization to dict."""
@@ -222,7 +222,7 @@ class TestWorkflow:
 
         assert workflow.name == "Test Workflow"
         assert workflow.description == "A test workflow"
-        assert workflow.current_phase == WorkflowPhase.PLAN
+        assert workflow.current_phase == WorkflowPhase.SPEC
         assert len(workflow.tasks) == 0
 
     def test_add_task(self):
@@ -237,7 +237,7 @@ class TestWorkflow:
         task = workflow.add_task(
             content="First task",
             active_form="Working on first task",
-            phase=WorkflowPhase.PLAN,
+            phase=WorkflowPhase.SPEC,
             assigned_agent="planner"
         )
 
@@ -256,13 +256,13 @@ class TestWorkflow:
         )
 
         cp = workflow.add_checkpoint(
-            name="Plan Review",
-            phase=WorkflowPhase.PLAN,
+            name="Spec Review",
+            phase=WorkflowPhase.SPEC,
             requires_approval=True
         )
 
         assert len(workflow.checkpoints) == 1
-        assert cp.name == "Plan Review"
+        assert cp.name == "Spec Review"
         assert cp.requires_approval is True
 
     def test_get_tasks_for_phase(self):
@@ -274,14 +274,14 @@ class TestWorkflow:
             circuit_breaker=cb
         )
 
-        workflow.add_task("Plan task", "Planning", phase=WorkflowPhase.PLAN)
+        workflow.add_task("Spec task", "Specifying", phase=WorkflowPhase.SPEC)
         workflow.add_task("Implement task", "Implementing", phase=WorkflowPhase.IMPLEMENT)
-        workflow.add_task("Another plan task", "Planning more", phase=WorkflowPhase.PLAN)
+        workflow.add_task("Another spec task", "Specifying more", phase=WorkflowPhase.SPEC)
 
-        plan_tasks = workflow.get_tasks_for_phase(WorkflowPhase.PLAN)
+        spec_tasks = workflow.get_tasks_for_phase(WorkflowPhase.SPEC)
         impl_tasks = workflow.get_tasks_for_phase(WorkflowPhase.IMPLEMENT)
 
-        assert len(plan_tasks) == 2
+        assert len(spec_tasks) == 2
         assert len(impl_tasks) == 1
 
     def test_get_next_task(self):
@@ -308,7 +308,7 @@ class TestWorkflow:
         assert next_task.id == task2.id
 
     def test_advance_phase(self):
-        """Test phase advancement."""
+        """Test phase advancement through TDD workflow."""
         cb = CostCircuitBreaker(budget_limit=1.0)
         workflow = Workflow(
             name="Test Workflow",
@@ -316,10 +316,13 @@ class TestWorkflow:
             circuit_breaker=cb
         )
 
-        assert workflow.current_phase == WorkflowPhase.PLAN
+        assert workflow.current_phase == WorkflowPhase.SPEC
 
         workflow.advance_phase()
-        assert workflow.current_phase == WorkflowPhase.TEST
+        assert workflow.current_phase == WorkflowPhase.TEST_DESIGN
+
+        workflow.advance_phase()
+        assert workflow.current_phase == WorkflowPhase.TEST_IMPL
 
         workflow.advance_phase()
         assert workflow.current_phase == WorkflowPhase.IMPLEMENT
@@ -386,8 +389,8 @@ class TestWorkflowEngine:
 
         assert workflow.name == "Test Workflow"
         assert workflow.id in engine.workflows
-        # Should have default checkpoints
-        assert len(workflow.checkpoints) == 4
+        # TDD workflow has 6 checkpoints across 7 phases
+        assert len(workflow.checkpoints) == 6
 
     def test_create_workflow_from_task(self):
         """Test creating workflow from task description."""
@@ -396,14 +399,14 @@ class TestWorkflowEngine:
             "Implement user authentication"
         )
 
-        assert len(workflow.tasks) == 11
+        assert len(workflow.tasks) == 25  # TDD workflow has 25 tasks
 
-        # Check phase distribution
-        plan_tasks = workflow.get_tasks_for_phase(WorkflowPhase.PLAN)
-        assert len(plan_tasks) == 3
+        # Check phase distribution for TDD workflow
+        spec_tasks = workflow.get_tasks_for_phase(WorkflowPhase.SPEC)
+        assert len(spec_tasks) == 4
 
-        test_tasks = workflow.get_tasks_for_phase(WorkflowPhase.TEST)
-        assert len(test_tasks) == 2
+        test_design_tasks = workflow.get_tasks_for_phase(WorkflowPhase.TEST_DESIGN)
+        assert len(test_design_tasks) == 4
 
     def test_get_agent_for_task(self):
         """Test agent assignment for tasks."""
@@ -413,7 +416,7 @@ class TestWorkflowEngine:
             id="test-001",
             content="Test",
             active_form="Testing",
-            phase=WorkflowPhase.PLAN,
+            phase=WorkflowPhase.SPEC,
             assigned_agent="planner"
         )
 
@@ -423,19 +426,20 @@ class TestWorkflowEngine:
         assert agent["model"] == "opus"
 
     def test_generate_claude_md_governance(self):
-        """Test CLAUDE.md governance generation."""
+        """Test TDD CLAUDE.md governance generation."""
         engine = WorkflowEngine(budget_limit=1.0)
         workflow = engine.create_workflow_from_task("Test task")
 
         governance = engine.generate_claude_md_governance(workflow)
 
-        assert "# Workflow Governance" in governance
+        assert "# TDD Workflow Governance" in governance  # TDD-specific header
         assert "ALWAYS" in governance  # Positive framing
         assert "Budget" in governance
         assert workflow.name in governance
+        assert "TDD PHILOSOPHY" in governance  # TDD rules section
 
     def test_generate_orchestrator_prompt(self):
-        """Test orchestrator prompt generation."""
+        """Test TDD orchestrator prompt generation."""
         engine = WorkflowEngine(budget_limit=1.0)
         workflow = engine.create_workflow_from_task("Test task")
 
@@ -443,7 +447,8 @@ class TestWorkflowEngine:
 
         assert "Orchestrator Workflow Execution" in prompt
         assert workflow.name in prompt
-        assert "PLAN" in prompt
+        assert "SPEC" in prompt  # TDD workflow starts with SPEC phase
+        assert "TDD" in prompt  # Should mention TDD philosophy
 
 
 # ============================================================================
@@ -516,22 +521,23 @@ class TestAgentRegistry:
 # ============================================================================
 
 class TestWorkflowPhase:
-    """Tests for workflow phase enum."""
+    """Tests for TDD workflow phase enum."""
 
     def test_phase_order(self):
-        """Test phases are in correct order."""
+        """Test TDD phases are in correct order."""
         phases = list(WorkflowPhase)
 
-        assert phases[0] == WorkflowPhase.PLAN
-        assert phases[1] == WorkflowPhase.TEST
-        assert phases[2] == WorkflowPhase.IMPLEMENT
-        assert phases[3] == WorkflowPhase.VALIDATE
-        assert phases[4] == WorkflowPhase.REVIEW
-        assert phases[5] == WorkflowPhase.DELIVER
+        assert phases[0] == WorkflowPhase.SPEC
+        assert phases[1] == WorkflowPhase.TEST_DESIGN
+        assert phases[2] == WorkflowPhase.TEST_IMPL
+        assert phases[3] == WorkflowPhase.IMPLEMENT
+        assert phases[4] == WorkflowPhase.VALIDATE
+        assert phases[5] == WorkflowPhase.REVIEW
+        assert phases[6] == WorkflowPhase.DELIVER
 
     def test_all_phases_exist(self):
-        """Test all expected phases exist."""
-        expected = ["PLAN", "TEST", "IMPLEMENT", "VALIDATE", "REVIEW", "DELIVER"]
+        """Test all expected TDD phases exist."""
+        expected = ["SPEC", "TEST_DESIGN", "TEST_IMPL", "IMPLEMENT", "VALIDATE", "REVIEW", "DELIVER"]
         actual = [p.name for p in WorkflowPhase]
 
         assert actual == expected
@@ -545,7 +551,7 @@ class TestIntegration:
     """Integration tests for the workflow engine."""
 
     def test_full_workflow_lifecycle(self):
-        """Test complete workflow lifecycle."""
+        """Test complete TDD workflow lifecycle."""
         engine = WorkflowEngine(budget_limit=2.0)
 
         # Create workflow
@@ -558,9 +564,9 @@ class TestIntegration:
             task.cost = 0.001
             task.status = TaskStatus.COMPLETED
 
-        # Check final status
+        # Check final status - TDD workflow has 25 tasks across 7 phases
         status = workflow.get_status()
-        assert status["completed"] == 11
+        assert status["completed"] == 25
         assert status["pending"] == 0
 
     def test_budget_enforcement_in_workflow(self):
