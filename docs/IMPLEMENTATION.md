@@ -170,6 +170,8 @@ python3 -m pytest tests/ -v
 
 ### Claude Code Hooks (~/.claude/settings.json)
 
+> **Note:** The installer automatically creates and configures this file. This section is for reference only.
+
 ```json
 {
   "hooks": {
@@ -179,7 +181,7 @@ python3 -m pytest tests/ -v
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ~/.claude/dashboard/hooks/send_event.py --event-type PreToolUse --agent-name ${AGENT_NAME:-claude} --model ${AGENT_MODEL:-sonnet}"
+            "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type PreToolUse --agent-name ${AGENT_NAME:-claude} --model ${AGENT_MODEL:-sonnet}"
           }
         ]
       }
@@ -190,7 +192,7 @@ python3 -m pytest tests/ -v
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ~/.claude/dashboard/hooks/send_event.py --event-type PostToolUse --agent-name ${AGENT_NAME:-claude} --model ${AGENT_MODEL:-sonnet}"
+            "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type PostToolUse --agent-name ${AGENT_NAME:-claude} --model ${AGENT_MODEL:-sonnet}"
           }
         ]
       }
@@ -200,7 +202,7 @@ python3 -m pytest tests/ -v
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ~/.claude/dashboard/hooks/send_event.py --event-type UserPromptSubmit --agent-name ${AGENT_NAME:-claude}"
+            "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type UserPromptSubmit --agent-name ${AGENT_NAME:-claude}"
           }
         ]
       }
@@ -210,7 +212,7 @@ python3 -m pytest tests/ -v
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ~/.claude/dashboard/hooks/send_event.py --event-type Stop --agent-name ${AGENT_NAME:-claude}"
+            "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type Stop --agent-name ${AGENT_NAME:-claude}"
           }
         ]
       }
@@ -220,7 +222,7 @@ python3 -m pytest tests/ -v
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ~/.claude/dashboard/hooks/send_event.py --event-type SubagentStop --agent-name ${AGENT_NAME:-claude}"
+            "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type SubagentStop --agent-name ${AGENT_NAME:-claude}"
           }
         ]
       }
@@ -358,7 +360,11 @@ python3 workflow_engine.py governance <workflow_id> -o CLAUDE.md
 | installer | Setup and configuration | `AGENT_NAME=installer AGENT_MODEL=haiku` |
 | validator | VALIDATE MODE - Run validation stack | `AGENT_NAME=validator AGENT_MODEL=haiku` |
 
-### Using Agents
+---
+
+## Running Claude as an Agent
+
+> **What this does:** Labels your Claude session with an agent name so the dashboard can track which agent is active. This is for **monitoring and identification only** — it doesn't change Claude's behavior.
 
 **Method 1: Environment Variables**
 ```bash
@@ -372,10 +378,12 @@ claude
 AGENT_NAME=planner AGENT_MODEL=opus claude "Analyze the authentication system"
 ```
 
-**Method 3: In Claude Code**
+**Method 3: Inline with Command**
+```bash
+AGENT_NAME=orchestrator claude "Plan a research strategy for implementing caching"
 ```
-@orchestrator Plan a research strategy for implementing caching
-```
+
+> **Note:** To use agent-specific system prompts, see the agent definitions in `~/.claude/agents/`.
 
 ---
 
@@ -526,20 +534,20 @@ cat > .claude/settings.json << 'EOF'
       "matcher": ".*",
       "hooks": [{
         "type": "command",
-        "command": "python3 .claude/hooks/send_event.py --event-type PreToolUse --agent-name ${AGENT_NAME:-claude} --model ${AGENT_MODEL:-sonnet}"
+        "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type PreToolUse --agent-name ${AGENT_NAME:-claude} --model ${AGENT_MODEL:-sonnet}"
       }]
     }],
     "PostToolUse": [{
       "matcher": ".*",
       "hooks": [{
         "type": "command",
-        "command": "python3 .claude/hooks/send_event.py --event-type PostToolUse --agent-name ${AGENT_NAME:-claude} --model ${AGENT_MODEL:-sonnet}"
+        "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type PostToolUse --agent-name ${AGENT_NAME:-claude} --model ${AGENT_MODEL:-sonnet}"
       }]
     }],
     "Stop": [{
       "hooks": [{
         "type": "command",
-        "command": "python3 .claude/hooks/send_event.py --event-type Stop --agent-name ${AGENT_NAME:-claude}"
+        "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type Stop --agent-name ${AGENT_NAME:-claude}"
       }]
     }]
   }
@@ -625,20 +633,20 @@ cat > .claude/settings.json << 'EOF'
       "matcher": ".*",
       "hooks": [{
         "type": "command",
-        "command": "python3 .claude/hooks/send_event.py --event-type PreToolUse --agent-name ${AGENT_NAME:-claude} --model ${AGENT_MODEL:-sonnet}"
+        "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type PreToolUse --agent-name ${AGENT_NAME:-claude} --model ${AGENT_MODEL:-sonnet}"
       }]
     }],
     "PostToolUse": [{
       "matcher": ".*",
       "hooks": [{
         "type": "command",
-        "command": "python3 .claude/hooks/send_event.py --event-type PostToolUse --agent-name ${AGENT_NAME:-claude} --model ${AGENT_MODEL:-sonnet}"
+        "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type PostToolUse --agent-name ${AGENT_NAME:-claude} --model ${AGENT_MODEL:-sonnet}"
       }]
     }],
     "Stop": [{
       "hooks": [{
         "type": "command",
-        "command": "python3 .claude/hooks/send_event.py --event-type Stop --agent-name ${AGENT_NAME:-claude}"
+        "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type Stop --agent-name ${AGENT_NAME:-claude}"
       }]
     }]
   }
@@ -693,8 +701,8 @@ EOF
 # Start dashboard
 agent-dashboard --web &
 
-# Test event sending
-python3 .claude/hooks/send_event.py --event-type PreToolUse --agent-name test
+# Test event sending (cross-platform)
+bash ~/.claude/dashboard/hooks/run_hook.sh --event-type PreToolUse --agent-name test
 
 # Check dashboard received event
 curl http://localhost:4200/api/events | head -20
@@ -722,16 +730,15 @@ View all projects in the dashboard, filtered by project name in the sessions pan
 curl http://localhost:4200/health
 # Expected: {"status": "healthy"}
 
-# 2. Test event sending
-python3 ~/.claude/dashboard/hooks/send_event.py \
+# 2. Test event sending (cross-platform)
+bash ~/.claude/dashboard/hooks/run_hook.sh \
   --event-type PreToolUse --agent-name test --payload '{"test": true}'
 
 # 3. Check hook permissions
 chmod +x ~/.claude/dashboard/hooks/send_event.py
 
-# 4. Verify Python path
-which python3
-python3 ~/.claude/dashboard/hooks/send_event.py --help
+# 4. Verify hook execution
+bash ~/.claude/dashboard/hooks/run_hook.sh --help
 ```
 
 ### Dashboard Won't Start
