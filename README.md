@@ -391,9 +391,11 @@ pip install pytest pytest-asyncio
 
 ---
 
-## Configuration
+## ⚙️ Configuration
 
 ### Claude Code Hooks (`~/.claude/settings.json`)
+
+> **Note:** The installer automatically creates and configures this file. This section is for reference only. If you skipped hook configuration during install, you can run `./scripts/install.sh` again.
 
 ```json
 {
@@ -402,20 +404,20 @@ pip install pytest pytest-asyncio
       "matcher": ".*",
       "hooks": [{
         "type": "command",
-        "command": "python3 ~/.claude/dashboard/hooks/send_event.py --event-type PreToolUse --agent-name ${AGENT_NAME:-claude} --model ${AGENT_MODEL:-sonnet}"
+        "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type PreToolUse --agent-name ${AGENT_NAME:-claude} --model ${AGENT_MODEL:-sonnet}"
       }]
     }],
     "PostToolUse": [{
       "matcher": ".*",
       "hooks": [{
         "type": "command",
-        "command": "python3 ~/.claude/dashboard/hooks/send_event.py --event-type PostToolUse --agent-name ${AGENT_NAME:-claude} --model ${AGENT_MODEL:-sonnet}"
+        "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type PostToolUse --agent-name ${AGENT_NAME:-claude} --model ${AGENT_MODEL:-sonnet}"
       }]
     }],
     "Stop": [{
       "hooks": [{
         "type": "command",
-        "command": "python3 ~/.claude/dashboard/hooks/send_event.py --event-type Stop --agent-name ${AGENT_NAME:-claude}"
+        "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type Stop --agent-name ${AGENT_NAME:-claude}"
       }]
     }]
   }
@@ -424,18 +426,20 @@ pip install pytest pytest-asyncio
 
 ### Environment Variables
 
+All environment variables are **optional** with sensible defaults.
+
+| Variable | Default | When to Set |
+|----------|---------|-------------|
+| `AGENT_DASHBOARD_URL` | `http://127.0.0.1:4200/events` | Only if using non-default port |
+| `AGENT_NAME` | `claude` | When running as a specific agent |
+| `AGENT_MODEL` | `sonnet` | When running as a specific agent |
+| `AGENT_PROJECT` | Auto-detected from git | Only if git detection fails |
+
+**Example (only needed for agent sessions):**
 ```bash
-# Add to ~/.bashrc or ~/.zshrc
-
-# Dashboard server URL
-export AGENT_DASHBOARD_URL="http://127.0.0.1:4200/events"
-
-# Default agent configuration
-export AGENT_NAME="claude"
-export AGENT_MODEL="sonnet"
-
-# Project identification (auto-detected from git if not set)
-export AGENT_PROJECT="my-project"
+export AGENT_NAME="orchestrator"
+export AGENT_MODEL="opus"
+claude
 ```
 
 ---
@@ -618,7 +622,10 @@ python3 -m pytest tests/ --cov=src --cov=hooks --cov-report=html
 # Verify imports
 python3 -c "from src.workflow_engine import WorkflowEngine; print('OK')"
 
-# Test event sending
+# Test event sending (cross-platform)
+bash ~/.claude/dashboard/hooks/run_hook.sh --event-type PreToolUse --agent-name test
+
+# Direct Python (development only)
 python3 hooks/send_event.py --event-type PreToolUse --agent-name test
 
 # Check API health
@@ -674,9 +681,12 @@ curl http://localhost:4200/health
 # 1. Check server is running
 curl http://localhost:4200/health
 
-# 2. Test event sending manually
-python3 ~/.claude/dashboard/hooks/send_event.py \
+# 2. Test event sending manually (cross-platform)
+bash ~/.claude/dashboard/hooks/run_hook.sh \
   --event-type PreToolUse --agent-name test
+
+# Or direct Python (development only)
+# python3 ~/.claude/dashboard/hooks/send_event.py --event-type PreToolUse --agent-name test
 
 # 3. Check hook permissions
 chmod +x ~/.claude/dashboard/hooks/send_event.py
@@ -727,6 +737,19 @@ For more troubleshooting, see [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md#tr
 - **Workflow Engine**: [Workflow Engine](#-workflow-engine) | [docs/WORKFLOW_FRAMEWORK.md](docs/WORKFLOW_FRAMEWORK.md)
 - **Testing**: [Testing](#-testing) | [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md#testing)
 - **Troubleshooting**: [Troubleshooting](#-troubleshooting) | [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md#troubleshooting)
+
+---
+
+## 📖 Glossary
+
+| Term | Definition |
+|------|------------|
+| **Agent** | A named Claude session with a specific role (e.g., orchestrator, researcher). Used for dashboard monitoring and identification—does not change Claude's behavior. |
+| **Tier** | Model capability level: Tier 1 (Opus/strategic), Tier 2 (Sonnet/analysis), Tier 3 (Haiku/execution) |
+| **Workflow** | A structured task breakdown using TDD phases, created via the Workflow Engine API |
+| **Phase** | A stage in the TDD workflow: SPEC → TEST_DESIGN → TEST_IMPL → IMPLEMENT → VALIDATE → REVIEW → DELIVER |
+| **Hook** | A Claude Code callback that sends events to the dashboard when tools are used |
+| **Event** | A notification sent to the dashboard (PreToolUse, PostToolUse, UserPromptSubmit, Stop, SubagentStop) |
 
 ---
 
