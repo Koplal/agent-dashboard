@@ -142,7 +142,7 @@ class Task:
     active_form: str
     status: TaskStatus = TaskStatus.PENDING
     assigned_agent: Optional[str] = None
-    phase: WorkflowPhase = WorkflowPhase.PLAN
+    phase: WorkflowPhase = WorkflowPhase.SPEC
     priority: int = 0
     dependencies: List[str] = field(default_factory=list)
     tokens_used: int = 0
@@ -558,7 +558,7 @@ class Workflow:
         self.description = description
         self.tasks: List[Task] = []
         self.checkpoints: List[WorkflowCheckpoint] = []
-        self.current_phase = WorkflowPhase.PLAN
+        self.current_phase = WorkflowPhase.SPEC
         self.circuit_breaker = circuit_breaker
         self.validation_stack = ValidationLayerStack(project_root)
         self.created_at = datetime.now()
@@ -570,7 +570,7 @@ class Workflow:
         self,
         content: str,
         active_form: str,
-        phase: WorkflowPhase = WorkflowPhase.PLAN,
+        phase: WorkflowPhase = WorkflowPhase.SPEC,
         assigned_agent: Optional[str] = None,
         dependencies: Optional[List[str]] = None,
         priority: int = 0
@@ -1272,7 +1272,7 @@ SPEC → TEST_DESIGN → TEST_IMPL → IMPLEMENT → VALIDATE → REVIEW → DEL
 
 3. **Checkpoint Protocol**
    At phase completion, check for approval requirements:
-   {json.dumps([{{"name": cp.name, "requires_approval": cp.requires_approval}} for cp in workflow.checkpoints if cp.phase == workflow.current_phase], indent=2)}
+   {json.dumps([{"name": cp.name, "requires_approval": cp.requires_approval} for cp in workflow.checkpoints if cp.phase == workflow.current_phase], indent=2)}
 
 4. **Phase Transition**
    After completing all tasks in current phase:
