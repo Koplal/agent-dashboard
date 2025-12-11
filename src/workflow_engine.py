@@ -121,6 +121,14 @@ AGENT_REGISTRY = {
     "claude-md-auditor": {"tier": AgentTier.SONNET, "role": "auditor"},
     "implementer": {"tier": AgentTier.SONNET, "role": "implementer"},
 
+    # Panel Judges - Sonnet (Quality Evaluation)
+    "panel-coordinator": {"tier": AgentTier.SONNET, "role": "coordinator"},
+    "judge-technical": {"tier": AgentTier.SONNET, "role": "reviewer"},
+    "judge-completeness": {"tier": AgentTier.SONNET, "role": "reviewer"},
+    "judge-practicality": {"tier": AgentTier.SONNET, "role": "reviewer"},
+    "judge-adversarial": {"tier": AgentTier.SONNET, "role": "reviewer"},
+    "judge-user": {"tier": AgentTier.SONNET, "role": "reviewer"},
+
     # Tier 3 - Haiku (Execution)
     "web-search-researcher": {"tier": AgentTier.HAIKU, "role": "researcher"},
     "summarizer": {"tier": AgentTier.HAIKU, "role": "synthesizer"},
