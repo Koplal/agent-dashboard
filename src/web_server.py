@@ -15,6 +15,12 @@ Endpoints:
     GET  /api/stats      - Statistics
     POST /events         - Receive events from hooks
     WS   /ws             - WebSocket for live updates
+
+Dependencies:
+    - aiohttp: Async HTTP/WebSocket server
+    - workflow_engine: Workflow orchestration (optional)
+
+Version: 2.2.0
 """
 
 import asyncio

@@ -10,6 +10,8 @@ This module provides:
 
 These classes enforce the handoff format required between agent tiers
 to ensure proper compression and context management.
+
+Version: 2.2.0
 """
 
 from dataclasses import dataclass, field

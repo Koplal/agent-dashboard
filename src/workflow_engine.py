@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-workflow_engine.py - Multi-Agent Workflow Orchestration Engine v2.1
+workflow_engine.py - Multi-Agent Workflow Orchestration Engine v2.2
 
 Implements a Test-Driven Development (TDD) workflow for autonomous Claude Code:
 
@@ -17,7 +17,7 @@ Design Patterns Implemented:
   2. Ephemeral Task Sandboxes - Context isolation per task
   3. Verified Incrementalism - Micro-generation with interleaved verification
   4. Subagent Orchestration - Multi-agent delegation patterns
-  5. Defense-in-Depth Validation - Four-layer validation stack
+  5. Defense-in-Depth Validation - Six-layer validation stack
   6. Test-Driven Development - Tests define correctness, code follows
 
 Workflow Phases:
@@ -320,12 +320,14 @@ class CostCircuitBreaker:
 
 class ValidationLayerStack:
     """
-    Four-Layer Validation Stack (Design Shift 5).
+    Six-Layer Validation Stack (Design Shift 5).
 
     Layer 1: Static Analysis (Pre-commit)
     Layer 2: Unit Test Suite
-    Layer 3: Integration Test Sandbox
-    Layer 4: Behavioral Diff Auditing
+    Layer 3: TODO Check (No TODOs in production)
+    Layer 4: Mock Detection (No mocks in production)
+    Layer 5: Integration Test Sandbox
+    Layer 6: Behavioral Diff Auditing
     """
 
     def __init__(self, project_root: str = "."):

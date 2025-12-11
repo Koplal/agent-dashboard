@@ -376,18 +376,20 @@ docker-compose logs dashboard
 
 ## Diagnostic Commands
 
+> **Cross-Platform Note:** Use `python` on Windows, `python3` on Linux/macOS.
+
 ```bash
 # Full system check
 agent-dashboard doctor
 
-# Check Python
-python3 --version
-python --version
+# Check Python version
+python --version       # Windows / Universal
+python3 --version      # Linux/macOS preferred
 
-# Check dependencies
-python3 -c "import rich; print(rich.__version__)"
-python3 -c "import aiohttp; print(aiohttp.__version__)"
-python3 -c "import tiktoken; print('ok')"
+# Check dependencies (use 'python' on Windows, 'python3' on Linux/macOS)
+python -c "import rich; print(rich.__version__)"
+python -c "import aiohttp; print(aiohttp.__version__)"
+python -c "import tiktoken; print('ok')"
 
 # Check installation
 ls -la ~/.claude/dashboard/
@@ -400,8 +402,8 @@ echo $PATH | tr ':' '\n' | grep local
 curl http://localhost:4200/health
 
 # Check port usage
-lsof -i :4200  # macOS/Linux
-netstat -ano | findstr :4200  # Windows
+lsof -i :4200                    # macOS/Linux
+netstat -ano | findstr :4200     # Windows (CMD/PowerShell)
 
 # View recent events
 agent-dashboard logs -n 20

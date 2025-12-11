@@ -18,6 +18,12 @@ Budget Matrix:
 | Haiku -> Sonnet  | 500    |
 | Sonnet -> Opus   | 1000   |
 | Sonnet -> Sonnet | 1500   |
+
+Dependencies:
+    - tiktoken: Accurate token counting (optional, falls back to estimation)
+    - validation: Base validation classes
+
+Version: 2.2.0
 """
 
 import json

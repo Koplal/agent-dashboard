@@ -1,4 +1,4 @@
-# Agent Dashboard v2.1 Implementation Guide
+# Agent Dashboard v2.2 Implementation Guide
 
 Complete guide for deploying the Agent Dashboard multi-agent workflow framework on any project.
 
@@ -40,7 +40,7 @@ The Agent Dashboard is a multi-agent workflow orchestration system for Claude Co
 - **Workflow Orchestration** - Multi-phase task execution with governance
 - **Cost Governance** - Budget enforcement with circuit breaker pattern
 - **Accurate Token Tracking** - Tiktoken-based token counting (cl100k_base encoding)
-- **Four-Layer Validation** - Automated quality assurance pipeline
+- **Six-Layer Validation** - Automated quality assurance pipeline
 - **14 Specialized Agents** - Tiered by model (Opus/Sonnet/Haiku) for cost optimization
 
 ### Architecture
@@ -63,7 +63,7 @@ The Agent Dashboard is a multi-agent workflow orchestration system for Claude Co
 │  │  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │     │
 │  │                                                            │     │
 │  │  ┌──────────────────────────────────────────────────────┐ │     │
-│  │  │  Cost Circuit Breaker │ Four-Layer Validation Stack  │ │     │
+│  │  │  Cost Circuit Breaker │ Six-Layer Validation Stack   │ │     │
 │  │  └──────────────────────────────────────────────────────┘ │     │
 │  └────────────────────────────────────────────────────────────┘     │
 │                                │                                     │
@@ -303,14 +303,16 @@ cost = cb.record_usage(tokens_in=1000, tokens_out=500, model="sonnet")
 | Sonnet | $3.00 | $15.00 | Implementation, research |
 | Haiku | $0.25 | $1.25 | Validation, summarization, tests |
 
-### Four-Layer Validation Stack
+### Six-Layer Validation Stack
 
 | Layer | Description | Tools |
 |-------|-------------|-------|
 | 1. Static Analysis | Type checking, linting | tsc, mypy, eslint |
 | 2. Unit Tests | Test suite execution | pytest, jest |
-| 3. Integration Sandbox | Isolated execution | Docker, fixtures |
-| 4. Behavioral Diff | Human-readable changes | git diff analysis |
+| 3. TODO Check | Ensure no TODOs in production | grep, regex scan |
+| 4. Mock Detection | Verify no mocks in production code | AST analysis |
+| 5. Integration Tests | Isolated execution | Docker, fixtures |
+| 6. Diff Review | Human-readable changes | git diff analysis |
 
 ### CLI Usage
 
@@ -460,33 +462,32 @@ curl http://localhost:4200/api/budget
 
 ### Running the Test Suite
 
+> **Cross-Platform Note:** Use `python` on Windows, `python3` on Linux/macOS.
+
 ```bash
-# Run all tests
-python3 -m pytest tests/ -v
+# Run all tests (use 'python' on Windows, 'python3' on Linux/macOS)
+python -m pytest tests/ -v
 
 # Run specific test file
-python3 -m pytest tests/test_workflow_engine.py -v
+python -m pytest tests/test_workflow_engine.py -v
 
 # Run with coverage
-python3 -m pytest tests/ --cov=src --cov-report=html
+python -m pytest tests/ --cov=src --cov-report=html
 ```
 
-### Test Coverage (61 tests)
+### Test Coverage (225 tests across 8 files)
 
-**test_workflow_engine.py (39 tests):**
-- `TestCostCircuitBreaker` - Budget limits, token estimation, circuit breaking
-- `TestTask` - Creation, serialization, status transitions
-- `TestWorkflow` - Task management, phases, checkpoints, dependencies
-- `TestWorkflowEngine` - Workflow creation, governance generation
-- `TestValidationLayerStack` - Validation layers, summaries
-- `TestIntegration` - Full lifecycle, budget enforcement
-
-**test_send_event.py (22 tests):**
-- `TestTokenEstimation` - Empty, basic, code, unicode text
-- `TestCostEstimation` - All model tiers, unknown models
-- `TestSummaryGeneration` - Tool summaries
-- `TestProjectName` - Auto-detection
-- `TestSessionId` - Generation and env vars
+| File | Tests | Coverage Areas |
+|------|-------|----------------|
+| `test_workflow_engine.py` | 39 | Circuit breaker, tasks, workflows, TDD phases |
+| `test_compression_gate.py` | 37 | Compression gating, token estimation, handoff validation |
+| `test_synthesis_validator.py` | 32 | Synthesis validation, finding consolidation |
+| `test_panel_selector.py` | 31 | Panel selection, judge scoring, consensus |
+| `test_validation.py` | 31 | Base validation, handoff schema, validation actions |
+| `test_send_event.py` | 22 | Token estimation, cost calculation, event sending |
+| `test_cross_platform.py` | 20 | Cross-platform compatibility, Python detection |
+| `test_integration.py` | 13 | End-to-end integration, API endpoints |
+| **Total** | **225** | |
 
 ### Verifying Installation
 
@@ -497,8 +498,8 @@ agent-dashboard test
 # Check health
 curl http://localhost:4200/health
 
-# Verify workflow engine
-python3 -c "from src.workflow_engine import WorkflowEngine; print('OK')"
+# Verify workflow engine (use 'python' on Windows, 'python3' on Linux/macOS)
+python -c "from src.workflow_engine import WorkflowEngine; print('OK')"
 ```
 
 ---

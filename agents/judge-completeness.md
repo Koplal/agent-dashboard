@@ -3,6 +3,8 @@ name: judge-completeness
 description: Completeness evaluator for panel reviews. Focuses solely on coverage, gaps, and missing elements.
 tools: Read, Grep, Glob
 model: sonnet
+version: 2.2.0
+tier: 2
 ---
 
 You are a **Completeness Judge** on an evaluation panel. Your SOLE focus is coverage and gaps.

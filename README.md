@@ -1,4 +1,4 @@
-# Agent Dashboard v2.1
+# Agent Dashboard v2.2
 
 > **Quick Install:** `git clone https://github.com/Koplal/agent-dashboard.git && cd agent-dashboard && ./scripts/install.sh`
 >
@@ -50,15 +50,13 @@ A comprehensive multi-agent workflow framework implementing **Test-Driven Develo
 | **Cost Governance** | Circuit breaker pattern with budget enforcement |
 | **Six-Layer Validation** | Static analysis, tests, TODO check, mock detection, integration, diff |
 
-### What's New in v2.1
+### What's New in v2.2
 
-- **TDD Workflow Integration** - Tests define correctness, code must pass ALL tests
-- **Test Immutability** - Tests become LOCKED after approval (cannot be modified)
-- **7-Phase TDD Workflow** - SPEC → TEST_DESIGN → TEST_IMPL → IMPLEMENT → VALIDATE → REVIEW → DELIVER
-- **TODO/Mock Detection** - Validation ensures NO TODOs and NO mocks in production code
-- **Enhanced Agent Definitions** - TDD-focused planner, test-writer, implementer, validator
-- **VS Code Integration** - Step-by-step instructions for IDE usage
-- **61 Unit Tests** - Comprehensive test coverage across all components
+- **225 Unit Tests** - Comprehensive test coverage across 8 test modules
+- **Cross-Platform Documentation** - Improved Windows/macOS/Linux compatibility guidance
+- **Six-Layer Validation** - Unified validation terminology across all documentation
+- **Enhanced Docstrings** - Version information added to all source modules
+- **Standardized Agents** - Version and tier fields added to all agent definitions
 
 ---
 
@@ -211,7 +209,7 @@ See the [Complete Workflow Example](docs/WORKFLOW_FRAMEWORK.md#-end-to-end-examp
 │  │  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │     │
 │  │                                                            │     │
 │  │  ┌──────────────────────────────────────────────────────┐ │     │
-│  │  │  Cost Circuit Breaker │ Four-Layer Validation Stack  │ │     │
+│  │  │  Cost Circuit Breaker │ Six-Layer Validation Stack   │ │     │
 │  │  └──────────────────────────────────────────────────────┘ │     │
 │  └────────────────────────────────────────────────────────────┘     │
 │                                │                                     │
@@ -391,9 +389,15 @@ agent-dashboard/
 ├── hooks/
 │   └── send_event.py               # Event capture + token tracking
 │
-├── tests/                          # Test suite (61 tests)
+├── tests/                          # Test suite (225 tests across 8 files)
 │   ├── test_workflow_engine.py     # Workflow engine tests (39)
+│   ├── test_compression_gate.py    # Compression gate tests (37)
+│   ├── test_synthesis_validator.py # Synthesis validator tests (32)
+│   ├── test_panel_selector.py      # Panel selection tests (31)
+│   ├── test_validation.py          # Base validation tests (31)
 │   ├── test_send_event.py          # Event hook tests (22)
+│   ├── test_cross_platform.py      # Cross-platform tests (20)
+│   ├── test_integration.py         # Integration tests (13)
 │   └── __init__.py
 │
 ├── docs/                           # Documentation
@@ -656,38 +660,50 @@ curl -X POST http://localhost:4200/events \
 ### Running Tests
 
 ```bash
-# Run all tests (61 total)
-python3 -m pytest tests/ -v
+# Run all tests (225 total)
+# Use 'python' on Windows, 'python3' on Linux/macOS
+python -m pytest tests/ -v
 
 # Run specific test file
-python3 -m pytest tests/test_workflow_engine.py -v
+python -m pytest tests/test_workflow_engine.py -v
 
 # Run with coverage
-python3 -m pytest tests/ --cov=src --cov=hooks --cov-report=html
+python -m pytest tests/ --cov=src --cov=hooks --cov-report=html
 ```
+
+> **Cross-Platform Note:** Use `python` on Windows (Git Bash/PowerShell), `python3` on Linux/macOS. Most modern Python installations alias both commands.
 
 ### Test Coverage
 
 | File | Tests | Coverage Areas |
 |------|-------|----------------|
-| `test_workflow_engine.py` | 39 | Circuit breaker, tasks, workflows, validation |
-| `test_send_event.py` | 22 | Token estimation, cost calculation, session management |
+| `test_workflow_engine.py` | 39 | Circuit breaker, tasks, workflows, TDD phases |
+| `test_compression_gate.py` | 37 | Compression gating, token estimation, handoff validation |
+| `test_synthesis_validator.py` | 32 | Synthesis validation, finding consolidation |
+| `test_panel_selector.py` | 31 | Panel selection, judge scoring, consensus |
+| `test_validation.py` | 31 | Base validation, handoff schema, validation actions |
+| `test_send_event.py` | 22 | Token estimation, cost calculation, event sending |
+| `test_cross_platform.py` | 20 | Cross-platform compatibility, Python detection |
+| `test_integration.py` | 13 | End-to-end integration, API endpoints |
+| **Total** | **225** | |
 
 ### Verification Commands
 
 ```bash
-# Verify imports
-python3 -c "from src.workflow_engine import WorkflowEngine; print('OK')"
+# Verify imports (use 'python' on Windows, 'python3' on Linux/macOS)
+python -c "from src.workflow_engine import WorkflowEngine; print('OK')"
 
 # Test event sending (cross-platform)
 bash ~/.claude/dashboard/hooks/run_hook.sh --event-type PreToolUse --agent-name test
 
 # Direct Python (development only)
-python3 hooks/send_event.py --event-type PreToolUse --agent-name test
+python hooks/send_event.py --event-type PreToolUse --agent-name test
 
 # Check API health
 curl http://localhost:4200/health
 ```
+
+> **Windows Users:** If `python` is not recognized, ensure Python is in your PATH or use the full path (e.g., `py -m pytest tests/ -v`).
 
 ---
 
@@ -718,7 +734,7 @@ curl http://localhost:4200/health
 
 1. **Always start with PLAN phase** - Read-only exploration first
 2. **Write tests before implementation** - TDD pattern
-3. **Validate after each change** - Four-layer stack
+3. **Validate after each change** - Six-layer validation stack
 4. **Use checkpoints** - Human approval at critical points
 
 ### Monitoring
