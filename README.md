@@ -424,9 +424,57 @@ aiohttp>=3.8.0      # Async web server + WebSocket
 ### Recommended
 
 ```
-tiktoken>=0.5.0     # Accurate token counting (optional, falls back to estimation)
-pytest>=7.0.0       # Testing framework (development)
-pytest-asyncio      # Async test support (development)
+transformers>=4.35.0  # Claude tokenizer (recommended, ~95% accuracy)
+tokenizers>=0.15.0    # Required by transformers
+tiktoken>=0.5.0       # Fallback tokenizer (~70-85% accuracy)
+pytest>=7.0.0         # Testing framework (development)
+pytest-asyncio        # Async test support (development)
+```
+
+---
+
+## Token Counting
+
+Agent Dashboard uses accurate Claude tokenization for cost estimation and budget governance.
+
+### Tokenizer Priority
+
+The system uses a tiered fallback approach:
+
+| Priority | Tokenizer | Accuracy | Install |
+|----------|-----------|----------|---------|
+| 1 | Xenova/claude-tokenizer | ~95%+ | `pip install transformers tokenizers` |
+| 2 | Anthropic API | 100% | `pip install anthropic` + API key |
+| 3 | tiktoken (fallback) | ~70-85% | `pip install tiktoken` |
+| 4 | Character estimation | ~60-70% | Built-in |
+
+### Check Tokenizer Status
+
+```bash
+agent-dashboard tokenizer
+```
+
+### Recommended Installation
+
+For best accuracy without API calls:
+```bash
+pip install transformers tokenizers
+```
+
+### Usage in Code
+
+```python
+from src.token_counter import count_tokens, estimate_cost, get_tokenizer_info
+
+# Count tokens
+tokens = count_tokens("Hello, world!")
+
+# Get cost estimate
+cost = estimate_cost(input_tokens=1000, output_tokens=500, model="claude-sonnet-4-5")
+
+# Check which tokenizer is active
+info = get_tokenizer_info()
+print(f"Using: {info.name} ({info.accuracy})")
 ```
 
 ### External Tools

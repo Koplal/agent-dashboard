@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# install.sh - Agent Dashboard v2.1 Installation Script
+# install.sh - Agent Dashboard v2.2 Installation Script
 # =============================================================================
 #
 # DESCRIPTION:
@@ -17,7 +17,7 @@
 # USAGE:
 #   ./scripts/install.sh
 #
-# VERSION: 2.1.0
+# VERSION: 2.2.0
 # =============================================================================
 
 # Exit immediately if any command fails
@@ -67,7 +67,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # =============================================================================
 echo -e "${MAGENTA}"
 echo "============================================================================="
-echo "                    Agent Dashboard v2.1 Installer                           "
+echo "                    Agent Dashboard v2.2 Installer                           "
 echo "            Multi-Agent Workflow Framework for Claude Code                   "
 echo "============================================================================="
 echo ""
@@ -423,7 +423,7 @@ echo -e "\n${BLUE}[7/8] Creating CLI launcher...${NC}"
 cat > "$BIN_DIR/agent-dashboard" << 'LAUNCHER_EOF'
 #!/usr/bin/env bash
 # =============================================================================
-# agent-dashboard - Cross-Platform CLI Launcher v2.1
+# agent-dashboard - Cross-Platform CLI Launcher v2.2
 # =============================================================================
 
 DASHBOARD_DIR="$HOME/.claude/dashboard"
@@ -478,13 +478,13 @@ while [[ $# -gt 0 ]]; do
             PORT="$2"
             shift 2
             ;;
-        doctor|status|test|uninstall|upgrade|logs|config)
+        doctor|status|test|tokenizer|uninstall|upgrade|logs|config)
             COMMAND="$1"
             shift
             break
             ;;
         --help|-h)
-            echo "Agent Dashboard v2.1 - Multi-Agent Workflow Monitor"
+            echo "Agent Dashboard v2.2 - Multi-Agent Workflow Monitor"
             echo ""
             echo "USAGE:"
             echo "  agent-dashboard [OPTIONS] [COMMAND]"
@@ -498,6 +498,7 @@ while [[ $# -gt 0 ]]; do
             echo "  doctor        Diagnose installation issues"
             echo "  status        Show system status"
             echo "  test          Send a test event"
+            echo "  tokenizer     Show tokenizer status"
             echo "  uninstall     Remove Agent Dashboard"
             echo "  upgrade       Update to latest version"
             echo "  logs          View recent logs"
@@ -507,6 +508,7 @@ while [[ $# -gt 0 ]]; do
             echo "  agent-dashboard              # Terminal TUI dashboard"
             echo "  agent-dashboard --web        # Web dashboard on port 4200"
             echo "  agent-dashboard doctor       # Check installation"
+            echo "  agent-dashboard tokenizer    # Show tokenizer status"
             echo ""
             exit 0
             ;;
@@ -556,6 +558,10 @@ case "$COMMAND" in
         $PYTHON_CMD "$DASHBOARD_DIR/cli.py" config "$@"
         exit $?
         ;;
+    tokenizer)
+        $PYTHON_CMD "$DASHBOARD_DIR/cli.py" tokenizer "$@"
+        exit $?
+        ;;
 esac
 
 # Auto-install missing dependencies
@@ -570,7 +576,7 @@ done
 # Launch dashboard
 if [ "$WEB_MODE" = true ]; then
     echo ""
-    echo "Starting Agent Dashboard v2.1 (Web Mode)"
+    echo "Starting Agent Dashboard v2.2 (Web Mode)"
     echo "==========================================="
     echo ""
     echo "  URL: http://localhost:$PORT"
@@ -583,7 +589,7 @@ if [ "$WEB_MODE" = true ]; then
     $PYTHON_CMD "$DASHBOARD_DIR/web_server.py" --port "$PORT"
 else
     echo ""
-    echo "Starting Agent Dashboard v2.1 (Terminal TUI)"
+    echo "Starting Agent Dashboard v2.2 (Terminal TUI)"
     echo "============================================="
     echo ""
     echo "  Press 'q' to quit"
@@ -600,45 +606,96 @@ echo -e "  ${GREEN}[OK]${NC} Created $BIN_DIR/agent-dashboard"
 # =============================================================================
 echo -e "\n${BLUE}[8/8] Installing Python dependencies...${NC}"
 
-install_with_pip() {
-    echo "  Using pip..."
-
+# Core dependencies installation function
+install_core_deps() {
     if [ "$IN_VENV" = true ]; then
-        # In virtual environment - install directly
-        $PYTHON_CMD -m pip install --quiet rich aiohttp tiktoken 2>/dev/null || \
-        $PYTHON_CMD -m pip install rich aiohttp tiktoken || \
-        {
-            echo -e "${RED}ERROR: pip install failed${NC}"
-            exit 1
-        }
+        $PYTHON_CMD -m pip install --quiet rich aiohttp 2>/dev/null || \
+        $PYTHON_CMD -m pip install rich aiohttp
     else
-        # Not in venv - use --user to avoid permission issues
-        $PYTHON_CMD -m pip install --quiet --user rich aiohttp tiktoken 2>/dev/null || \
-        $PYTHON_CMD -m pip install --user rich aiohttp tiktoken || \
-        {
-            echo -e "${RED}ERROR: pip install failed${NC}"
-            echo ""
-            echo "Try creating a virtual environment:"
-            echo "  $PYTHON_CMD -m venv ~/.claude-venv"
-            echo "  source ~/.claude-venv/bin/activate"
-            echo "  ./scripts/install.sh"
-            exit 1
-        }
+        $PYTHON_CMD -m pip install --quiet --user rich aiohttp 2>/dev/null || \
+        $PYTHON_CMD -m pip install --user rich aiohttp
     fi
 }
 
+# Tokenizer installation function
+install_tokenizer() {
+    local tokenizer_type="$1"
+    if [ "$IN_VENV" = true ]; then
+        case "$tokenizer_type" in
+            transformers)
+                $PYTHON_CMD -m pip install --quiet transformers tokenizers 2>/dev/null || \
+                $PYTHON_CMD -m pip install transformers tokenizers
+                ;;
+            tiktoken)
+                $PYTHON_CMD -m pip install --quiet tiktoken 2>/dev/null || \
+                $PYTHON_CMD -m pip install tiktoken
+                ;;
+        esac
+    else
+        case "$tokenizer_type" in
+            transformers)
+                $PYTHON_CMD -m pip install --quiet --user transformers tokenizers 2>/dev/null || \
+                $PYTHON_CMD -m pip install --user transformers tokenizers
+                ;;
+            tiktoken)
+                $PYTHON_CMD -m pip install --quiet --user tiktoken 2>/dev/null || \
+                $PYTHON_CMD -m pip install --user tiktoken
+                ;;
+        esac
+    fi
+}
+
+# Install core dependencies first
+echo "  Installing core dependencies..."
 if [ "$PKG_MANAGER" = "uv" ]; then
-    echo "  Using uv (fast mode)..."
-    uv pip install --system rich aiohttp tiktoken 2>/dev/null || \
-    uv pip install rich aiohttp tiktoken 2>/dev/null || \
-    { echo "  uv failed, falling back to pip..."; install_with_pip; }
+    uv pip install --system rich aiohttp 2>/dev/null || \
+    uv pip install rich aiohttp 2>/dev/null || \
+    install_core_deps
 else
-    install_with_pip
+    install_core_deps
 fi
 
 echo -e "  ${GREEN}[OK]${NC} rich (terminal UI)"
 echo -e "  ${GREEN}[OK]${NC} aiohttp (web server)"
-echo -e "  ${GREEN}[OK]${NC} tiktoken (token counting)"
+
+# Tokenizer selection
+echo ""
+echo -e "${CYAN}Token counting options:${NC}"
+echo "   1) transformers (recommended, ~95% accuracy for Claude)"
+echo "   2) tiktoken (legacy, ~70-85% accuracy)"
+echo "   3) skip (use character estimation)"
+echo ""
+read -p "  Install tokenizer? [1/2/3] (default: 1): " tokenizer_choice
+tokenizer_choice=${tokenizer_choice:-1}
+
+case $tokenizer_choice in
+    1)
+        echo "  Installing HuggingFace transformers..."
+        if [ "$PKG_MANAGER" = "uv" ]; then
+            uv pip install --system transformers tokenizers 2>/dev/null || \
+            uv pip install transformers tokenizers 2>/dev/null || \
+            install_tokenizer "transformers"
+        else
+            install_tokenizer "transformers"
+        fi
+        echo -e "  ${GREEN}[OK]${NC} transformers + tokenizers (Claude tokenizer)"
+        ;;
+    2)
+        echo "  Installing tiktoken..."
+        if [ "$PKG_MANAGER" = "uv" ]; then
+            uv pip install --system tiktoken 2>/dev/null || \
+            uv pip install tiktoken 2>/dev/null || \
+            install_tokenizer "tiktoken"
+        else
+            install_tokenizer "tiktoken"
+        fi
+        echo -e "  ${GREEN}[OK]${NC} tiktoken (legacy tokenizer)"
+        ;;
+    *)
+        echo -e "  ${YELLOW}[SKIP]${NC} Tokenizer installation skipped"
+        echo "         Using character estimation (~60-70% accuracy)"
+        ;;
+esac
 
 # =============================================================================
 # UPDATE PATH

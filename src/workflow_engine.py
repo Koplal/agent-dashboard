@@ -44,16 +44,17 @@ from typing import Optional, Dict, List, Any, Callable
 import sqlite3
 import threading
 
-# Try to import tiktoken for token estimation
+# Import centralized token counting
 try:
-    import tiktoken
-    _encoding = tiktoken.get_encoding("cl100k_base")
-    _TIKTOKEN_AVAILABLE = True
-except (ImportError, Exception):
-    # ImportError: tiktoken not installed
-    # Other exceptions: network errors when downloading encoding files
-    _encoding = None
-    _TIKTOKEN_AVAILABLE = False
+    from src.token_counter import count_tokens as _count_tokens, estimate_cost as _estimate_cost_from_module, get_tokenizer_info
+    _TOKEN_COUNTER_AVAILABLE = True
+except ImportError:
+    _TOKEN_COUNTER_AVAILABLE = False
+    # Inline fallback
+    def _count_tokens(text: str, **kwargs) -> int:
+        return len(text) // 4 if text else 0
+    def _estimate_cost_from_module(input_tokens: int, output_tokens: int, model: str = "sonnet") -> float:
+        return (input_tokens + output_tokens) * 0.000003  # Rough estimate
 
 
 # ============================================================================
@@ -240,15 +241,8 @@ class CostCircuitBreaker:
         self._callbacks: List[Callable] = []
 
     def estimate_tokens(self, text: str) -> int:
-        """Estimate token count using tiktoken."""
-        if not text:
-            return 0
-        if _TIKTOKEN_AVAILABLE and _encoding is not None:
-            try:
-                return len(_encoding.encode(text))
-            except Exception:
-                pass
-        return len(text) // 4
+        """Estimate token count using centralized token counter."""
+        return _count_tokens(text) if text else 0
 
     def estimate_cost(self, tokens_in: int, tokens_out: int, model: str) -> float:
         """Calculate cost for token usage."""

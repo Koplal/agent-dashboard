@@ -30,16 +30,37 @@ from typing import Optional, Dict, Any
 import urllib.request
 import urllib.error
 
-# Try to import tiktoken for accurate token counting
+# Import token counting from centralized module
 try:
-    import tiktoken
-    _encoding = tiktoken.get_encoding("cl100k_base")
-    _TIKTOKEN_AVAILABLE = True
-except (ImportError, Exception):
-    # ImportError: tiktoken not installed
-    # Other exceptions: network errors when downloading encoding files
-    _encoding = None
-    _TIKTOKEN_AVAILABLE = False
+    from src.token_counter import count_tokens, estimate_cost as _estimate_cost_from_module, get_tokenizer_info
+    _TOKEN_COUNTER_AVAILABLE = True
+except ImportError:
+    # Fallback for standalone hook usage
+    _TOKEN_COUNTER_AVAILABLE = False
+
+    # Inline fallback implementation
+    try:
+        import tiktoken
+        _encoding = tiktoken.get_encoding("cl100k_base")
+        _TIKTOKEN_AVAILABLE = True
+    except (ImportError, Exception):
+        _encoding = None
+        _TIKTOKEN_AVAILABLE = False
+
+    def count_tokens(text: str, **kwargs) -> int:
+        """Fallback token counter."""
+        if not text:
+            return 0
+        if _TIKTOKEN_AVAILABLE and _encoding:
+            return len(_encoding.encode(text))
+        return len(text) // 4
+
+    def get_tokenizer_info():
+        """Fallback tokenizer info."""
+        return type('TokenizerInfo', (), {
+            'name': 'tiktoken' if _TIKTOKEN_AVAILABLE else 'character',
+            'accuracy': '~70-85%' if _TIKTOKEN_AVAILABLE else '~60-70%'
+        })()
 
 # Configuration
 DEFAULT_URL = "http://127.0.0.1:4200/events"
@@ -146,23 +167,13 @@ def read_stdin_payload() -> Dict[str, Any]:
 
 
 def estimate_tokens(text: str) -> int:
-    """Count tokens using tiktoken (cl100k_base encoding).
-
-    Uses the cl100k_base encoding which is suitable for Claude and modern LLMs.
-    Falls back to character-based estimation if tiktoken is unavailable.
     """
-    if not text:
-        return 0
+    Estimate token count for text.
 
-    if _TIKTOKEN_AVAILABLE and _encoding is not None:
-        try:
-            return len(_encoding.encode(text))
-        except Exception:
-            # Fall back to estimation on any encoding error
-            pass
-
-    # Fallback: rough estimate (4 chars per token)
-    return len(text) // 4
+    Uses centralized token_counter module if available,
+    otherwise falls back to local implementation.
+    """
+    return count_tokens(text)
 
 
 def estimate_cost(tokens_in: int, tokens_out: int, model: str) -> float:

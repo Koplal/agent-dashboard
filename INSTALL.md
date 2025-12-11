@@ -391,6 +391,30 @@ deactivate
 
 ---
 
+## Token Counting (Optional but Recommended)
+
+For accurate Claude token counting, install the HuggingFace tokenizer:
+
+```bash
+pip install transformers tokenizers
+```
+
+This provides ~95%+ accuracy for token counting without requiring API calls.
+
+**Alternative (legacy):**
+```bash
+pip install tiktoken
+```
+
+This provides ~70-85% accuracy using OpenAI's tokenizer.
+
+**Verify installation:**
+```bash
+agent-dashboard tokenizer
+```
+
+---
+
 ## Verification
 
 After installation, verify everything works:
