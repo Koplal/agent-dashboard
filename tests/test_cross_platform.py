@@ -83,11 +83,11 @@ class TestInstallation:
         assert agents_dir.exists(), "agents/ directory not found"
 
     def test_agents_count(self):
-        """Should have 14 agent definitions."""
+        """Should have 20 agent definitions (14 base + 6 panel judges)."""
         agents_dir = Path(__file__).parent.parent / "agents"
         agent_files = list(agents_dir.glob("*.md"))
-        assert len(agent_files) == 14, \
-            f"Expected 14 agents, found {len(agent_files)}"
+        assert len(agent_files) == 20, \
+            f"Expected 20 agents, found {len(agent_files)}"
 
     def test_all_agents_have_frontmatter(self):
         """All agent files should have valid YAML frontmatter."""
