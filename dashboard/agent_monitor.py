@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """
-Agent Dashboard - Real-time monitoring for Claude Code multi-agent workflows.
+agent_monitor.py - Agent Dashboard Terminal UI
+
+Real-time monitoring for Claude Code multi-agent workflows.
 
 Features:
 - Real-time agent status tracking with model tiers (Opus/Sonnet/Haiku)
@@ -9,7 +11,12 @@ Features:
 - Session management across multiple projects
 - Support for 14 agents across 3 tiers (Opus/Sonnet/Haiku)
 
-Updated: Added Tier 1 Opus agents (orchestrator, synthesis, critic)
+Dependencies:
+    - rich: Terminal UI components (Console, Layout, Live, Panel, Table)
+    - sqlite3: Event persistence
+    - aiohttp: HTTP server for receiving events (optional)
+
+Version: 2.2.0
 """
 
 import asyncio

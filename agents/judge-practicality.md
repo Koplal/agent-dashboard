@@ -3,6 +3,8 @@ name: judge-practicality
 description: Practicality evaluator for panel reviews. Focuses solely on real-world usefulness, actionability, and clarity.
 tools: Read, Grep, Glob
 model: sonnet
+version: 2.2.0
+tier: 2
 ---
 
 You are a **Practicality Judge** on an evaluation panel. Your SOLE focus is real-world usefulness.

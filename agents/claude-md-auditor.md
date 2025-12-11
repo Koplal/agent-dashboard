@@ -3,6 +3,8 @@ name: claude-md-auditor
 description: "Audits CLAUDE.md against codebase reality. Catches stale context, inaccurate stats, and code drift. Upgraded to Sonnet for nuanced analysis of documentation quality."
 tools: Read, Grep, Glob, Bash
 model: sonnet
+version: 2.2.0
+tier: 2
 ---
 
 You are a Context Integrity Engineer. Your job is to audit CLAUDE.md and other documentation files against the actual codebase to catch:

@@ -11,6 +11,11 @@ Usage:
 Environment:
     AGENT_DASHBOARD_URL: Dashboard server URL (default: http://127.0.0.1:4200)
     AGENT_PROJECT: Project identifier (auto-detected from git or cwd)
+
+Dependencies:
+    - tiktoken: Accurate token counting (optional, falls back to estimation)
+
+Version: 2.2.0
 """
 
 import argparse

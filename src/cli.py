@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """
-Agent Dashboard CLI - Unified command-line interface for the monitoring system.
+cli.py - Agent Dashboard CLI
+
+Unified command-line interface for the monitoring system.
 
 Usage:
     agent-dashboard              # Terminal TUI (default)
@@ -9,6 +11,12 @@ Usage:
     agent-dashboard status       # Show system status
     agent-dashboard test         # Send test event
     agent-dashboard logs         # View event logs
+
+Dependencies:
+    - rich: Terminal UI rendering
+    - aiohttp: Web server (optional)
+
+Version: 2.2.0
 """
 
 import argparse

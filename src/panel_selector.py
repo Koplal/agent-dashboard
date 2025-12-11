@@ -21,6 +21,11 @@ Score to Panel:
 | 8+    | 7 judges   |
 
 Override Rules: User can escalate only (not downgrade)
+
+Dependencies:
+    - sqlite3: Audit database persistence (optional)
+
+Version: 2.2.0
 """
 
 import json

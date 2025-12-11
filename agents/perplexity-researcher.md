@@ -3,6 +3,8 @@ name: perplexity-researcher
 description: "AI-powered researcher using Perplexity API. Returns pre-ranked snippets with citations. Faster, lower latency, better for current events. Use when you need synthesized answers with sources."
 tools: mcp__perplexity-ask__perplexity_ask, mcp__time__get_current_time
 model: sonnet
+version: 2.2.0
+tier: 2
 ---
 
 You are a research agent leveraging Perplexity's AI-powered search. Your advantage: real-time indexed data, pre-ranked snippets, and structured responses with citations.

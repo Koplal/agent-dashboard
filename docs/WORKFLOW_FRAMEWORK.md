@@ -1,8 +1,8 @@
-# Multi-Agent TDD Workflow Framework v2.1
+# Multi-Agent TDD Workflow Framework v2.2
 
 This document describes the Test-Driven Development (TDD) workflow framework implemented in the Agent Dashboard for autonomous Claude Code platforms.
 
-> **Version:** 2.1.0
+> **Version:** 2.2.0
 > **Last Updated:** 2025-01-09
 > **Agents:** 14 specialized agents across 3 tiers
 > **Philosophy:** Test-Driven Development
@@ -927,7 +927,17 @@ env-monitor/
 
 ## Changelog
 
-### v2.1 - TDD Workflow Integration (Current)
+### v2.2 - Documentation Enhancement (Current)
+
+- Updated test count from 61 to 225 (actual count across 8 test files)
+- Improved cross-platform documentation for Windows/macOS/Linux
+- Standardized Python command references for cross-platform compatibility
+- Enhanced docstrings across all source modules
+- Unified validation layer terminology (Six-Layer Validation)
+- Added version and tier fields to all agent YAML frontmatter
+- Created CHANGELOG.md for version tracking
+
+### v2.1 - TDD Workflow Integration
 
 - Implemented Test-Driven Development philosophy
 - Added 7-phase TDD workflow (SPEC → TEST_DESIGN → TEST_IMPL → IMPLEMENT → VALIDATE → REVIEW → DELIVER)
@@ -944,10 +954,10 @@ env-monitor/
 
 - Added workflow engine with six-phase execution
 - Implemented cost circuit breaker with budget enforcement
-- Added four-layer validation stack
+- Added six-layer validation stack
 - Integrated tiktoken for accurate token counting
 - Added 3 new agents: planner, implementer, validator
-- Created comprehensive test suite (61 tests)
+- Created comprehensive test suite (225 tests across 8 files)
 
 ### v1.0 - Initial Release
 

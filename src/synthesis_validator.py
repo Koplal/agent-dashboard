@@ -16,6 +16,11 @@ Loop Counter Logic:
 - Max loops: 5 consecutive rejections without progress -> escalate
 - Escalation target: Orchestrator
 - Senior action: Proceed with documented gaps
+
+Dependencies:
+    - validation: Base validation classes (ValidationResult, ValidationAction)
+
+Version: 2.2.0
 """
 
 import logging
