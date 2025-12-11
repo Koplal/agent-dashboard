@@ -451,6 +451,52 @@ def show_config(args):
     return 0
 
 
+def show_tokenizer_status(args):
+    """Show tokenizer status and test token counting."""
+    try:
+        from src.token_counter import (
+            count_tokens, get_tokenizer_info, get_all_tokenizers_status
+        )
+    except ImportError:
+        print("Error: token_counter module not found")
+        print("Ensure you're running from the project root")
+        sys.exit(1)
+
+    print("\nToken Counter Status")
+    print("=" * 50)
+
+    # Show all tokenizers
+    for name, info in get_all_tokenizers_status().items():
+        status = "+" if info.is_available else "-"
+        print(f"\n{status} {info.name}")
+        print(f"   Tier: {info.tier.value}")
+        print(f"   Accuracy: {info.accuracy}")
+        print(f"   Requires Network: {'Yes' if info.requires_network else 'No'}")
+        if info.error:
+            print(f"   Error: {info.error}")
+
+    # Show active tokenizer
+    active = get_tokenizer_info()
+    print(f"\nActive Tokenizer: {active.name}")
+    print(f"   Accuracy: {active.accuracy}")
+
+    # Test token counting
+    if args.test_text:
+        test_text = args.test_text
+    else:
+        test_text = "Hello, world! This is a test of the Claude tokenizer system."
+
+    print(f"\nTest: {test_text!r}")
+    print(f"   Tokens: {count_tokens(test_text)}")
+
+    # Installation hints
+    if not get_all_tokenizers_status()["claude-hf"].is_available:
+        print("\nFor best accuracy, install the Claude tokenizer:")
+        print("   pip install transformers tokenizers")
+
+    return 0
+
+
 def main():
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
@@ -507,6 +553,17 @@ Examples:
     # Config command
     config_parser = subparsers.add_parser("config", help="Show configuration")
     config_parser.set_defaults(func=show_config)
+
+    # Tokenizer status subcommand
+    tokenizer_parser = subparsers.add_parser(
+        'tokenizer',
+        help='Show tokenizer status and diagnostics'
+    )
+    tokenizer_parser.add_argument(
+        '--test-text', '-t',
+        help='Test text to tokenize'
+    )
+    tokenizer_parser.set_defaults(func=show_tokenizer_status)
 
     args = parser.parse_args()
 

@@ -29,7 +29,7 @@ WARNINGS=0
 # -----------------------------------------------------------------------------
 # Check 1: Python
 # -----------------------------------------------------------------------------
-echo -e "${CYAN}[1/8] Python${NC}"
+echo -e "${CYAN}[1/9] Python${NC}"
 
 # Find Python using the same logic as installer
 PYTHON_CMD=""
@@ -57,7 +57,7 @@ fi
 # -----------------------------------------------------------------------------
 # Check 2: Dependencies
 # -----------------------------------------------------------------------------
-echo -e "\n${CYAN}[2/8] Python Dependencies${NC}"
+echo -e "\n${CYAN}[2/9] Python Dependencies${NC}"
 
 if [ -n "$PYTHON_CMD" ]; then
     for pkg in rich aiohttp; do
@@ -71,11 +71,18 @@ if [ -n "$PYTHON_CMD" ]; then
         fi
     done
 
-    # tiktoken is optional
-    if $PYTHON_CMD -c "import tiktoken" 2>/dev/null; then
-        echo -e "  ${GREEN}[OK]${NC} tiktoken (optional)"
+    # Check tokenizers (in order of preference)
+    echo ""
+    echo -e "  ${CYAN}Token Counting:${NC}"
+    if $PYTHON_CMD -c "from transformers import GPT2TokenizerFast" 2>/dev/null; then
+        echo -e "  ${GREEN}[OK]${NC} transformers (Claude tokenizer, ~95% accuracy)"
+    elif $PYTHON_CMD -c "import tiktoken" 2>/dev/null; then
+        echo -e "  ${YELLOW}[WARN]${NC} tiktoken only (legacy, ~70-85% accuracy)"
+        echo "        Consider: pip install transformers tokenizers"
+        WARNINGS=$((WARNINGS + 1))
     else
-        echo -e "  ${YELLOW}[WARN]${NC} tiktoken not installed (optional - token counting)"
+        echo -e "  ${YELLOW}[WARN]${NC} No tokenizer installed (using character estimation)"
+        echo "        Run: pip install transformers tokenizers"
         WARNINGS=$((WARNINGS + 1))
     fi
 else
@@ -85,7 +92,7 @@ fi
 # -----------------------------------------------------------------------------
 # Check 3: Installation Directories
 # -----------------------------------------------------------------------------
-echo -e "\n${CYAN}[3/8] Installation${NC}"
+echo -e "\n${CYAN}[3/9] Installation${NC}"
 
 DASHBOARD_DIR="$HOME/.claude/dashboard"
 AGENTS_DIR="$HOME/.claude/agents"
@@ -122,7 +129,7 @@ fi
 # -----------------------------------------------------------------------------
 # Check 4: PATH
 # -----------------------------------------------------------------------------
-echo -e "\n${CYAN}[4/8] PATH Configuration${NC}"
+echo -e "\n${CYAN}[4/9] PATH Configuration${NC}"
 
 if command -v agent-dashboard &> /dev/null; then
     echo -e "  ${GREEN}[OK]${NC} agent-dashboard in PATH"
@@ -141,7 +148,7 @@ fi
 # -----------------------------------------------------------------------------
 # Check 5: Claude Code CLI
 # -----------------------------------------------------------------------------
-echo -e "\n${CYAN}[5/8] Claude Code CLI${NC}"
+echo -e "\n${CYAN}[5/9] Claude Code CLI${NC}"
 
 if command -v claude &> /dev/null; then
     echo -e "  ${GREEN}[OK]${NC} Claude Code CLI installed"
@@ -153,7 +160,7 @@ fi
 # -----------------------------------------------------------------------------
 # Check 6: Hooks Configuration
 # -----------------------------------------------------------------------------
-echo -e "\n${CYAN}[6/8] Hooks Configuration${NC}"
+echo -e "\n${CYAN}[6/9] Hooks Configuration${NC}"
 
 SETTINGS_FILE="$HOME/.claude/settings.json"
 if [ -f "$SETTINGS_FILE" ]; then
@@ -170,7 +177,7 @@ fi
 # -----------------------------------------------------------------------------
 # Check 7: Port 4200
 # -----------------------------------------------------------------------------
-echo -e "\n${CYAN}[7/8] Dashboard Server${NC}"
+echo -e "\n${CYAN}[7/9] Dashboard Server${NC}"
 
 if command -v curl &> /dev/null; then
     if curl -sf http://localhost:4200/health > /dev/null 2>&1; then
@@ -192,7 +199,7 @@ fi
 # -----------------------------------------------------------------------------
 # Check 8: Database
 # -----------------------------------------------------------------------------
-echo -e "\n${CYAN}[8/8] Database${NC}"
+echo -e "\n${CYAN}[8/9] Database${NC}"
 
 DB_FILE="$HOME/.claude/agent_dashboard.db"
 if [ -f "$DB_FILE" ]; then
@@ -200,6 +207,28 @@ if [ -f "$DB_FILE" ]; then
     echo -e "  ${GREEN}[OK]${NC} Database exists ($size)"
 else
     echo -e "  ${CYAN}[INFO]${NC} No database yet (created on first event)"
+fi
+
+# -----------------------------------------------------------------------------
+# Check 9: Tokenizer Status
+# -----------------------------------------------------------------------------
+echo -e "\n${CYAN}[9/9] Tokenizer${NC}"
+
+if [ -n "$PYTHON_CMD" ]; then
+    if $PYTHON_CMD -c "from transformers import GPT2TokenizerFast; GPT2TokenizerFast.from_pretrained('Xenova/claude-tokenizer')" 2>/dev/null; then
+        echo -e "  ${GREEN}[OK]${NC} Claude tokenizer (HuggingFace): Available (~95% accuracy)"
+    elif $PYTHON_CMD -c "import tiktoken" 2>/dev/null; then
+        echo -e "  ${YELLOW}[WARN]${NC} tiktoken fallback: Available (~70-85% accuracy)"
+        echo "        Consider installing transformers for better accuracy:"
+        echo "        pip install transformers tokenizers"
+        WARNINGS=$((WARNINGS + 1))
+    else
+        echo -e "  ${YELLOW}[WARN]${NC} No tokenizer installed (using character estimation)"
+        echo "        Run: pip install transformers tokenizers"
+        WARNINGS=$((WARNINGS + 1))
+    fi
+else
+    echo -e "  ${YELLOW}[SKIP]${NC} Cannot check (Python not found)"
 fi
 
 # -----------------------------------------------------------------------------

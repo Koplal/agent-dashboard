@@ -36,16 +36,36 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Accurate Claude tokenizer (RECOMMENDED)
+tokenizer = [
+    "transformers>=4.35.0",
+    "tokenizers>=0.15.0",
+]
+
+# Legacy tiktoken support
 tiktoken = [
     "tiktoken>=0.5.0",
 ]
+
+# Full Anthropic API support (includes official token counting)
+anthropic = [
+    "anthropic>=0.39.0",
+]
+
+# Development dependencies
 dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
+    "transformers>=4.35.0",
     "tiktoken>=0.5.0",
 ]
+
+# All optional features
 all = [
+    "transformers>=4.35.0",
+    "tokenizers>=0.15.0",
     "tiktoken>=0.5.0",
+    "anthropic>=0.39.0",
     "uvloop>=0.19.0; platform_system != 'Windows'",
 ]
 

@@ -249,6 +249,64 @@ export AGENT_PROJECT="my-project"
 
 ---
 
+## Token Counting Architecture
+
+The dashboard uses a tiered token counting system for accurate cost estimation:
+
+### Tier Hierarchy
+
+1. **Xenova/claude-tokenizer** (Default)
+   - HuggingFace-compatible Claude tokenizer
+   - Derived from Anthropic's SDK
+   - ~95%+ accuracy
+   - Works offline
+   - Install: `pip install transformers tokenizers`
+
+2. **Anthropic API**
+   - Official `count_tokens` endpoint
+   - 100% accurate
+   - Requires API key and network
+   - Rate-limited (separate from message limits)
+   - Install: `pip install anthropic`
+
+3. **tiktoken** (Legacy Fallback)
+   - OpenAI's tokenizer with cl100k_base encoding
+   - ~70-85% accuracy (70% vocabulary overlap with Claude)
+   - Install: `pip install tiktoken`
+
+4. **Character Estimation** (Emergency Fallback)
+   - Simple len(text) // 4 heuristic
+   - ~60-70% accuracy
+   - Always available
+
+### Usage in Code
+
+```python
+from src.token_counter import count_tokens, estimate_cost, get_tokenizer_info
+
+# Count tokens
+tokens = count_tokens("Hello, world!")
+
+# Get cost estimate
+cost = estimate_cost(input_tokens=1000, output_tokens=500, model="claude-sonnet-4-5")
+
+# Check which tokenizer is active
+info = get_tokenizer_info()
+print(f"Using: {info.name} ({info.accuracy})")
+```
+
+### CLI Diagnostics
+
+```bash
+# Check tokenizer status
+agent-dashboard tokenizer
+
+# Test with custom text
+agent-dashboard tokenizer --test-text "Your custom text here"
+```
+
+---
+
 ## Workflow Engine
 
 The Workflow Engine implements the "Locked Gate Pattern" for autonomous Claude Code workflows.

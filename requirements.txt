@@ -1,5 +1,5 @@
 # =============================================================================
-# Agent Dashboard v2.1 - Python Dependencies
+# Agent Dashboard v2.2 - Python Dependencies
 # =============================================================================
 # Install: pip install -r requirements.txt
 # Or with uv: uv pip install -r requirements.txt
@@ -8,8 +8,10 @@
 rich>=13.0.0                    # Terminal TUI rendering
 aiohttp>=3.9.0                  # Async web server + WebSocket
 
-# Optional but recommended
-tiktoken>=0.5.0                 # Accurate token counting (falls back to estimation)
+# Optional but recommended for accurate token counting:
+# pip install transformers tokenizers
+# Or for legacy support:
+# pip install tiktoken
 
 # Development dependencies
 pytest>=7.0.0                   # Testing framework
