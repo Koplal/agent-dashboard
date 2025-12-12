@@ -3,7 +3,7 @@ name: judge-adversarial
 description: Devil's advocate for 5+ judge panels. Actively attacks and stress-tests the work product.
 tools: Read, Grep, Glob, Bash
 model: sonnet
-version: 2.2.0
+version: 2.2.1
 tier: 2
 ---
 

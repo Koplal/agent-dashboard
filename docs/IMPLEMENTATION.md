@@ -97,7 +97,7 @@ The Agent Dashboard is a multi-agent workflow orchestration system for Claude Co
 
 ```
 rich>=13.0.0      # Terminal UI
-aiohttp>=3.8.0    # Web server
+aiohttp>=3.9.0    # Web server
 tiktoken>=0.5.0   # Token counting (optional, falls back to estimation)
 pytest>=7.0.0     # Testing (development)
 ```

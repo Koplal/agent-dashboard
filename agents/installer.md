@@ -3,7 +3,7 @@ name: installer
 description: "Setup specialist for installing tools, packages, and configuring settings. Use PROACTIVELY for any installation or configuration tasks."
 tools: Read, Write, Edit, Bash, Grep, Glob
 model: haiku
-version: 2.2.0
+version: 2.2.1
 tier: 3
 ---
 

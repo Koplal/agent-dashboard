@@ -4,7 +4,7 @@ description: "Expert synthesizer that combines multiple research outputs into co
 tools: Read, Grep, Glob
 model: opus
 receives_summaries_only: true
-version: 2.2.0
+version: 2.2.1
 tier: 1
 ---
 

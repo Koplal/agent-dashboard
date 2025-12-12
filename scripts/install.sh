@@ -17,7 +17,7 @@
 # USAGE:
 #   ./scripts/install.sh
 #
-# VERSION: 2.2.0
+# VERSION: 2.2.1
 # =============================================================================
 
 # Exit immediately if any command fails

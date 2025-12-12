@@ -30,7 +30,7 @@ FROM python:3.11-slim
 # Image metadata
 LABEL org.opencontainers.image.title="Agent Dashboard"
 LABEL org.opencontainers.image.description="Real-time monitoring for Claude Code multi-agent workflows"
-LABEL org.opencontainers.image.version="2.1.0"
+LABEL org.opencontainers.image.version="2.2.1"
 LABEL org.opencontainers.image.source="https://github.com/Koplal/agent-dashboard"
 LABEL org.opencontainers.image.licenses="MIT"
 

@@ -16,7 +16,7 @@ Dependencies:
     - rich: Terminal UI rendering
     - aiohttp: Web server (optional)
 
-Version: 2.2.0
+Version: 2.2.1
 """
 
 import argparse
@@ -290,7 +290,7 @@ def run_doctor(args):
         if len(agent_files) >= 14:
             print(f"  [OK] {len(agent_files)} agents installed")
         else:
-            print(f"  [WARN] {len(agent_files)}/14 agents installed")
+            print(f"  [WARN] {len(agent_files)}/20 agents installed")
             warnings += 1
     else:
         print(f"  [FAIL] Agents directory not found")

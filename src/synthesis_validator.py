@@ -20,7 +20,7 @@ Loop Counter Logic:
 Dependencies:
     - validation: Base validation classes (ValidationResult, ValidationAction)
 
-Version: 2.2.0
+Version: 2.2.1
 """
 
 import logging

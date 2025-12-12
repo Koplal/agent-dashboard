@@ -9,14 +9,14 @@ Features:
 - Token usage and cost monitoring
 - Event timeline with color-coded agents
 - Session management across multiple projects
-- Support for 14 agents across 3 tiers (Opus/Sonnet/Haiku)
+- Support for 20 agents across 3 tiers (Opus/Sonnet/Haiku)
 
 Dependencies:
     - rich: Terminal UI components (Console, Layout, Live, Panel, Table)
     - sqlite3: Event persistence
     - aiohttp: HTTP server for receiving events (optional)
 
-Version: 2.2.0
+Version: 2.2.1
 """
 
 import asyncio

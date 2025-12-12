@@ -20,7 +20,7 @@ Dependencies:
     - aiohttp: Async HTTP/WebSocket server
     - workflow_engine: Workflow orchestration (optional)
 
-Version: 2.2.0
+Version: 2.2.1
 """
 
 import asyncio
@@ -981,12 +981,12 @@ class WebDashboard:
         site = web.TCPSite(runner, "0.0.0.0", self.port)
         await site.start()
         
-        print(f"🚀 Agent Dashboard running at http://localhost:{self.port}")
-        print(f"📡 Event endpoint: http://localhost:{self.port}/events")
-        print(f"🔌 WebSocket: ws://localhost:{self.port}/ws")
+        print(f"[*] Agent Dashboard running at http://localhost:{self.port}")
+        print(f"[>] Event endpoint: http://localhost:{self.port}/events")
+        print(f"[~] WebSocket: ws://localhost:{self.port}/ws")
         if self.workflow_engine:
-            print(f"🔧 Workflow API: http://localhost:{self.port}/api/workflow")
-            print(f"💰 Budget API: http://localhost:{self.port}/api/budget")
+            print(f"[+] Workflow API: http://localhost:{self.port}/api/workflow")
+            print(f"[$] Budget API: http://localhost:{self.port}/api/budget")
         
         # Start stats broadcaster
         asyncio.create_task(self.stats_broadcaster())
@@ -1011,7 +1011,7 @@ def main():
     try:
         asyncio.run(dashboard.run())
     except KeyboardInterrupt:
-        print("\n👋 Server stopped")
+        print("\n[x] Server stopped")
 
 
 if __name__ == "__main__":

@@ -19,7 +19,7 @@ Dependencies:
     - tiktoken (fallback): pip install tiktoken
     - anthropic (optional API): pip install anthropic
 
-Version: 2.2.0
+Version: 2.2.1
 """
 
 import os

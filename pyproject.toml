@@ -1,11 +1,11 @@
 # =============================================================================
-# Agent Dashboard v2.2 - Python Project Configuration
+# Agent Dashboard v2.2.1 - Python Project Configuration
 # =============================================================================
 # Modern Python packaging using pyproject.toml (PEP 517/518/621)
 
 [project]
 name = "agent-dashboard"
-version = "2.2.0"
+version = "2.2.1"
 description = "Real-time monitoring for Claude Code multi-agent workflows"
 readme = "README.md"
 license = {text = "MIT"}

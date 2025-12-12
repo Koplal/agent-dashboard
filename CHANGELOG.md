@@ -2,6 +2,34 @@
 
 All notable changes to Agent Dashboard are documented here.
 
+## [2.2.1] - 2025-12-11
+
+### Added
+- **docs/EXAMPLE_USAGE.md** - Comprehensive usage guide with:
+  - Complete workflow examples using plain language prompts
+  - Multi-agent parallel execution walkthrough
+  - Hook troubleshooting guide with common issues and solutions
+  - Command-line reference for all operations
+- Panel Judge Workflow documentation section in README
+- New "Panel Judges" subsection in Agent Registry with 6 agents:
+  - `panel-coordinator` - Orchestrates evaluation panels
+  - `judge-technical` - Technical accuracy evaluation
+  - `judge-completeness` - Coverage and gap analysis
+  - `judge-practicality` - Real-world usefulness evaluation
+  - `judge-adversarial` - Stress-testing and vulnerability finding
+  - `judge-user` - End-user perspective evaluation
+- Missing src/ modules documented in repository structure:
+  - token_counter.py, validation.py, compression_gate.py
+  - panel_selector.py, synthesis_validator.py
+- test_token_counter.py added to test suite documentation
+
+### Fixed
+- Agent count updated from 14 to 20 across all documentation
+- Dockerfile version label updated from 2.1.0 to 2.2.1
+- Test file count updated from 8 to 9 in repository structure
+- aiohttp version requirement corrected from >=3.8.0 to >=3.9.0
+- All version strings updated to 2.2.1 across codebase
+
 ## [2.2.0] - 2025-12-11
 
 ### Changed

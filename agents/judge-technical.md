@@ -3,7 +3,7 @@ name: judge-technical
 description: Technical accuracy evaluator for panel reviews. Focuses solely on factual accuracy, technical feasibility, and implementation soundness.
 tools: Read, Grep, Glob, Bash
 model: sonnet
-version: 2.2.0
+version: 2.2.1
 tier: 2
 ---
 

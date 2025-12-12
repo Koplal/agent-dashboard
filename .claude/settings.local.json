@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc:*)",
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(python -m pytest:*)",
+      "Bash(grep:*)",
+      "Bash(python:*)",
+      "Bash(cat:*)",
+      "Bash(for f in agents/*.md)",
+      "Bash(do sed -i 's/version: 2.2.0/version: 2.2.1/' \"$f\")",
+      "Bash(done)",
+      "Bash(./scripts/install.sh:*)"
+    ]
+  }
+}

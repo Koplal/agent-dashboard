@@ -1,4 +1,4 @@
-# Agent Dashboard v2.2
+# Agent Dashboard v2.2.1
 
 > **Quick Install:** `git clone https://github.com/Koplal/agent-dashboard.git && cd agent-dashboard && ./scripts/install.sh`
 >
@@ -21,7 +21,8 @@ A comprehensive multi-agent workflow framework implementing **Test-Driven Develo
 - [TDD Philosophy](#-tdd-philosophy)
 - [Quick Start](#-quick-start)
 - [Architecture](#-architecture)
-- [Agent Registry](#-agent-registry-14-agents)
+- [Agent Registry](#-agent-registry-20-agents)
+- [Panel Judge Workflow](#-panel-judge-workflow)
 - [Repository Structure](#-repository-structure)
 - [Dependencies](#-dependencies)
 - [Configuration](#-configuration)
@@ -44,7 +45,7 @@ A comprehensive multi-agent workflow framework implementing **Test-Driven Develo
 | Feature | Description |
 |---------|-------------|
 | **TDD Workflow** | Test-Driven Development with immutable tests |
-| **Multi-Agent Orchestration** | 14 specialized agents across 3 tiers (Opus/Sonnet/Haiku) |
+| **Multi-Agent Orchestration** | 20 specialized agents across 3 tiers (Opus/Sonnet/Haiku) |
 | **Real-time Monitoring** | Terminal TUI (Rich) and Web Dashboard with WebSocket updates |
 | **7-Phase Workflow** | SPEC → TEST_DESIGN → TEST_IMPL → IMPLEMENT → VALIDATE → REVIEW → DELIVER |
 | **Cost Governance** | Circuit breaker pattern with budget enforcement |
@@ -284,7 +285,7 @@ Claude Code Session
 
 ---
 
-## Agent Registry (14 Agents)
+## Agent Registry (20 Agents)
 
 ### Tier 1 - Opus (Strategic/Quality) `$$$`
 
@@ -304,6 +305,19 @@ Claude Code Session
 | `research-judge` | ● | Evaluator | Research quality scoring |
 | `claude-md-auditor` | ● | Auditor | Documentation file auditing |
 | `implementer` | ● | Builder | Execute approved plans (IMPLEMENT MODE) |
+
+### Panel Judges (Tier 2 - Sonnet) `$$`
+
+The Panel Judge system provides automated quality evaluation for non-testable work products. Judges are spawned in parallel by the panel-coordinator based on task risk scoring.
+
+| Agent | Symbol | Role | Description |
+|-------|--------|------|-------------|
+| `panel-coordinator` | ● | Coordinator | Orchestrates panels with automatic size selection |
+| `judge-technical` | ● | Tech Judge | Technical accuracy and feasibility |
+| `judge-completeness` | ● | Coverage Judge | Completeness and gap analysis |
+| `judge-practicality` | ● | Practicality Judge | Real-world usefulness and clarity |
+| `judge-adversarial` | ● | Attack Judge | Stress-testing and vulnerability finding |
+| `judge-user` | ● | User Judge | End-user perspective and experience |
 
 ### Tier 3 - Haiku (Execution/Routine) `$`
 
@@ -358,11 +372,87 @@ Claude Code Session
 
 ---
 
+## Panel Judge Workflow
+
+The Panel Judge system automatically scales quality evaluation based on task risk. It evaluates **non-testable work products** (plans, designs, documentation, decisions) where unit tests cannot verify correctness.
+
+### Risk Scoring
+
+Tasks are scored on 4 factors to determine panel size:
+
+| Factor | Low | Medium | High |
+|--------|-----|--------|------|
+| **Reversibility** | Reversible (0) | - | Irreversible (4) |
+| **Blast Radius** | Internal (0) | Team (1), Org (2) | External (3) |
+| **Domain** | Business/Software (1) | - | Hardware/Mixed (2) |
+| **Impact** | Low (0) | Medium (1), High (2) | Critical (4) |
+
+### Panel Size Selection
+
+| Risk Score | Panel Size | Judges |
+|------------|------------|--------|
+| 0-3 (Low) | 3 judges | technical, completeness, practicality |
+| 4-7 (Medium) | 5 judges | + adversarial, user |
+| 8+ (High) | 7 judges | + domain-expert, risk |
+
+### Workflow Sequence
+
+```
+1. TRIGGER → Task requires quality evaluation (non-testable work product)
+2. SCORE   → Calculate risk from metadata or infer from keywords
+3. SELECT  → Determine panel size (3, 5, or 7 judges)
+4. SPAWN   → Launch judges in PARALLEL (all receive identical input)
+5. EVALUATE → Each judge scores independently (max 500 tokens each)
+6. AGGREGATE → Collect verdicts, calculate consensus level
+7. VERDICT → Apply majority voting rules
+8. REPORT  → Generate audit trail with recommendations
+```
+
+### Verdict Rules
+
+| Verdict | Condition |
+|---------|-----------|
+| **APPROVED** | Majority PASS, no FAIL votes |
+| **CONDITIONAL** | Majority PASS/CONDITIONAL, max 1 FAIL |
+| **REVISION REQUIRED** | Majority CONDITIONAL or 2+ FAILs |
+| **REJECTED** | Majority FAIL |
+
+### Override Policy
+
+- Users **CAN** escalate panel size (request larger panel)
+- Users **CANNOT** downgrade (request smaller than calculated)
+- All overrides are logged for audit
+
+### Triggering a Panel Evaluation
+
+Panel evaluations are triggered when:
+- A task is flagged as non-testable (plans, designs, documentation)
+- The orchestrator delegates quality review for critical decisions
+- A user explicitly requests panel evaluation via the API
+
+```bash
+# Example: Create a panel evaluation via API
+curl -X POST http://localhost:4200/api/panel \
+  -H "Content-Type: application/json" \
+  -d '{
+    "subject": "API redesign proposal",
+    "description": "Breaking change to authentication endpoints",
+    "metadata": {
+      "reversible": false,
+      "blast_radius": "external",
+      "domain": "software",
+      "impact": "high"
+    }
+  }'
+```
+
+---
+
 ## Repository Structure
 
 ```
 agent-dashboard/
-├── agents/                         # Agent definitions (14 agents)
+├── agents/                         # Agent definitions (20 agents)
 │   ├── orchestrator.md             # ◆ Tier 1 - Strategic coordinator
 │   ├── synthesis.md                # ◆ Tier 1 - Research synthesizer
 │   ├── critic.md                   # ◆ Tier 1 - Devil's advocate
@@ -372,6 +462,12 @@ agent-dashboard/
 │   ├── research-judge.md           # ● Tier 2 - Quality evaluation
 │   ├── claude-md-auditor.md        # ● Tier 2 - Doc auditing
 │   ├── implementer.md              # ● Tier 2 - Code execution
+│   ├── panel-coordinator.md        # ● Tier 2 - Panel orchestration
+│   ├── judge-technical.md          # ● Tier 2 - Technical accuracy
+│   ├── judge-completeness.md       # ● Tier 2 - Coverage evaluation
+│   ├── judge-practicality.md       # ● Tier 2 - Usefulness evaluation
+│   ├── judge-adversarial.md        # ● Tier 2 - Stress testing
+│   ├── judge-user.md               # ● Tier 2 - User perspective
 │   ├── web-search-researcher.md    # ○ Tier 3 - Web searches
 │   ├── summarizer.md               # ○ Tier 3 - Compression
 │   ├── test-writer.md              # ○ Tier 3 - Test generation
@@ -381,7 +477,12 @@ agent-dashboard/
 ├── src/                            # Core Python modules
 │   ├── cli.py                      # Unified CLI interface
 │   ├── web_server.py               # Web dashboard + REST API
-│   └── workflow_engine.py          # Multi-agent orchestration
+│   ├── workflow_engine.py          # Multi-agent orchestration
+│   ├── token_counter.py            # Token counting with tiered fallback
+│   ├── validation.py               # Six-layer validation stack
+│   ├── compression_gate.py         # Token budgeting for handoffs
+│   ├── panel_selector.py           # Judge panel selection logic
+│   └── synthesis_validator.py      # Synthesis output validation
 │
 ├── dashboard/
 │   └── agent_monitor.py            # Terminal TUI dashboard (Rich)
@@ -389,7 +490,7 @@ agent-dashboard/
 ├── hooks/
 │   └── send_event.py               # Event capture + token tracking
 │
-├── tests/                          # Test suite (225 tests across 8 files)
+├── tests/                          # Test suite (9 test files)
 │   ├── test_workflow_engine.py     # Workflow engine tests (39)
 │   ├── test_compression_gate.py    # Compression gate tests (37)
 │   ├── test_synthesis_validator.py # Synthesis validator tests (32)
@@ -397,6 +498,7 @@ agent-dashboard/
 │   ├── test_validation.py          # Base validation tests (31)
 │   ├── test_send_event.py          # Event hook tests (22)
 │   ├── test_cross_platform.py      # Cross-platform tests (20)
+│   ├── test_token_counter.py       # Token counting tests
 │   ├── test_integration.py         # Integration tests (13)
 │   └── __init__.py
 │
@@ -418,7 +520,7 @@ agent-dashboard/
 
 ```
 rich>=13.0.0        # Terminal UI rendering
-aiohttp>=3.8.0      # Async web server + WebSocket
+aiohttp>=3.9.0      # Async web server + WebSocket
 ```
 
 ### Recommended
@@ -846,17 +948,20 @@ For more troubleshooting, see [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md#tr
 | Document | Description |
 |----------|-------------|
 | [README.md](README.md) | Quick start and overview (this file) |
+| [docs/EXAMPLE_USAGE.md](docs/EXAMPLE_USAGE.md) | **Complete usage guide with examples and hook troubleshooting** |
 | [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) | Complete deployment guide with project integration |
 | [docs/WORKFLOW_FRAMEWORK.md](docs/WORKFLOW_FRAMEWORK.md) | Design patterns, governance, and validation architecture |
 
 ### Quick Links
 
+- **Getting Started**: [docs/EXAMPLE_USAGE.md](docs/EXAMPLE_USAGE.md) (recommended first read)
 - **Installation**: [Quick Start](#-quick-start) | [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md#installation)
 - **Configuration**: [Configuration](#-configuration) | [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md#configuration)
-- **Agent Setup**: [Agent Registry](#-agent-registry-14-agents) | [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md#agent-setup)
+- **Agent Setup**: [Agent Registry](#-agent-registry-20-agents) | [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md#agent-setup)
 - **API Reference**: [API Reference](#-api-reference) | [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md#api-reference)
 - **Workflow Engine**: [Workflow Engine](#-workflow-engine) | [docs/WORKFLOW_FRAMEWORK.md](docs/WORKFLOW_FRAMEWORK.md)
 - **Testing**: [Testing](#-testing) | [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md#testing)
+- **Hook Issues**: [docs/EXAMPLE_USAGE.md#troubleshooting-hooks](docs/EXAMPLE_USAGE.md#troubleshooting-hooks)
 - **Troubleshooting**: [Troubleshooting](#-troubleshooting) | [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md#troubleshooting)
 
 ---

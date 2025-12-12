@@ -3,7 +3,7 @@ name: web-search-researcher
 description: "Deep web researcher using WebSearch + WebFetch. Crawls actual pages, cross-verifies sources, rejects old data. Use when you need to read full documents or verify across multiple sites."
 tools: WebSearch, WebFetch, mcp__time__get_current_time
 model: haiku
-version: 2.2.0
+version: 2.2.1
 tier: 3
 ---
 

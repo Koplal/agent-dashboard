@@ -2,9 +2,9 @@
 
 This document describes the Test-Driven Development (TDD) workflow framework implemented in the Agent Dashboard for autonomous Claude Code platforms.
 
-> **Version:** 2.2.0
+> **Version:** 2.2.1
 > **Last Updated:** 2025-01-09
-> **Agents:** 14 specialized agents across 3 tiers
+> **Agents:** 20 specialized agents across 3 tiers
 > **Philosophy:** Test-Driven Development
 
 ## TDD Philosophy
@@ -261,7 +261,7 @@ if projected > budget_limit:
 | `GET /api/workflow/{id}/governance` | Governance | Get CLAUDE.md |
 | `GET /api/budget` | Budget | Get budget status |
 
-### Agent Registry (14 Agents)
+### Agent Registry (20 Agents)
 
 | Tier | Agents | Model |
 |------|--------|-------|
