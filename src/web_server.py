@@ -27,9 +27,13 @@ import asyncio
 import json
 import os
 import sqlite3
+import socket
+import subprocess
+import sys
+import re
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, List, Set, Optional, Any
+from typing import Dict, List, Set, Optional, Any, Tuple
 from dataclasses import dataclass, asdict
 import argparse
 
@@ -47,6 +51,235 @@ try:
     HAS_WORKFLOW_ENGINE = True
 except ImportError:
     HAS_WORKFLOW_ENGINE = False
+
+
+# =============================================================================
+# PORT CONFLICT HANDLING UTILITIES
+# =============================================================================
+
+def is_port_available(port: int, host: str = "0.0.0.0") -> bool:
+    """Check if a port is available for binding.
+
+    Args:
+        port: The port number to check
+        host: The host address to bind to
+
+    Returns:
+        True if port is available, False if in use
+    """
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            sock.bind((host, port))
+            return True
+    except OSError:
+        return False
+
+
+def find_available_port(start_port: int, max_attempts: int = 10) -> Optional[int]:
+    """Find the next available port starting from start_port.
+
+    Args:
+        start_port: The port number to start searching from
+        max_attempts: Maximum number of ports to try
+
+    Returns:
+        An available port number, or None if no port found
+    """
+    for offset in range(max_attempts):
+        port = start_port + offset
+        if is_port_available(port):
+            return port
+    return None
+
+
+def get_process_using_port(port: int) -> Optional[Dict[str, Any]]:
+    """Get information about the process using a specific port.
+
+    Args:
+        port: The port number to check
+
+    Returns:
+        Dict with 'pid', 'name' keys if found, None otherwise
+    """
+    try:
+        if sys.platform == "win32":
+            # Windows: use netstat to find PID
+            result = subprocess.run(
+                ["netstat", "-ano"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+
+            for line in result.stdout.splitlines():
+                if f":{port}" in line and "LISTENING" in line:
+                    parts = line.split()
+                    if parts:
+                        pid = int(parts[-1])
+                        # Get process name
+                        proc_result = subprocess.run(
+                            ["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
+                            capture_output=True,
+                            text=True,
+                            timeout=10
+                        )
+                        proc_name = "unknown"
+                        if proc_result.stdout.strip():
+                            # Parse CSV output: "name.exe","pid",...
+                            match = re.match(r'"([^"]+)"', proc_result.stdout.strip())
+                            if match:
+                                proc_name = match.group(1)
+                        return {"pid": pid, "name": proc_name}
+        else:
+            # Unix: use lsof
+            result = subprocess.run(
+                ["lsof", "-i", f":{port}", "-t"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            if result.stdout.strip():
+                pid = int(result.stdout.strip().split()[0])
+                # Get process name
+                proc_result = subprocess.run(
+                    ["ps", "-p", str(pid), "-o", "comm="],
+                    capture_output=True,
+                    text=True,
+                    timeout=10
+                )
+                proc_name = proc_result.stdout.strip() or "unknown"
+                return {"pid": pid, "name": proc_name}
+    except Exception as e:
+        print(f"Warning: Could not identify process on port {port}: {e}")
+
+    return None
+
+
+def kill_process_on_port(port: int, force: bool = False) -> bool:
+    """Kill the process using a specific port.
+
+    Args:
+        port: The port number
+        force: If True, kill without confirmation
+
+    Returns:
+        True if process was killed, False otherwise
+    """
+    proc_info = get_process_using_port(port)
+    if not proc_info:
+        return True  # No process to kill
+
+    pid = proc_info["pid"]
+    name = proc_info["name"]
+
+    if not force:
+        print(f"\n[!] Port {port} is in use by {name} (PID: {pid})")
+        try:
+            response = input("    Kill this process? [y/N]: ").strip().lower()
+            if response != 'y':
+                print("    Aborted.")
+                return False
+        except (EOFError, KeyboardInterrupt):
+            print("\n    Aborted.")
+            return False
+
+    try:
+        if sys.platform == "win32":
+            subprocess.run(["taskkill", "/F", "/PID", str(pid)], check=True)
+        else:
+            os.kill(pid, 9)  # SIGKILL
+
+        # Wait a moment for the port to be released
+        import time
+        time.sleep(0.5)
+
+        if is_port_available(port):
+            print(f"[+] Killed process {name} (PID: {pid})")
+            return True
+        else:
+            print(f"[-] Failed to free port {port}")
+            return False
+    except Exception as e:
+        print(f"[-] Error killing process: {e}")
+        return False
+
+
+def check_port_and_handle(port: int, force: bool = False, auto_port: bool = False) -> Tuple[int, bool]:
+    """Check port availability and handle conflicts based on flags.
+
+    Args:
+        port: The desired port
+        force: Kill existing process if True
+        auto_port: Find alternative port if True
+
+    Returns:
+        Tuple of (port_to_use, success)
+    """
+    if is_port_available(port):
+        return port, True
+
+    proc_info = get_process_using_port(port)
+    proc_desc = f"{proc_info['name']} (PID: {proc_info['pid']})" if proc_info else "unknown process"
+
+    if force:
+        print(f"[*] Port {port} in use by {proc_desc}, killing...")
+        if kill_process_on_port(port, force=True):
+            return port, True
+        else:
+            print(f"[-] Failed to free port {port}")
+            return port, False
+
+    if auto_port:
+        print(f"[*] Port {port} in use by {proc_desc}, finding alternative...")
+        alt_port = find_available_port(port + 1)
+        if alt_port:
+            print(f"[+] Using port {alt_port} instead")
+            return alt_port, True
+        else:
+            print(f"[-] No available ports found in range {port+1}-{port+10}")
+            return port, False
+
+    # Neither flag set - show interactive prompt
+    print(f"\n{'='*60}")
+    print(f"Port {port} is already in use")
+    print(f"{'='*60}")
+    print(f"\n  Process: {proc_desc}")
+    print(f"\n  Options:")
+    print(f"    [1] Kill the existing process and use port {port}")
+    print(f"    [2] Use a different port automatically")
+    print(f"    [3] Cancel and exit")
+    print()
+
+    try:
+        choice = input("  Select an option [1/2/3]: ").strip()
+
+        if choice == "1":
+            print(f"\n[*] Killing process {proc_desc}...")
+            if kill_process_on_port(port, force=True):
+                return port, True
+            else:
+                print(f"[-] Failed to free port {port}")
+                return port, False
+
+        elif choice == "2":
+            print(f"\n[*] Finding alternative port...")
+            alt_port = find_available_port(port + 1)
+            if alt_port:
+                print(f"[+] Using port {alt_port} instead")
+                return alt_port, True
+            else:
+                print(f"[-] No available ports found in range {port+1}-{port+10}")
+                return port, False
+
+        else:
+            print("\n[x] Cancelled.")
+            return port, False
+
+    except (EOFError, KeyboardInterrupt):
+        print("\n\n[x] Cancelled.")
+        return port, False
+
 
 # Theme colors matching claude-powerline.json
 THEME = {
@@ -1000,14 +1233,34 @@ def main():
     if not HAS_AIOHTTP:
         print("Error: aiohttp is required. Install with: pip install aiohttp")
         return
-    
+
     parser = argparse.ArgumentParser(description="Agent Dashboard Web Server")
-    parser.add_argument("--port", type=int, default=4200, help="Server port")
+    parser.add_argument("--port", "-p", type=int, default=4200, help="Server port (default: 4200)")
     parser.add_argument("--db", type=str, help="Database path")
+    parser.add_argument(
+        "--force", "-f",
+        action="store_true",
+        help="Kill any existing process using the port"
+    )
+    parser.add_argument(
+        "--auto-port", "-a",
+        action="store_true",
+        help="Automatically find an available port if the specified one is in use"
+    )
     args = parser.parse_args()
-    
-    dashboard = WebDashboard(port=args.port)
-    
+
+    # Check port availability and handle conflicts
+    port, success = check_port_and_handle(
+        port=args.port,
+        force=args.force,
+        auto_port=args.auto_port
+    )
+
+    if not success:
+        sys.exit(1)
+
+    dashboard = WebDashboard(port=port)
+
     try:
         asyncio.run(dashboard.run())
     except KeyboardInterrupt:

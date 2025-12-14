@@ -137,7 +137,7 @@ For detailed documentation, see [docs/WORKFLOW_FRAMEWORK.md](docs/WORKFLOW_FRAME
 **Bash/Zsh Terminal:**
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/agent-dashboard.git
+git clone https://github.com/Koplal/agent-dashboard.git
 cd agent-dashboard
 
 # Run the automated installer
@@ -498,11 +498,12 @@ agent-dashboard/
 │   ├── test_validation.py          # Base validation tests (31)
 │   ├── test_send_event.py          # Event hook tests (22)
 │   ├── test_cross_platform.py      # Cross-platform tests (20)
-│   ├── test_token_counter.py       # Token counting tests
+│   ├── test_token_counter.py       # Token counting tests (24)
 │   ├── test_integration.py         # Integration tests (13)
 │   └── __init__.py
 │
 ├── docs/                           # Documentation
+│   ├── EXAMPLE_USAGE.md            # Complete usage guide with examples
 │   ├── IMPLEMENTATION.md           # Complete deployment guide
 │   └── WORKFLOW_FRAMEWORK.md       # Design patterns & governance
 │
@@ -733,6 +734,8 @@ python3 src/workflow_engine.py governance <workflow_id> -o CLAUDE.md
 
 ## API Reference
 
+> **Rate Limits:** The local dashboard server has no rate limits. All endpoints accept unlimited requests. For production deployments, consider adding rate limiting via a reverse proxy (nginx, Caddy) if exposing the API externally.
+
 ### Core Endpoints
 
 | Endpoint | Method | Description |
@@ -755,6 +758,13 @@ python3 src/workflow_engine.py governance <workflow_id> -o CLAUDE.md
 | `/api/workflow/{id}/prompt` | GET | Get orchestrator prompt |
 | `/api/workflow/{id}/governance` | GET | Get CLAUDE.md governance |
 | `/api/budget` | GET | Get budget status |
+
+### Panel Judge Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/panel` | POST | Create panel evaluation for non-testable work |
+| `/api/panel/{id}` | GET | Get panel evaluation status and results |
 
 ### Example Requests
 
@@ -810,7 +820,7 @@ curl -X POST http://localhost:4200/events \
 ### Running Tests
 
 ```bash
-# Run all tests (225 total)
+# Run all tests (249 total)
 # Use 'python' on Windows, 'python3' on Linux/macOS
 python -m pytest tests/ -v
 
@@ -832,10 +842,11 @@ python -m pytest tests/ --cov=src --cov=hooks --cov-report=html
 | `test_synthesis_validator.py` | 32 | Synthesis validation, finding consolidation |
 | `test_panel_selector.py` | 31 | Panel selection, judge scoring, consensus |
 | `test_validation.py` | 31 | Base validation, handoff schema, validation actions |
+| `test_token_counter.py` | 24 | Token counting, tokenizer fallback, cost estimation |
 | `test_send_event.py` | 22 | Token estimation, cost calculation, event sending |
 | `test_cross_platform.py` | 20 | Cross-platform compatibility, Python detection |
 | `test_integration.py` | 13 | End-to-end integration, API endpoints |
-| **Total** | **225** | |
+| **Total** | **249** | |
 
 ### Verification Commands
 

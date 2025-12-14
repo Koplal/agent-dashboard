@@ -30,37 +30,38 @@ from typing import Optional, Dict, Any
 import urllib.request
 import urllib.error
 
-# Import token counting from centralized module
+# Token counting - standalone implementation for hook usage
+# This avoids import path issues when running from ~/.claude/dashboard/hooks/
+_TIKTOKEN_AVAILABLE = False
+_encoding = None
+
 try:
-    from src.token_counter import count_tokens, estimate_cost as _estimate_cost_from_module, get_tokenizer_info
-    _TOKEN_COUNTER_AVAILABLE = True
-except ImportError:
-    # Fallback for standalone hook usage
-    _TOKEN_COUNTER_AVAILABLE = False
+    import tiktoken
+    _encoding = tiktoken.get_encoding("cl100k_base")
+    _TIKTOKEN_AVAILABLE = True
+except (ImportError, Exception):
+    pass  # Silently fall back to character estimation
 
-    # Inline fallback implementation
-    try:
-        import tiktoken
-        _encoding = tiktoken.get_encoding("cl100k_base")
-        _TIKTOKEN_AVAILABLE = True
-    except (ImportError, Exception):
-        _encoding = None
-        _TIKTOKEN_AVAILABLE = False
 
-    def count_tokens(text: str, **kwargs) -> int:
-        """Fallback token counter."""
-        if not text:
-            return 0
-        if _TIKTOKEN_AVAILABLE and _encoding:
+def count_tokens(text: str, **kwargs) -> int:
+    """Count tokens using tiktoken or character estimation fallback."""
+    if not text:
+        return 0
+    if _TIKTOKEN_AVAILABLE and _encoding:
+        try:
             return len(_encoding.encode(text))
-        return len(text) // 4
+        except Exception:
+            pass
+    # Character estimation fallback (~4 chars per token)
+    return len(text) // 4
 
-    def get_tokenizer_info():
-        """Fallback tokenizer info."""
-        return type('TokenizerInfo', (), {
-            'name': 'tiktoken' if _TIKTOKEN_AVAILABLE else 'character',
-            'accuracy': '~70-85%' if _TIKTOKEN_AVAILABLE else '~60-70%'
-        })()
+
+def get_tokenizer_info():
+    """Get tokenizer info for diagnostics."""
+    return type('TokenizerInfo', (), {
+        'name': 'tiktoken' if _TIKTOKEN_AVAILABLE else 'character',
+        'accuracy': '~70-85%' if _TIKTOKEN_AVAILABLE else '~60-70%'
+    })()
 
 # Configuration
 DEFAULT_URL = "http://127.0.0.1:4200/events"
@@ -109,15 +110,22 @@ def get_session_id() -> str:
     # Check environment for session ID
     if session_id := os.environ.get("CLAUDE_SESSION_ID"):
         return session_id
-    
+
+    # Safely get home directory (handles missing HOME env var)
+    try:
+        home_dir = Path.home()
+    except RuntimeError:
+        # Fallback for environments where HOME is not set
+        home_dir = Path(os.environ.get("USERPROFILE", os.environ.get("HOME", ".")))
+
     # Try to read from Claude Code's session file
-    session_file = Path.home() / ".claude" / "session"
+    session_file = home_dir / ".claude" / "session"
     if session_file.exists():
         try:
             return session_file.read_text().strip()[:36]
         except Exception:
             pass
-    
+
     # Generate a deterministic session ID based on terminal
     terminal_info = f"{os.environ.get('TERM_SESSION_ID', '')}{os.environ.get('TMUX', '')}{os.getppid()}"
     return hashlib.md5(terminal_info.encode()).hexdigest()[:16]
@@ -248,17 +256,18 @@ def send_event(
             headers={"Content-Type": "application/json"},
             method="POST"
         )
-        
+
         with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as response:
             return response.status == 200
-            
-    except urllib.error.URLError as e:
-        # Server not running - silently ignore
+
+    except urllib.error.URLError:
+        # Server not running - silently ignore (don't pollute Claude Code terminal)
         pass
-    except Exception as e:
-        # Log to stderr for debugging
-        print(f"Warning: Failed to send event: {e}", file=sys.stderr)
-    
+    except Exception:
+        # Silently ignore all errors to avoid polluting Claude Code terminal
+        # Hook failures should never interrupt the user's workflow
+        pass
+
     return False
 
 
@@ -337,7 +346,7 @@ def main():
     else:
         payload = read_stdin_payload()
     
-    success = send_event(
+    send_event(
         event_type=args.event_type,
         agent_name=args.agent_name,
         payload=payload,
@@ -345,8 +354,9 @@ def main():
         summarize=args.summarize,
         dashboard_url=args.url,
     )
-    
-    sys.exit(0 if success else 1)
+
+    # Always exit successfully - hook failures should never break Claude Code
+    sys.exit(0)
 
 
 if __name__ == "__main__":

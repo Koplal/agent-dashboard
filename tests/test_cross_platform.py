@@ -94,7 +94,7 @@ class TestInstallation:
         agents_dir = Path(__file__).parent.parent / "agents"
 
         for agent_file in agents_dir.glob("*.md"):
-            content = agent_file.read_text()
+            content = agent_file.read_text(encoding='utf-8')
             assert content.startswith("---"), \
                 f"{agent_file.name} missing YAML frontmatter"
             assert "name:" in content, \
@@ -220,11 +220,11 @@ class TestNoStaleReferences:
                 continue
 
             try:
-                content = filepath.read_text()
+                content = filepath.read_text(encoding='utf-8')
                 assert stale_pattern not in content.lower(), \
                     f"Stale agent count reference found in {filepath}"
-            except UnicodeDecodeError:
-                continue  # Skip binary files
+            except (UnicodeDecodeError, OSError):
+                continue  # Skip binary files or files with encoding issues
 
 
 class TestPlatformSpecific:

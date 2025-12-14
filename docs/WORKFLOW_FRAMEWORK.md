@@ -747,7 +747,7 @@ Create specification for firmware:
 # Output: docs/firmware-spec.md
 
 # Phase 2: TEST_DESIGN (test-writer agent)
-AGENT_NAME=test-writer AGENT_MODEL=sonnet claude "
+AGENT_NAME=test-writer AGENT_MODEL=haiku claude "
 Review firmware-spec.md and define test criteria:
 - Unit test requirements
 - Integration test scenarios

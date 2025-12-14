@@ -9,6 +9,7 @@ event handling, and API endpoints.
 import asyncio
 import json
 import socket
+import time
 import pytest
 from pathlib import Path
 from datetime import datetime
@@ -19,6 +20,19 @@ def find_free_port():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(('', 0))
         return s.getsockname()[1]
+
+
+def safe_unlink(path: Path, retries: int = 3, delay: float = 0.2):
+    """Safely delete a file with retries for Windows file locking issues."""
+    for i in range(retries):
+        try:
+            path.unlink(missing_ok=True)
+            return
+        except PermissionError:
+            if i < retries - 1:
+                time.sleep(delay)
+            # On final attempt, just ignore - file will be cleaned up later
+            pass
 
 
 class TestWebServerBasics:
@@ -48,7 +62,7 @@ class TestWebServerBasics:
             assert dashboard.sessions == {}
             assert dashboard.events == []
         finally:
-            Path(db_path).unlink(missing_ok=True)
+            safe_unlink(Path(db_path))
 
 
 class TestWebServerAsync:
@@ -91,7 +105,7 @@ class TestWebServerAsync:
             finally:
                 await runner.cleanup()
         finally:
-            Path(db_path).unlink(missing_ok=True)
+            safe_unlink(Path(db_path))
 
     @pytest.mark.asyncio
     async def test_event_submission(self, free_port):
@@ -144,7 +158,7 @@ class TestWebServerAsync:
             finally:
                 await runner.cleanup()
         finally:
-            Path(db_path).unlink(missing_ok=True)
+            safe_unlink(Path(db_path))
 
     @pytest.mark.asyncio
     async def test_sessions_endpoint(self, free_port):
@@ -178,7 +192,7 @@ class TestWebServerAsync:
             finally:
                 await runner.cleanup()
         finally:
-            Path(db_path).unlink(missing_ok=True)
+            safe_unlink(Path(db_path))
 
     @pytest.mark.asyncio
     async def test_stats_endpoint(self, free_port):
@@ -215,7 +229,7 @@ class TestWebServerAsync:
             finally:
                 await runner.cleanup()
         finally:
-            Path(db_path).unlink(missing_ok=True)
+            safe_unlink(Path(db_path))
 
 
 class TestCLI:

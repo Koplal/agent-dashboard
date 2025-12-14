@@ -27,7 +27,7 @@ Before starting, ensure you have:
 
 | Requirement | Check Command | Expected Output |
 |-------------|---------------|-----------------|
-| Python 3.9+ | `python --version` | `Python 3.9.x` or higher |
+| Python 3.9+ | `python3 --version` | `Python 3.9.x` or higher |
 | Git | `git --version` | `git version 2.x.x` |
 | Claude Code CLI | `claude --version` | Version info displayed |
 | Bash shell | `echo $SHELL` | `/bin/bash` or `/bin/zsh` |
@@ -104,6 +104,8 @@ claude
 AGENT_NAME=researcher AGENT_MODEL=sonnet claude
 ```
 
+> **Important:** The `AGENT_NAME` and `AGENT_MODEL` environment variables are **metadata for the dashboard only**. They do not change which Claude model is actually used - that's controlled by your Claude Code configuration or API settings. These variables help the dashboard track and categorize your agent sessions by role and intended model tier.
+
 ---
 
 ## Hook Configuration
@@ -114,7 +116,7 @@ Agent Dashboard uses Claude Code hooks to capture events. Hooks are configured i
 
 ### Default Hook Configuration
 
-The installer creates this configuration automatically:
+The installer creates this configuration automatically. See [README.md Configuration](../README.md#-configuration) for the complete hook reference including all event types.
 
 ```json
 {
@@ -491,7 +493,7 @@ bash -x ~/.claude/dashboard/hooks/run_hook.sh --event-type PreToolUse --agent-na
 3. **Import errors in send_event.py:**
    ```bash
    # Test Python script directly
-   python ~/.claude/dashboard/hooks/send_event.py --event-type Test --agent-name test
+   python3 ~/.claude/dashboard/hooks/send_event.py --event-type Test --agent-name test
    ```
 
 #### Issue 3: Token Counting Not Working
@@ -535,7 +537,7 @@ Enable verbose logging:
 # set -x  # Enable debug output
 
 # Or test send_event.py directly with verbose output
-python ~/.claude/dashboard/hooks/send_event.py \
+python3 ~/.claude/dashboard/hooks/send_event.py \
   --event-type PreToolUse \
   --agent-name test \
   --payload '{"tool_name": "Test"}'
@@ -619,7 +621,7 @@ Output to docs/implementation-plan.md
 
 # Phase 2: Test Design
 echo "=== Phase 2: Test Design ==="
-AGENT_NAME=test-writer AGENT_MODEL=sonnet claude "
+AGENT_NAME=test-writer AGENT_MODEL=haiku claude "
 Based on docs/implementation-plan.md, design test cases.
 Output to tests/test_design.md
 "

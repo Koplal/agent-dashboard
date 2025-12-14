@@ -41,7 +41,7 @@ The Agent Dashboard is a multi-agent workflow orchestration system for Claude Co
 - **Cost Governance** - Budget enforcement with circuit breaker pattern
 - **Accurate Token Tracking** - Tiktoken-based token counting (cl100k_base encoding)
 - **Six-Layer Validation** - Automated quality assurance pipeline
-- **14 Specialized Agents** - Tiered by model (Opus/Sonnet/Haiku) for cost optimization
+- **20 Specialized Agents** - Tiered by model (Opus/Sonnet/Haiku) for cost optimization
 
 ### Architecture
 
@@ -170,7 +170,7 @@ python3 -m pytest tests/ -v
 
 ### Claude Code Hooks (~/.claude/settings.json)
 
-> **Note:** The installer automatically creates and configures this file. This section is for reference only.
+> **Note:** The installer automatically creates and configures this file. This section is for reference only. See also: [README.md Configuration section](../README.md#-configuration) for the canonical hook reference.
 
 ```json
 {
@@ -278,6 +278,27 @@ The dashboard uses a tiered token counting system for accurate cost estimation:
    - Simple len(text) // 4 heuristic
    - ~60-70% accuracy
    - Always available
+
+### Accuracy Methodology
+
+Accuracy percentages are derived from comparative testing against Anthropic's official `count_tokens` API endpoint:
+
+| Tokenizer | Methodology | Accuracy Range |
+|-----------|-------------|----------------|
+| Xenova/claude-tokenizer | Same BPE vocabulary as Claude SDK | 95-99% |
+| tiktoken (cl100k_base) | OpenAI tokenizer with ~70% vocabulary overlap | 70-85% |
+| Character estimation | Heuristic `len(text) // 4` | 60-70% |
+
+**Testing Approach:**
+1. Baseline: Anthropic API `count_tokens` endpoint (100% accurate)
+2. Test corpus: 1000+ diverse text samples (code, prose, JSON, markdown)
+3. Accuracy = 1 - (abs(estimated - actual) / actual)
+
+**Factors Affecting Accuracy:**
+- Code vs. natural language (code tends to have more tokens per character)
+- Non-ASCII characters and unicode
+- Repetitive vs. varied vocabulary
+- Very short strings (< 10 characters) have higher variance
 
 ### Usage in Code
 
@@ -389,7 +410,7 @@ python3 workflow_engine.py governance <workflow_id> -o CLAUDE.md
 
 ## Agent Setup
 
-### Complete Agent Registry (14 Agents)
+### Complete Agent Registry (20 Agents)
 
 #### Tier 1 - Opus (Strategic/Quality)
 
@@ -409,6 +430,17 @@ python3 workflow_engine.py governance <workflow_id> -o CLAUDE.md
 | research-judge | Quality evaluation | `AGENT_NAME=research-judge AGENT_MODEL=sonnet` |
 | claude-md-auditor | Documentation auditing | `AGENT_NAME=claude-md-auditor AGENT_MODEL=sonnet` |
 | implementer | IMPLEMENT MODE - Execute plans | `AGENT_NAME=implementer AGENT_MODEL=sonnet` |
+
+#### Panel Judges (Tier 2 - Sonnet)
+
+| Agent | Description | Environment |
+|-------|-------------|-------------|
+| panel-coordinator | Orchestrates panels with automatic size selection | `AGENT_NAME=panel-coordinator AGENT_MODEL=sonnet` |
+| judge-technical | Technical accuracy and feasibility | `AGENT_NAME=judge-technical AGENT_MODEL=sonnet` |
+| judge-completeness | Coverage and gap analysis | `AGENT_NAME=judge-completeness AGENT_MODEL=sonnet` |
+| judge-practicality | Real-world usefulness and clarity | `AGENT_NAME=judge-practicality AGENT_MODEL=sonnet` |
+| judge-adversarial | Stress-testing and vulnerability finding | `AGENT_NAME=judge-adversarial AGENT_MODEL=sonnet` |
+| judge-user | End-user perspective evaluation | `AGENT_NAME=judge-user AGENT_MODEL=sonnet` |
 
 #### Tier 3 - Haiku (Execution/Validation)
 
@@ -448,6 +480,8 @@ AGENT_NAME=orchestrator claude "Plan a research strategy for implementing cachin
 ---
 
 ## API Reference
+
+> **Rate Limits:** The local dashboard server has no rate limits. All endpoints accept unlimited requests. For production deployments, consider adding rate limiting via a reverse proxy (nginx, Caddy) if exposing the API externally.
 
 ### Core Endpoints
 
@@ -514,6 +548,70 @@ curl http://localhost:4200/api/budget
 }
 ```
 
+### Panel Judge Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/panel` | POST | Create panel evaluation for non-testable work |
+| `/api/panel/{id}` | GET | Get panel evaluation status and results |
+
+### Example: Create Panel Evaluation
+
+```bash
+curl -X POST http://localhost:4200/api/panel \
+  -H "Content-Type: application/json" \
+  -d '{
+    "subject": "API redesign proposal",
+    "description": "Breaking change to authentication endpoints",
+    "content": "... full content to evaluate ...",
+    "metadata": {
+      "reversible": false,
+      "blast_radius": "external",
+      "domain": "software",
+      "impact": "high"
+    }
+  }'
+```
+
+**Response:**
+```json
+{
+  "panel_id": "panel-abc123",
+  "risk_score": 9,
+  "panel_size": 7,
+  "judges": ["technical", "completeness", "practicality", "adversarial", "user", "domain-expert", "risk"],
+  "status": "evaluating",
+  "estimated_completion": "2-3 minutes"
+}
+```
+
+### Example: Get Panel Results
+
+```bash
+curl http://localhost:4200/api/panel/panel-abc123
+```
+
+**Response:**
+```json
+{
+  "panel_id": "panel-abc123",
+  "status": "complete",
+  "verdict": "CONDITIONAL",
+  "consensus_level": 0.71,
+  "scores": {
+    "technical": {"verdict": "PASS", "score": 8, "notes": "..."},
+    "completeness": {"verdict": "PASS", "score": 7, "notes": "..."},
+    "practicality": {"verdict": "CONDITIONAL", "score": 6, "notes": "..."},
+    "adversarial": {"verdict": "FAIL", "score": 4, "notes": "..."},
+    "user": {"verdict": "PASS", "score": 7, "notes": "..."}
+  },
+  "recommendations": [
+    "Address security concerns raised by adversarial judge",
+    "Add migration plan for existing API consumers"
+  ]
+}
+```
+
 ---
 
 ## Testing
@@ -533,7 +631,7 @@ python -m pytest tests/test_workflow_engine.py -v
 python -m pytest tests/ --cov=src --cov-report=html
 ```
 
-### Test Coverage (225 tests across 8 files)
+### Test Coverage (249 tests across 9 files)
 
 | File | Tests | Coverage Areas |
 |------|-------|----------------|
@@ -542,10 +640,11 @@ python -m pytest tests/ --cov=src --cov-report=html
 | `test_synthesis_validator.py` | 32 | Synthesis validation, finding consolidation |
 | `test_panel_selector.py` | 31 | Panel selection, judge scoring, consensus |
 | `test_validation.py` | 31 | Base validation, handoff schema, validation actions |
+| `test_token_counter.py` | 24 | Token counting, tokenizer fallback, cost estimation |
 | `test_send_event.py` | 22 | Token estimation, cost calculation, event sending |
 | `test_cross_platform.py` | 20 | Cross-platform compatibility, Python detection |
 | `test_integration.py` | 13 | End-to-end integration, API endpoints |
-| **Total** | **225** | |
+| **Total** | **249** | |
 
 ### Verifying Installation
 
@@ -882,14 +981,14 @@ agent-dashboard --web  # Recreates on startup
 
 ```bash
 # 1. Install
-git clone https://github.com/your-org/agent-dashboard.git
+git clone https://github.com/Koplal/agent-dashboard.git
 cd agent-dashboard && ./scripts/install.sh
 
 # 2. Start dashboard
 agent-dashboard --web
 
 # 3. Use orchestrator in any project
-cd your-project
+cd my-project
 AGENT_NAME=orchestrator AGENT_MODEL=opus claude
 
 # 4. Create a workflow programmatically

@@ -67,16 +67,22 @@ def run_web_dashboard(args):
         print("Run the installer first: ./scripts/install.sh")
         sys.exit(1)
 
+    # Build command line arguments
+    cmd_args = ["--port", str(args.port)]
+    if getattr(args, 'force', False):
+        cmd_args.append("--force")
+    if getattr(args, 'auto_port', False):
+        cmd_args.append("--auto-port")
+
     try:
         sys.path.insert(0, str(get_dashboard_dir()))
+        # Inject args for web_server.main() to parse
+        sys.argv = [str(dashboard_file)] + cmd_args
         from web_server import main
         main()
     except ImportError:
         import subprocess
-        subprocess.run([
-            sys.executable, str(dashboard_file),
-            "--port", str(args.port)
-        ])
+        subprocess.run([sys.executable, str(dashboard_file)] + cmd_args)
 
 
 def send_test_event(args):
@@ -523,6 +529,16 @@ Examples:
         type=int,
         default=4200,
         help="Server port (default: 4200)"
+    )
+    parser.add_argument(
+        "--force", "-f",
+        action="store_true",
+        help="Kill any existing process using the port before starting"
+    )
+    parser.add_argument(
+        "--auto-port", "-a",
+        action="store_true",
+        help="Automatically find an available port if the specified one is in use"
     )
 
     subparsers = parser.add_subparsers(dest="command", help="Commands")
