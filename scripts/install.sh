@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# install.sh - Agent Dashboard v2.2 Installation Script
+# install.sh - Agent Dashboard v2.3 Installation Script
 # =============================================================================
 #
 # DESCRIPTION:
@@ -17,7 +17,7 @@
 # USAGE:
 #   ./scripts/install.sh
 #
-# VERSION: 2.2.1
+# VERSION: 2.3.0
 # =============================================================================
 
 # Exit immediately if any command fails
@@ -59,6 +59,7 @@ NC='\033[0m'
 INSTALL_DIR="$HOME/.claude/dashboard"
 AGENTS_DIR="$HOME/.claude/agents"
 CONFIG_DIR="$HOME/.claude"
+COMMANDS_DIR="$HOME/.claude/commands"
 BIN_DIR="$HOME/.local/bin"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
@@ -67,14 +68,17 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # =============================================================================
 echo -e "${MAGENTA}"
 echo "============================================================================="
-echo "                    Agent Dashboard v2.2 Installer                           "
+echo "                    Agent Dashboard v2.3 Installer                           "
 echo "            Multi-Agent Workflow Framework for Claude Code                   "
 echo "============================================================================="
 echo ""
-echo "  Agent Tiers (14 agents total):"
+echo "  Agent Tiers (16 agents total):"
+echo "    Tier 0 (Sonnet/Haiku): prompt-enhancer, prompt-validator"
 echo "    Tier 1 (Opus):   orchestrator, synthesis, critic, planner"
 echo "    Tier 2 (Sonnet): researcher, perplexity, judge, auditor, implementer"
 echo "    Tier 3 (Haiku):  web-search, summarizer, test-writer, installer, validator"
+echo ""
+echo "  Slash Commands: /project, /enhance"
 echo ""
 echo "============================================================================="
 echo -e "${NC}"
@@ -404,6 +408,9 @@ echo -e "  ${GREEN}[OK]${NC} Installed $AGENT_COUNT agent definitions"
 echo ""
 echo -e "  ${CYAN}Installed Agents by Tier:${NC}"
 echo ""
+echo -e "  ${GREEN}Tier 0 - Prompt Enhancement [\$]:${NC}"
+echo "    prompt-enhancer (Sonnet), prompt-validator (Haiku)"
+echo ""
 echo -e "  ${MAGENTA}Tier 1 - Opus (Strategic) [\$\$\$]:${NC}"
 echo "    orchestrator, synthesis, critic, planner"
 echo ""
@@ -416,14 +423,36 @@ echo "    web-search-researcher, summarizer, test-writer,"
 echo "    installer, validator"
 
 # =============================================================================
+# INSTALL SLASH COMMANDS
+# =============================================================================
+echo -e "\n${BLUE}[7/9] Installing slash commands...${NC}"
+
+mkdir -p "$COMMANDS_DIR"
+
+if [ -d "$SCRIPT_DIR/commands" ]; then
+    COMMAND_COUNT=0
+    for cmd_file in "$SCRIPT_DIR/commands"/*.md; do
+        if [ -f "$cmd_file" ]; then
+            cp "$cmd_file" "$COMMANDS_DIR/"
+            cmd_name=$(basename "$cmd_file" .md)
+            echo -e "  ${GREEN}[OK]${NC} /${cmd_name}"
+            ((COMMAND_COUNT++))
+        fi
+    done
+    echo -e "  ${GREEN}[OK]${NC} Installed $COMMAND_COUNT slash commands"
+else
+    echo -e "  ${YELLOW}[SKIP]${NC} No commands directory found"
+fi
+
+# =============================================================================
 # CREATE CLI LAUNCHER SCRIPT
 # =============================================================================
-echo -e "\n${BLUE}[7/8] Creating CLI launcher...${NC}"
+echo -e "\n${BLUE}[8/9] Creating CLI launcher...${NC}"
 
 cat > "$BIN_DIR/agent-dashboard" << 'LAUNCHER_EOF'
 #!/usr/bin/env bash
 # =============================================================================
-# agent-dashboard - Cross-Platform CLI Launcher v2.2
+# agent-dashboard - Cross-Platform CLI Launcher v2.3
 # =============================================================================
 
 DASHBOARD_DIR="$HOME/.claude/dashboard"
@@ -484,7 +513,7 @@ while [[ $# -gt 0 ]]; do
             break
             ;;
         --help|-h)
-            echo "Agent Dashboard v2.2 - Multi-Agent Workflow Monitor"
+            echo "Agent Dashboard v2.3 - Multi-Agent Workflow Monitor"
             echo ""
             echo "USAGE:"
             echo "  agent-dashboard [OPTIONS] [COMMAND]"
@@ -576,7 +605,7 @@ done
 # Launch dashboard
 if [ "$WEB_MODE" = true ]; then
     echo ""
-    echo "Starting Agent Dashboard v2.2 (Web Mode)"
+    echo "Starting Agent Dashboard v2.3 (Web Mode)"
     echo "==========================================="
     echo ""
     echo "  URL: http://localhost:$PORT"
@@ -589,7 +618,7 @@ if [ "$WEB_MODE" = true ]; then
     $PYTHON_CMD "$DASHBOARD_DIR/web_server.py" --port "$PORT"
 else
     echo ""
-    echo "Starting Agent Dashboard v2.2 (Terminal TUI)"
+    echo "Starting Agent Dashboard v2.3 (Terminal TUI)"
     echo "============================================="
     echo ""
     echo "  Press 'q' to quit"
@@ -604,7 +633,7 @@ echo -e "  ${GREEN}[OK]${NC} Created $BIN_DIR/agent-dashboard"
 # =============================================================================
 # INSTALL PYTHON DEPENDENCIES
 # =============================================================================
-echo -e "\n${BLUE}[8/8] Installing Python dependencies...${NC}"
+echo -e "\n${BLUE}[9/9] Installing Python dependencies...${NC}"
 
 # Core dependencies installation function
 install_core_deps() {
@@ -713,7 +742,7 @@ if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
     if [ -n "$SHELL_RC" ]; then
         if ! grep -q "Agent Dashboard" "$SHELL_RC" 2>/dev/null; then
             echo "" >> "$SHELL_RC"
-            echo "# Agent Dashboard v2.1" >> "$SHELL_RC"
+            echo "# Agent Dashboard v2.3" >> "$SHELL_RC"
             echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$SHELL_RC"
             echo -e "  ${GREEN}[OK]${NC} Added to $SHELL_RC"
         fi
@@ -867,6 +896,12 @@ echo "  agent-dashboard           # Terminal TUI"
 echo "  agent-dashboard doctor    # Diagnose issues"
 echo "  agent-dashboard test      # Send test event"
 echo "  agent-dashboard status    # Check status"
+echo ""
+echo -e "${CYAN}SLASH COMMANDS${NC}"
+echo -e "${CYAN}==============${NC}"
+echo ""
+echo "  /project [description]    # Start structured project workflow"
+echo "  /enhance [request]        # Enhance prompt before execution"
 echo ""
 echo -e "${YELLOW}NOTE:${NC} Open a new terminal or run:"
 echo -e "      ${GREEN}source ~/.bashrc${NC}  (Bash) or ${GREEN}source ~/.zshrc${NC}  (Zsh)"

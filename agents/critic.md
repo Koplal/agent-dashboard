@@ -3,7 +3,7 @@ name: critic
 description: "Devil's advocate that systematically challenges research conclusions, finds weaknesses, and stress-tests arguments. Essential for preventing groupthink and catching errors before delivery. Use on important findings before finalizing."
 tools: Read, Grep, Glob, WebSearch, WebFetch
 model: opus
-version: 2.2.1
+version: 2.3.0
 tier: 1
 ---
 

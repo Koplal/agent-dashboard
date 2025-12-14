@@ -3,7 +3,7 @@ name: judge-user
 description: User perspective evaluator for 5+ judge panels. Represents end-user interests and experience.
 tools: Read, Grep, Glob
 model: sonnet
-version: 2.2.1
+version: 2.3.0
 tier: 2
 ---
 

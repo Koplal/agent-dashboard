@@ -3,7 +3,7 @@ name: validator
 description: "TDD validation specialist that runs the validation stack. Verifies ALL tests pass, NO TODOs in production, NO mocks in production. Provides pass/fail verdicts with actionable feedback."
 tools: Bash, Read, Grep, Glob
 model: haiku
-version: 2.2.1
+version: 2.3.0
 tier: 3
 ---
 

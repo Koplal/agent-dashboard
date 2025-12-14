@@ -3,7 +3,7 @@ name: research-judge
 description: "Impartial evaluator that scores research quality against objective criteria. Compares multiple research outputs fairly. Use to assess research quality before delivery."
 tools: Read, Grep, Glob
 model: sonnet
-version: 2.2.1
+version: 2.3.0
 tier: 2
 ---
 

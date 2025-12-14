@@ -3,7 +3,7 @@ name: claude-md-auditor
 description: "Audits CLAUDE.md against codebase reality. Catches stale context, inaccurate stats, and code drift. Upgraded to Sonnet for nuanced analysis of documentation quality."
 tools: Read, Grep, Glob, Bash
 model: sonnet
-version: 2.2.1
+version: 2.3.0
 tier: 2
 ---
 

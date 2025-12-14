@@ -3,7 +3,7 @@ name: researcher
 description: "Research specialist for documentation, official sources, and structured information gathering. Upgraded to Sonnet for better synthesis of complex, multi-source research."
 tools: Read, Grep, Glob, WebSearch, WebFetch
 model: sonnet
-version: 2.2.1
+version: 2.3.0
 tier: 2
 ---
 

@@ -3,7 +3,7 @@ name: orchestrator
 description: "Strategic coordinator for multi-agent research workflows. Analyzes queries, develops strategies, delegates to specialized agents, and synthesizes final outputs. Use as the PRIMARY entry point for complex research tasks."
 tools: Task, Read, Grep, Glob, Bash
 model: opus
-version: 2.2.1
+version: 2.3.0
 tier: 1
 ---
 

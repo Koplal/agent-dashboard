@@ -3,7 +3,7 @@ name: judge-practicality
 description: Practicality evaluator for panel reviews. Focuses solely on real-world usefulness, actionability, and clarity.
 tools: Read, Grep, Glob
 model: sonnet
-version: 2.2.1
+version: 2.3.0
 tier: 2
 ---
 

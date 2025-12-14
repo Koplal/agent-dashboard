@@ -3,7 +3,7 @@ name: implementer
 description: "TDD execution agent that writes code to pass LOCKED tests. CANNOT modify tests. NO TODOs. NO mocks in production. Auto-iterates until ALL tests pass."
 tools: Read, Edit, Write, Bash, Grep, Glob
 model: sonnet
-version: 2.2.1
+version: 2.3.0
 tier: 2
 ---
 

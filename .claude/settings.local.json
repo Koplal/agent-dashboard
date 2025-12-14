@@ -11,7 +11,10 @@
       "Bash(for f in agents/*.md)",
       "Bash(do sed -i 's/version: 2.2.0/version: 2.2.1/' \"$f\")",
       "Bash(done)",
-      "Bash(./scripts/install.sh:*)"
+      "Bash(./scripts/install.sh:*)",
+      "Bash(mkdir:*)",
+      "Bash(for f in \"I:/My Drive/CSC/Projects/Datalogger harvester 2/agent-dashboard/agents/\"*.md)",
+      "Bash(do sed -i 's/version: 2.2.[0-9]/version: 2.3.0/' \"$f\")"
     ]
   }
 }
