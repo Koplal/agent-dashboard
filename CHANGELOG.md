@@ -2,6 +2,28 @@
 
 All notable changes to Agent Dashboard are documented here.
 
+## [2.3.0] - 2025-12-14
+
+### Added
+
+#### Prompt Enhancement System
+- **agents/prompt-enhancer.md** (Tier 0, Sonnet) - Pre-execution prompt optimizer
+- **agents/prompt-validator.md** (Tier 0, Haiku) - Prompt quality scoring
+- **docs/PROMPT_ENHANCEMENT.md** - Enhancement system documentation
+
+#### Slash Commands
+- **commands/** directory - New directory for slash commands
+- **commands/project.md** - Structured project workflow (`/project`)
+- **commands/enhance.md** - Prompt enhancement with confirmation (`/enhance`)
+
+#### Installation Updates
+- install.sh now installs slash commands to `~/.claude/commands/`
+- Added COMMANDS_DIR configuration
+
+### Changed
+- Version bumped to 2.3.0
+- Agent count updated to 22
+
 ## [2.2.1] - 2025-12-11
 
 ### Added
