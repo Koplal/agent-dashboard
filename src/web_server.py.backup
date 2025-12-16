@@ -12,7 +12,6 @@ Endpoints:
     GET  /               - Web dashboard
     GET  /api/events     - Recent events
     GET  /api/sessions   - Active sessions
-    GET  /api/sessions/grouped - Sessions grouped by project with aggregates
     GET  /api/stats      - Statistics
     POST /events         - Receive events from hooks
     WS   /ws             - WebSocket for live updates
@@ -21,7 +20,7 @@ Dependencies:
     - aiohttp: Async HTTP/WebSocket server
     - workflow_engine: Workflow orchestration (optional)
 
-Version: 2.4.0
+Version: 2.3.0
 """
 
 import asyncio

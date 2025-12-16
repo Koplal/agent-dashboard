@@ -19,13 +19,19 @@ Token Counting:
     For accurate token counting, this module extracts content from multiple
     payload fields including tool_input, output, content, and response data.
 
-Version: 2.3.0
+Subagent Name Extraction:
+    For Task tool usage and SubagentStop events, the subagent name is automatically
+    extracted from the payload and used instead of the parent agent name. This ensures
+    proper tracking of spawned subagents in the dashboard.
+
+Version: 2.4.0
 """
 
 import argparse
 import json
 import os
 import sys
+import re
 import subprocess
 import hashlib
 from datetime import datetime
@@ -178,6 +184,84 @@ def read_stdin_payload() -> Dict[str, Any]:
     return {}
 
 
+def extract_subagent_name(payload, event_type, fallback_name):
+    """Extract subagent name from payload for Task tool usage and SubagentStop events.
+    
+    Claude Code passes subagent information in the payload when:
+    1. Using the Task tool to spawn a subagent (tool_name == "Task")
+    2. SubagentStop events contain info about which subagent stopped
+    
+    Returns:
+        Tuple of (agent_name, subagent_model) - model may be None
+    """
+    subagent_name = None
+    subagent_model = None
+    
+    tool_name = payload.get("tool_name", "")
+    tool_input = payload.get("tool_input", {})
+    
+    # Handle Task tool - extract the agent being spawned
+    if tool_name == "Task":
+        if isinstance(tool_input, dict):
+            # Check for explicit agent field
+            for field in ["agent", "agent_name", "name", "subagent"]:
+                if field in tool_input and tool_input[field]:
+                    subagent_name = str(tool_input[field]).strip()
+                    break
+            
+            # Check for model/tier specification
+            for field in ["model", "tier", "agent_model"]:
+                if field in tool_input and tool_input[field]:
+                    subagent_model = str(tool_input[field]).strip().lower()
+                    break
+            
+            # If no explicit agent field, try to extract from description/prompt
+            if not subagent_name:
+                for field in ["description", "prompt", "task", "content"]:
+                    if field in tool_input and tool_input[field]:
+                        text = str(tool_input[field])
+                        patterns = [
+                            r'^Task\(([a-zA-Z_-]+)\)',
+                            r'^\[([a-zA-Z_-]+)\]',
+                            r'^([a-zA-Z_-]+):\s',
+                            r'^@([a-zA-Z_-]+)\s',
+                        ]
+                        for pattern in patterns:
+                            match = re.match(pattern, text, re.IGNORECASE)
+                            if match:
+                                subagent_name = match.group(1).lower()
+                                break
+                        if subagent_name:
+                            break
+    
+    # Handle SubagentStop events
+    elif event_type == "SubagentStop":
+        for field in ["subagent_name", "agent_name", "subagent", "agent", "name"]:
+            if field in payload and payload[field]:
+                subagent_name = str(payload[field]).strip()
+                break
+        
+        for field in ["subagent_model", "model", "tier"]:
+            if field in payload and payload[field]:
+                subagent_model = str(payload[field]).strip().lower()
+                break
+        
+        tool_response = payload.get("tool_response", {})
+        if isinstance(tool_response, dict) and not subagent_name:
+            for field in ["agent_name", "subagent", "agent"]:
+                if field in tool_response and tool_response[field]:
+                    subagent_name = str(tool_response[field]).strip()
+                    break
+    
+    # Normalize and validate
+    if subagent_name:
+        subagent_name = subagent_name.strip().lower()
+        subagent_name = re.sub(r'^(agent[_-]?|subagent[_-]?)', '', subagent_name)
+        if subagent_name and re.match(r'^[a-z][a-z0-9_-]*$', subagent_name):
+            return subagent_name, subagent_model
+    
+    return fallback_name, subagent_model
+
 
 
 def extract_token_content(payload: Dict[str, Any]) -> Tuple[str, str]:
@@ -272,6 +356,10 @@ def send_event(
     # Build event data
     git_info = get_git_info()
     
+    # Extract subagent name from payload for Task tool and SubagentStop events
+    effective_agent_name, subagent_model = extract_subagent_name(payload, event_type, agent_name)
+    effective_model = subagent_model if subagent_model else model
+    
     # Extract and estimate tokens using improved extraction (fixes accuracy issue)
     input_content, output_content = extract_token_content(payload)
     tokens_in = estimate_tokens(input_content)
@@ -280,19 +368,23 @@ def send_event(
     event = {
         "timestamp": datetime.now().isoformat(),
         "event_type": event_type,
-        "agent_name": agent_name,
+        "agent_name": effective_agent_name,
         "session_id": get_session_id(),
         "project": get_project_name(),
-        "model": model,
+        "model": effective_model,
         "tokens_in": tokens_in,
         "tokens_out": tokens_out,
-        "cost": estimate_cost(tokens_in, tokens_out, model),
+        "cost": estimate_cost(tokens_in, tokens_out, effective_model),
         "payload": {
             **payload,
             "git_branch": git_info["branch"],
             "git_dirty": git_info["dirty"],
+            "parent_agent": agent_name if effective_agent_name != agent_name else None,
         }
     }
+    
+    # Remove None values from payload
+    event["payload"] = {k: v for k, v in event["payload"].items() if v is not None}
     
     # Optional: Add AI summary
     if summarize and event_type in ("PostToolUse", "Stop", "SubagentStop"):
@@ -346,6 +438,10 @@ def generate_summary(payload: Dict[str, Any]) -> Optional[str]:
     elif tool_name == "WebSearch":
         query = tool_input.get("query", "")
         return f"Searched: {query[:50]}"
+    elif tool_name == "Task":
+        if isinstance(tool_input, dict):
+            desc = tool_input.get("description", tool_input.get("prompt", ""))[:80]
+            return f"Spawned subagent: {desc}"
     
     return None
 
