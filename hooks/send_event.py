@@ -182,16 +182,18 @@ def read_stdin_payload() -> Dict[str, Any]:
 
 def extract_token_content(payload: Dict[str, Any]) -> Tuple[str, str]:
     """Extract input and output content from event payload for accurate token counting.
-    
-    This fixes the token counting accuracy issue by checking multiple payload fields,
-    not just tool_input.command.
+
+    Extracts from Claude Code hook payload structure:
+    - Input: tool_input fields (command, content, query, etc.)
+    - Output: tool_response.stdout, tool_response.file.content, etc.
     """
     input_parts = []
     output_parts = []
-    
+
+    # Extract from tool_input (the input to the tool)
     tool_input = payload.get("tool_input", {})
     if isinstance(tool_input, dict):
-        input_fields = ["command", "content", "file_path", "query", "prompt", "pattern", 
+        input_fields = ["command", "content", "file_path", "query", "prompt", "pattern",
                        "code", "message", "text", "description", "new_source", "old_string", "new_string"]
         for field in input_fields:
             if field in tool_input and tool_input[field]:
@@ -200,18 +202,31 @@ def extract_token_content(payload: Dict[str, Any]) -> Tuple[str, str]:
             input_parts.append(json.dumps(tool_input))
     elif tool_input:
         input_parts.append(str(tool_input))
-    
-    output_fields = ["output", "result", "response", "content", "data"]
-    for field in output_fields:
-        if field in payload and payload[field]:
-            output_parts.append(str(payload[field]))
-            break
-    
-    if "response" in payload and isinstance(payload["response"], dict):
-        resp = payload["response"]
-        if "content" in resp and resp["content"] and not output_parts:
-            output_parts.append(str(resp["content"]))
-    
+
+    # Extract from tool_response (the output from the tool)
+    # Claude Code hooks use tool_response with stdout/stderr or file content
+    tool_response = payload.get("tool_response", {})
+    if isinstance(tool_response, dict):
+        # Bash tool output - stdout field
+        if "stdout" in tool_response and tool_response["stdout"]:
+            output_parts.append(str(tool_response["stdout"]))
+        # Read tool output - file.content field
+        if "file" in tool_response and isinstance(tool_response["file"], dict):
+            file_content = tool_response["file"].get("content", "")
+            if file_content:
+                output_parts.append(str(file_content))
+        # Generic content field
+        if "content" in tool_response and tool_response["content"] and not output_parts:
+            output_parts.append(str(tool_response["content"]))
+
+    # Fallback to top-level output fields
+    if not output_parts:
+        output_fields = ["output", "result", "response", "content", "data"]
+        for field in output_fields:
+            if field in payload and payload[field] and not isinstance(payload[field], dict):
+                output_parts.append(str(payload[field]))
+                break
+
     return "\n".join(input_parts), "\n".join(output_parts)
 
 def estimate_tokens(text: str) -> int:

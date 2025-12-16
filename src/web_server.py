@@ -555,6 +555,14 @@ DASHBOARD_HTML = """
         .project-header { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: var(--bg-tertiary); border-radius: 6px; margin-bottom: 0.5rem; cursor: pointer; font-weight: 600; font-size: 0.85rem; }
         .project-header:hover { background: var(--bg-primary); }
         .project-count { margin-left: auto; background: var(--accent-blue); color: var(--bg-primary); padding: 0.1rem 0.5rem; border-radius: 10px; font-size: 0.75rem; }
+        .project-totals { display: flex; gap: 1rem; font-size: 0.75rem; color: var(--text-secondary); padding: 0.3rem 0.5rem; }
+        .model-badge { padding: 0.2rem 0.6rem; border-radius: 4px; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; }
+        .model-opus { background: var(--accent-purple); color: var(--bg-primary); }
+        .model-sonnet { background: var(--accent-blue); color: var(--bg-primary); }
+        .model-haiku { background: var(--accent-green); color: var(--bg-primary); }
+        .agent-active { position: relative; }
+        .agent-active::after { content: ''; position: absolute; right: -4px; top: 50%; transform: translateY(-50%); width: 6px; height: 6px; background: var(--accent-green); border-radius: 50%; }
+        .agent-usage { font-size: 0.7rem; color: var(--text-muted); margin-left: 0.5rem; }
     </style>
 </head>
 <body>
@@ -569,6 +577,10 @@ DASHBOARD_HTML = """
                 <span>⏱ <span id="uptime">00:00:00</span></span>
                 <span>📡 Port {port}</span>
                 <span>🕐 <span id="current-time"></span></span>
+                <span style="margin-left: auto;">
+                    <button onclick="restartDashboard()" style="padding: 0.3rem 0.8rem; background: var(--accent-orange); border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem; margin-right: 0.5rem;" title="Restart Dashboard">🔄 Restart</button>
+                    <button onclick="shutdownDashboard()" style="padding: 0.3rem 0.8rem; background: var(--accent-red); border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;" title="Shutdown Dashboard">⏹ Stop</button>
+                </span>
             </div>
         </header>
         
@@ -735,18 +747,23 @@ DASHBOARD_HTML = """
                 groups[project].push(s);
             });
             
-            // Render grouped sessions
+            // Render grouped sessions with project totals
             panel.innerHTML = Object.entries(groups).map(([project, projectSessions]) => {
+                // Calculate project totals
+                const projectTokens = projectSessions.reduce((sum, s) => sum + s.total_tokens, 0);
+                const projectCost = projectSessions.reduce((sum, s) => sum + s.total_cost, 0);
+                
                 const sessionsHtml = projectSessions.slice(0, 5).map(s => {
                     const color = AGENT_COLORS[s.color_idx];
                     const statusClass = `status-${s.status}`;
                     const timeAgo = getTimeAgo(s.last_activity);
                     const displayName = formatAgentName(s.agent_name);
+                    const modelClass = getModelClass(s.model);
                     
                     return `
                         <div class="session-card" style="border-left-color: ${color}">
                             <div class="name" style="color: ${color}">${displayName}</div>
-                            <div class="meta">${s.model}</div>
+                            <div class="meta"><span class="model-badge ${modelClass}">${s.model}</span></div>
                             <div class="stats">
                                 <span class="${statusClass}">● ${s.status}</span>
                                 <span>🎯 ${s.total_tokens.toLocaleString()}</span>
@@ -763,10 +780,23 @@ DASHBOARD_HTML = """
                             📁 ${project}
                             <span class="project-count">${projectSessions.length}</span>
                         </div>
+                        <div class="project-totals">
+                            <span>🎯 ${projectTokens.toLocaleString()} tokens</span>
+                            <span>💰 $${projectCost.toFixed(4)}</span>
+                        </div>
                         <div class="project-sessions">${sessionsHtml}</div>
                     </div>
                 `;
             }).join('');
+        }
+        
+        // Get CSS class for model badge
+        function getModelClass(model) {
+            if (!model) return 'model-sonnet';
+            const m = model.toLowerCase();
+            if (m.includes('opus')) return 'model-opus';
+            if (m.includes('haiku')) return 'model-haiku';
+            return 'model-sonnet';
         }
         
         function updateEventsPanel() {
@@ -834,11 +864,32 @@ DASHBOARD_HTML = """
                 `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
         }
         
-        // Load agents from API
+        // Get active agents from session data
+        function getActiveAgents() {
+            const active = new Set();
+            const usage = {};
+            Object.values(sessions).forEach(s => {
+                const name = s.agent_name?.replace('${AGENT_NAME:-', '').replace('}', '') || '';
+                if (name && name !== 'claude') {
+                    active.add(name.toLowerCase());
+                    usage[name.toLowerCase()] = (usage[name.toLowerCase()] || 0) + 1;
+                }
+            });
+            events.forEach(e => {
+                const name = e.agent_name?.replace('${AGENT_NAME:-', '').replace('}', '') || '';
+                if (name && name !== 'claude') {
+                    active.add(name.toLowerCase());
+                }
+            });
+            return { active, usage };
+        }
+
+        // Load agents from API with usage indicators
         function loadAgents() {
             fetch('/api/agents').then(r => r.json()).then(data => {
                 const panel = document.getElementById('agents-panel');
                 const agents = data.agents || [];
+                const { active, usage } = getActiveAgents();
                 
                 if (agents.length === 0) {
                     panel.innerHTML = '<p style="color: var(--text-muted)">No agents found</p>';
@@ -859,11 +910,16 @@ DASHBOARD_HTML = """
                         const tierEmoji = tier === 'opus' ? '◆' : tier === 'sonnet' ? '●' : '○';
                         return list.map(a => {
                             const color = AGENT_COLORS[a.idx % AGENT_COLORS.length];
+                            const isActive = active.has(a.name?.toLowerCase());
+                            const usageCount = usage[a.name?.toLowerCase()] || 0;
+                            const activeClass = isActive ? 'agent-active' : '';
+                            const usageText = usageCount > 0 ? `<span class="agent-usage">(${usageCount})</span>` : '';
+                            const modelClass = getModelClass(a.model);
                             return `
-                                <div class="agent-item">
+                                <div class="agent-item ${activeClass}">
                                     <span class="agent-color" style="background: ${color}"></span>
-                                    <span>${tierEmoji} ${formatAgentName(a.name)}</span>
-                                    <span class="agent-model">${a.model}</span>
+                                    <span>${tierEmoji} ${formatAgentName(a.name)}${usageText}</span>
+                                    <span class="model-badge ${modelClass}" style="font-size: 0.65rem; padding: 0.1rem 0.4rem;">${a.model}</span>
                                 </div>
                             `;
                         }).join('');
@@ -872,6 +928,31 @@ DASHBOARD_HTML = """
                 document.getElementById('agents-panel').innerHTML = 
                     '<p style="color: var(--text-muted)">Could not load agents</p>';
             });
+        }
+
+        // Dashboard control functions
+        function restartDashboard() {
+            if (confirm('Restart the dashboard server?')) {
+                fetch('/api/restart', { method: 'POST' })
+                    .then(r => r.json())
+                    .then(data => {
+                        alert('Dashboard restarting... Page will reload in 3 seconds.');
+                        setTimeout(() => location.reload(), 3000);
+                    })
+                    .catch(err => alert('Restart failed: ' + err));
+            }
+        }
+        
+        function shutdownDashboard() {
+            if (confirm('Shutdown the dashboard server? You will need to restart it manually.')) {
+                fetch('/api/shutdown', { method: 'POST' })
+                    .then(r => r.json())
+                    .then(data => {
+                        alert('Dashboard shutting down...');
+                        document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#f7768e;font-size:1.5rem;">Dashboard stopped. Restart manually with: agent-dashboard --web</div>';
+                    })
+                    .catch(err => alert('Shutdown failed: ' + err));
+            }
         }
 
         // Initialize
@@ -1120,6 +1201,20 @@ class WebDashboard:
             "source": "agents/"
         })
 
+    async def handle_restart(self, request):
+        """Restart the dashboard server."""
+        import os
+        import sys
+        # Schedule restart after response
+        asyncio.get_event_loop().call_later(0.5, lambda: os.execv(sys.executable, [sys.executable] + sys.argv))
+        return web.json_response({"status": "restarting"})
+
+    async def handle_shutdown(self, request):
+        """Shutdown the dashboard server."""
+        # Schedule shutdown after response
+        asyncio.get_event_loop().call_later(0.5, lambda: asyncio.get_event_loop().stop())
+        return web.json_response({"status": "shutting_down"})
+
     # =========================================================================
     # WORKFLOW ENGINE API ENDPOINTS
     # =========================================================================
@@ -1295,6 +1390,8 @@ class WebDashboard:
         app.router.add_get("/api/stats", self.handle_stats)
         app.router.add_get("/health", self.handle_health)
         app.router.add_get("/api/agents", self.handle_agents)
+        app.router.add_post("/api/restart", self.handle_restart)
+        app.router.add_post("/api/shutdown", self.handle_shutdown)
         app.router.add_get("/ws", self.handle_websocket)
 
         # Workflow engine routes
