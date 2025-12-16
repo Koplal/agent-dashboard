@@ -20,7 +20,7 @@ Dependencies:
     - aiohttp: Async HTTP/WebSocket server
     - workflow_engine: Workflow orchestration (optional)
 
-Version: 2.2.1
+Version: 2.3.0
 """
 
 import asyncio
@@ -526,17 +526,35 @@ DASHBOARD_HTML = """
             font-size: 0.75rem;
         }
         
+        /* Responsive scaling for all screen sizes */
         @media (max-width: 1200px) {
-            .grid {
-                grid-template-columns: 1fr 1fr;
-            }
+            .grid { grid-template-columns: 1fr 1fr; }
+            .panel-content { max-height: 350px; }
         }
-        
         @media (max-width: 768px) {
-            .grid {
-                grid-template-columns: 1fr;
-            }
+            .grid { grid-template-columns: 1fr; }
+            .container { padding: 0.5rem; }
+            header { padding: 1rem; }
+            header h1 { font-size: 1.4rem; }
+            .header-info { flex-wrap: wrap; gap: 0.8rem; font-size: 0.8rem; }
+            .panel-content { max-height: 300px; }
+            .event-row { grid-template-columns: 60px 24px 80px 90px 1fr; font-size: 0.75rem; }
+            .session-card .stats { flex-wrap: wrap; gap: 0.5rem; font-size: 0.75rem; }
         }
+        @media (max-width: 480px) {
+            header h1 { font-size: 1.2rem; }
+            .event-row { grid-template-columns: 50px 20px 70px 1fr; font-size: 0.7rem; }
+            .event-row .type { display: none; }
+        }
+        @media (min-width: 1920px) {
+            .container { max-width: 2200px; }
+            header h1 { font-size: 2.2rem; }
+            .panel-content { max-height: 500px; }
+        }
+        .project-group { margin-bottom: 1rem; }
+        .project-header { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: var(--bg-tertiary); border-radius: 6px; margin-bottom: 0.5rem; cursor: pointer; font-weight: 600; font-size: 0.85rem; }
+        .project-header:hover { background: var(--bg-primary); }
+        .project-count { margin-left: auto; background: var(--accent-blue); color: var(--bg-primary); padding: 0.1rem 0.5rem; border-radius: 10px; font-size: 0.75rem; }
     </style>
 </head>
 <body>
@@ -594,49 +612,10 @@ DASHBOARD_HTML = """
                     </div>
                 </div>
                 
-                <div class="panel-header" style="margin-top: 1rem;">🤖 Registered Agents</div>
+                <div class="panel-header" style="margin-top: 1rem;">🤖 Registered Agents <button onclick="loadAgents()" style="margin-left: auto; padding: 0.2rem 0.5rem; background: var(--accent-blue); border: none; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">↻</button></div>
                 <div class="panel-content">
-                    <div class="agent-legend">
-                        <div class="agent-item">
-                            <span class="agent-color" style="background: #7dcfff"></span>
-                            <span>🔍 researcher</span>
-                            <span class="agent-model">haiku</span>
-                        </div>
-                        <div class="agent-item">
-                            <span class="agent-color" style="background: #bb9af7"></span>
-                            <span>🌐 web-search-researcher</span>
-                            <span class="agent-model">sonnet</span>
-                        </div>
-                        <div class="agent-item">
-                            <span class="agent-color" style="background: #ff9e64"></span>
-                            <span>⚡ perplexity-researcher</span>
-                            <span class="agent-model">sonnet</span>
-                        </div>
-                        <div class="agent-item">
-                            <span class="agent-color" style="background: #9ece6a"></span>
-                            <span>📋 summarizer</span>
-                            <span class="agent-model">sonnet</span>
-                        </div>
-                        <div class="agent-item">
-                            <span class="agent-color" style="background: #f7768e"></span>
-                            <span>⚖️ research-judge</span>
-                            <span class="agent-model">sonnet</span>
-                        </div>
-                        <div class="agent-item">
-                            <span class="agent-color" style="background: #7aa2f7"></span>
-                            <span>🧪 test-writer</span>
-                            <span class="agent-model">sonnet</span>
-                        </div>
-                        <div class="agent-item">
-                            <span class="agent-color" style="background: #e0af68"></span>
-                            <span>📦 installer</span>
-                            <span class="agent-model">sonnet</span>
-                        </div>
-                        <div class="agent-item">
-                            <span class="agent-color" style="background: #73daca"></span>
-                            <span>📝 claude-md-auditor</span>
-                            <span class="agent-model">haiku</span>
-                        </div>
+                    <div class="agent-legend" id="agents-panel">
+                        <p style="color: var(--text-muted)">Loading agents...</p>
                     </div>
                 </div>
             </div>
@@ -728,32 +707,63 @@ DASHBOARD_HTML = """
             updateSessionsPanel();
         }
         
+        // Format agent name for display (capitalize, replace hyphens with spaces)
+        function formatAgentName(name) {
+            if (!name) return 'Unknown';
+            return name.split('-').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+        }
+
+        // Group sessions by project for better organization
         function updateSessionsPanel() {
             const panel = document.getElementById('sessions-panel');
             const sorted = Object.values(sessions).sort((a, b) => 
                 new Date(b.last_activity) - new Date(a.last_activity)
-            ).slice(0, 10);
+            );
             
             if (sorted.length === 0) {
                 panel.innerHTML = '<p style="color: var(--text-muted)">No active sessions</p>';
                 return;
             }
             
-            panel.innerHTML = sorted.map(s => {
-                const color = AGENT_COLORS[s.color_idx];
-                const statusClass = `status-${s.status}`;
-                const timeAgo = getTimeAgo(s.last_activity);
+            // Group sessions by project
+            const groups = {};
+            sorted.forEach(s => {
+                const project = s.project || 'default';
+                if (!groups[project]) groups[project] = [];
+                groups[project].push(s);
+            });
+            
+            // Render grouped sessions
+            panel.innerHTML = Object.entries(groups).map(([project, projectSessions]) => {
+                const sessionsHtml = projectSessions.slice(0, 5).map(s => {
+                    const color = AGENT_COLORS[s.color_idx];
+                    const statusClass = `status-${s.status}`;
+                    const timeAgo = getTimeAgo(s.last_activity);
+                    const displayName = formatAgentName(s.agent_name);
+                    
+                    return `
+                        <div class="session-card" style="border-left-color: ${color}">
+                            <div class="name" style="color: ${color}">${displayName}</div>
+                            <div class="meta">${s.model}</div>
+                            <div class="stats">
+                                <span class="${statusClass}">● ${s.status}</span>
+                                <span>🎯 ${s.total_tokens.toLocaleString()}</span>
+                                <span>💰 $${s.total_cost.toFixed(4)}</span>
+                                <span>⏱ ${timeAgo}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
                 
                 return `
-                    <div class="session-card" style="border-left-color: ${color}">
-                        <div class="name" style="color: ${color}">${s.agent_name}</div>
-                        <div class="meta">${s.project} • ${s.model}</div>
-                        <div class="stats">
-                            <span class="${statusClass}">● ${s.status}</span>
-                            <span>🎯 ${s.total_tokens.toLocaleString()}</span>
-                            <span>💰 $${s.total_cost.toFixed(4)}</span>
-                            <span>⏱ ${timeAgo}</span>
+                    <div class="project-group">
+                        <div class="project-header">
+                            📁 ${project}
+                            <span class="project-count">${projectSessions.length}</span>
                         </div>
+                        <div class="project-sessions">${sessionsHtml}</div>
                     </div>
                 `;
             }).join('');
@@ -824,8 +834,49 @@ DASHBOARD_HTML = """
                 `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
         }
         
+        // Load agents from API
+        function loadAgents() {
+            fetch('/api/agents').then(r => r.json()).then(data => {
+                const panel = document.getElementById('agents-panel');
+                const agents = data.agents || [];
+                
+                if (agents.length === 0) {
+                    panel.innerHTML = '<p style="color: var(--text-muted)">No agents found</p>';
+                    return;
+                }
+                
+                // Group by tier
+                const tiers = {opus: [], sonnet: [], haiku: []};
+                agents.forEach((a, i) => {
+                    const tier = a.model || 'sonnet';
+                    if (tiers[tier]) tiers[tier].push({...a, idx: i});
+                    else tiers.sonnet.push({...a, idx: i});
+                });
+                
+                panel.innerHTML = Object.entries(tiers)
+                    .filter(([_, list]) => list.length > 0)
+                    .map(([tier, list]) => {
+                        const tierEmoji = tier === 'opus' ? '◆' : tier === 'sonnet' ? '●' : '○';
+                        return list.map(a => {
+                            const color = AGENT_COLORS[a.idx % AGENT_COLORS.length];
+                            return `
+                                <div class="agent-item">
+                                    <span class="agent-color" style="background: ${color}"></span>
+                                    <span>${tierEmoji} ${formatAgentName(a.name)}</span>
+                                    <span class="agent-model">${a.model}</span>
+                                </div>
+                            `;
+                        }).join('');
+                    }).join('');
+            }).catch(err => {
+                document.getElementById('agents-panel').innerHTML = 
+                    '<p style="color: var(--text-muted)">Could not load agents</p>';
+            });
+        }
+
         // Initialize
         connect();
+        loadAgents();
         setInterval(updateClock, 1000);
         updateClock();
         
@@ -1018,6 +1069,57 @@ class WebDashboard:
         """Health check."""
         return web.json_response({"status": "healthy"})
 
+    def scan_agents_directory(self) -> List[Dict[str, Any]]:
+        """Scan the agents directory for agent definitions.
+        
+        Reads YAML frontmatter from .md files in the agents/ directory.
+        Returns list of agent info dicts with name, description, model, tier, version.
+        """
+        agents = []
+        # Find agents directory relative to this file or project root
+        agents_dirs = [
+            Path(__file__).parent.parent / "agents",
+            Path.cwd() / "agents",
+        ]
+        
+        for agents_dir in agents_dirs:
+            if agents_dir.exists():
+                for md_file in sorted(agents_dir.glob("*.md")):
+                    try:
+                        text = md_file.read_text(encoding='utf-8')
+                        # Parse YAML frontmatter between --- markers
+                        if text.startswith('---'):
+                            end = text.find('---', 3)
+                            if end > 0:
+                                frontmatter = text[3:end].strip()
+                                agent = {'file': md_file.name}
+                                for line in frontmatter.split('\n'):
+                                    if ':' in line:
+                                        key, val = line.split(':', 1)
+                                        key = key.strip()
+                                        val = val.strip().strip('"').strip("'")
+                                        if key in ('name', 'description', 'model', 'tier', 'version', 'tools'):
+                                            agent[key] = val
+                                if 'name' in agent:
+                                    agents.append(agent)
+                    except Exception:
+                        pass
+                break  # Use first found agents directory
+        
+        return agents
+
+    async def handle_agents(self, request):
+        """Get list of registered agents from agents/ directory.
+        
+        Dynamically scans the agents directory for .md files with YAML frontmatter.
+        """
+        agents = self.scan_agents_directory()
+        return web.json_response({
+            "agents": agents,
+            "count": len(agents),
+            "source": "agents/"
+        })
+
     # =========================================================================
     # WORKFLOW ENGINE API ENDPOINTS
     # =========================================================================
@@ -1192,6 +1294,7 @@ class WebDashboard:
         app.router.add_get("/api/sessions", self.handle_sessions)
         app.router.add_get("/api/stats", self.handle_stats)
         app.router.add_get("/health", self.handle_health)
+        app.router.add_get("/api/agents", self.handle_agents)
         app.router.add_get("/ws", self.handle_websocket)
 
         # Workflow engine routes

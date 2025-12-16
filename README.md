@@ -1,4 +1,4 @@
-# Agent Dashboard v2.2.1
+# Agent Dashboard v2.3.0
 
 > **Quick Install:** `git clone https://github.com/Koplal/agent-dashboard.git && cd agent-dashboard && ./scripts/install.sh`
 >
@@ -50,6 +50,15 @@ A comprehensive multi-agent workflow framework implementing **Test-Driven Develo
 | **7-Phase Workflow** | SPEC → TEST_DESIGN → TEST_IMPL → IMPLEMENT → VALIDATE → REVIEW → DELIVER |
 | **Cost Governance** | Circuit breaker pattern with budget enforcement |
 | **Six-Layer Validation** | Static analysis, tests, TODO check, mock detection, integration, diff |
+
+### What's New in v2.3
+
+- **Improved Token Counting** - Fixed accuracy by extracting content from multiple payload fields
+- **Project Grouping** - Dashboard sessions are now grouped by project for better organization
+- **Responsive Dashboard** - Better scaling from mobile (320px) to 4K (3840px) screens
+- **Dynamic Agent Sync** - Agents are now automatically discovered from `/agents/*.md` files
+- **Formatted Agent Names** - Agent names display properly formatted (capitalized, no hyphens)
+- **New API Endpoint** - `GET /api/agents` returns dynamically scanned agent registry
 
 ### What's New in v2.2
 
@@ -745,6 +754,7 @@ python3 src/workflow_engine.py governance <workflow_id> -o CLAUDE.md
 | `/api/events` | GET | Get recent events |
 | `/api/sessions` | GET | Get active sessions |
 | `/api/stats` | GET | Get statistics |
+| `/api/agents` | GET | Get registered agents (dynamically scanned) |
 | `/health` | GET | Health check |
 | `/ws` | WebSocket | Live updates |
 
@@ -811,7 +821,10 @@ curl -X POST http://localhost:4200/events \
 - Interactive session cards
 - Event filtering by type/agent
 - 24-hour statistics
-- Agent registry with tier information
+- **Project Grouping** - Sessions organized by project with collapsible groups
+- **Dynamic Agent Registry** - Agents scanned from `/agents/*.md` files
+- **Responsive Design** - Scales from mobile (320px) to 4K (3840px)
+- **Formatted Names** - Agent names properly capitalized and formatted
 
 ---
 
