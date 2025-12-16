@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# install.sh - Agent Dashboard v2.3 Installation Script
+# install.sh - Agent Dashboard v2.4.1 Installation Script
 # =============================================================================
 #
 # DESCRIPTION:
@@ -17,7 +17,7 @@
 # USAGE:
 #   ./scripts/install.sh
 #
-# VERSION: 2.3.0
+# VERSION: 2.4.1
 # =============================================================================
 
 # Exit immediately if any command fails
@@ -68,7 +68,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # =============================================================================
 echo -e "${MAGENTA}"
 echo "============================================================================="
-echo "                    Agent Dashboard v2.3 Installer                           "
+echo "                    Agent Dashboard v2.4.1 Installer                           "
 echo "            Multi-Agent Workflow Framework for Claude Code                   "
 echo "============================================================================="
 echo ""
@@ -394,15 +394,51 @@ HOOK_WRAPPER_EOF
 chmod +x "$INSTALL_DIR/hooks/run_hook.sh"
 echo -e "  ${GREEN}[OK]${NC} hooks/run_hook.sh (Cross-platform wrapper)"
 
-# Install agent definitions
+# Install agent definitions (append-safe: skip if file exists and is newer)
 AGENT_COUNT=0
+AGENT_SKIPPED=0
 for agent_file in "$SCRIPT_DIR/agents/"*.md; do
     if [ -f "$agent_file" ]; then
-        cp "$agent_file" "$AGENTS_DIR/"
-        AGENT_COUNT=$((AGENT_COUNT + 1))
+        agent_name=$(basename "$agent_file")
+        target_file="$AGENTS_DIR/$agent_name"
+        if [ -f "$target_file" ]; then
+            # File exists - check if source is newer
+            if [ "$agent_file" -nt "$target_file" ]; then
+                cp "$agent_file" "$target_file"
+                AGENT_COUNT=$((AGENT_COUNT + 1))
+            else
+                AGENT_SKIPPED=$((AGENT_SKIPPED + 1))
+            fi
+        else
+            cp "$agent_file" "$AGENTS_DIR/"
+            AGENT_COUNT=$((AGENT_COUNT + 1))
+        fi
     fi
 done
 echo -e "  ${GREEN}[OK]${NC} Installed $AGENT_COUNT agent definitions"
+if [ $AGENT_SKIPPED -gt 0 ]; then
+    echo -e "  ${CYAN}[INFO]${NC} Skipped $AGENT_SKIPPED existing agent files (use --force to overwrite)"
+fi
+
+# Install CLAUDE.md project context file
+CLAUDE_MD_SRC="$SCRIPT_DIR/CLAUDE.md"
+CLAUDE_MD_DST="$CONFIG_DIR/CLAUDE.md"
+if [ -f "$CLAUDE_MD_SRC" ]; then
+    if [ -f "$CLAUDE_MD_DST" ]; then
+        # Append new content if not already present
+        if ! grep -q "Agent Definitions" "$CLAUDE_MD_DST" 2>/dev/null; then
+            echo "" >> "$CLAUDE_MD_DST"
+            echo "# --- Agent Dashboard Context (appended) ---" >> "$CLAUDE_MD_DST"
+            cat "$CLAUDE_MD_SRC" >> "$CLAUDE_MD_DST"
+            echo -e "  ${GREEN}[OK]${NC} Appended agent context to existing CLAUDE.md"
+        else
+            echo -e "  ${CYAN}[INFO]${NC} CLAUDE.md already contains agent context"
+        fi
+    else
+        cp "$CLAUDE_MD_SRC" "$CLAUDE_MD_DST"
+        echo -e "  ${GREEN}[OK]${NC} Installed CLAUDE.md (project context)"
+    fi
+fi
 
 # Display agent summary
 echo ""
@@ -513,7 +549,7 @@ while [[ $# -gt 0 ]]; do
             break
             ;;
         --help|-h)
-            echo "Agent Dashboard v2.3 - Multi-Agent Workflow Monitor"
+            echo "Agent Dashboard v2.4.1 - Multi-Agent Workflow Monitor"
             echo ""
             echo "USAGE:"
             echo "  agent-dashboard [OPTIONS] [COMMAND]"
@@ -605,7 +641,7 @@ done
 # Launch dashboard
 if [ "$WEB_MODE" = true ]; then
     echo ""
-    echo "Starting Agent Dashboard v2.3 (Web Mode)"
+    echo "Starting Agent Dashboard v2.4.1 (Web Mode)"
     echo "==========================================="
     echo ""
     echo "  URL: http://localhost:$PORT"
@@ -618,7 +654,7 @@ if [ "$WEB_MODE" = true ]; then
     $PYTHON_CMD "$DASHBOARD_DIR/web_server.py" --port "$PORT"
 else
     echo ""
-    echo "Starting Agent Dashboard v2.3 (Terminal TUI)"
+    echo "Starting Agent Dashboard v2.4.1 (Terminal TUI)"
     echo "============================================="
     echo ""
     echo "  Press 'q' to quit"
@@ -742,7 +778,7 @@ if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
     if [ -n "$SHELL_RC" ]; then
         if ! grep -q "Agent Dashboard" "$SHELL_RC" 2>/dev/null; then
             echo "" >> "$SHELL_RC"
-            echo "# Agent Dashboard v2.3" >> "$SHELL_RC"
+            echo "# Agent Dashboard v2.4.1" >> "$SHELL_RC"
             echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$SHELL_RC"
             echo -e "  ${GREEN}[OK]${NC} Added to $SHELL_RC"
         fi
@@ -770,66 +806,60 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo -e "  ${GREEN}[OK]${NC} Backed up to $BACKUP_FILE"
     fi
 
-    # Create settings with cross-platform hook wrapper
-    cat > "$SETTINGS_FILE" << 'SETTINGS_EOF'
-{
+    # Dashboard hooks to add
+    DASHBOARD_HOOKS='{
   "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": ".*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type PreToolUse --agent-name ${AGENT_NAME:-claude} --model ${AGENT_MODEL:-sonnet}"
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": ".*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type PostToolUse --agent-name ${AGENT_NAME:-claude} --model ${AGENT_MODEL:-sonnet}"
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type UserPromptSubmit --agent-name ${AGENT_NAME:-claude}"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type Stop --agent-name ${AGENT_NAME:-claude}"
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type SubagentStop --agent-name ${AGENT_NAME:-claude}"
-          }
-        ]
-      }
-    ]
+    "PreToolUse": [{"matcher": ".*", "hooks": [{"type": "command", "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type PreToolUse --agent-name ${AGENT_NAME:-claude} --model ${AGENT_MODEL:-sonnet}"}]}],
+    "PostToolUse": [{"matcher": ".*", "hooks": [{"type": "command", "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type PostToolUse --agent-name ${AGENT_NAME:-claude} --model ${AGENT_MODEL:-sonnet}"}]}],
+    "UserPromptSubmit": [{"hooks": [{"type": "command", "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type UserPromptSubmit --agent-name ${AGENT_NAME:-claude}"}]}],
+    "Stop": [{"hooks": [{"type": "command", "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type Stop --agent-name ${AGENT_NAME:-claude}"}]}],
+    "SubagentStop": [{"hooks": [{"type": "command", "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type SubagentStop --agent-name ${AGENT_NAME:-claude}"}]}]
   }
-}
-SETTINGS_EOF
-    echo -e "  ${GREEN}[OK]${NC} Configured hooks in $SETTINGS_FILE"
+}'
+
+    # Merge hooks into existing settings (preserves other settings)
+    if [ -f "$SETTINGS_FILE" ]; then
+        $PYTHON_CMD << MERGE_SCRIPT
+import json
+import sys
+
+# Read existing settings
+try:
+    with open("$SETTINGS_FILE", "r") as f:
+        existing = json.load(f)
+except (json.JSONDecodeError, FileNotFoundError):
+    existing = {}
+
+# Parse new hooks
+new_hooks = json.loads('''$DASHBOARD_HOOKS''')
+
+# Merge hooks - add dashboard hooks without removing existing ones
+if "hooks" not in existing:
+    existing["hooks"] = {}
+
+for hook_type, hook_list in new_hooks.get("hooks", {}).items():
+    if hook_type not in existing["hooks"]:
+        existing["hooks"][hook_type] = hook_list
+    else:
+        # Check if dashboard hook already exists
+        existing_commands = [h.get("hooks", [{}])[0].get("command", "") for h in existing["hooks"][hook_type] if isinstance(h, dict)]
+        for new_hook in hook_list:
+            new_cmd = new_hook.get("hooks", [{}])[0].get("command", "")
+            if "run_hook.sh" not in str(existing_commands):
+                existing["hooks"][hook_type].append(new_hook)
+
+# Write merged settings
+with open("$SETTINGS_FILE", "w") as f:
+    json.dump(existing, f, indent=2)
+
+print("Merged dashboard hooks into existing settings")
+MERGE_SCRIPT
+        echo -e "  ${GREEN}[OK]${NC} Merged hooks into existing $SETTINGS_FILE"
+    else
+        # Create new settings file
+        echo "$DASHBOARD_HOOKS" | $PYTHON_CMD -c "import sys,json; print(json.dumps(json.load(sys.stdin), indent=2))" > "$SETTINGS_FILE"
+        echo -e "  ${GREEN}[OK]${NC} Created $SETTINGS_FILE with dashboard hooks"
+    fi
 else
     echo -e "  ${YELLOW}[SKIP]${NC} Hook configuration skipped"
 fi

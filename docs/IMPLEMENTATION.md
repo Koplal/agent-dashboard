@@ -1,4 +1,4 @@
-# Agent Dashboard v2.4 Implementation Guide
+# Agent Dashboard v2.4.1 Implementation Guide
 
 Complete guide for deploying the Agent Dashboard multi-agent workflow framework on any project.
 
@@ -327,6 +327,128 @@ agent-dashboard tokenizer
 # Test with custom text
 agent-dashboard tokenizer --test-text "Your custom text here"
 ```
+
+
+---
+
+## Dashboard UI Implementation (v2.4)
+
+### Collapsible Project Grouping
+
+The Active Sessions panel organizes agents by project with collapsible sections:
+
+#### Frontend Implementation
+
+The UI state persists collapse/expand across WebSocket updates using a JavaScript object:
+
+- projectExpandState: Keys are project names, values are boolean (expanded/collapsed)
+- toggleProject(projectName): Toggles expansion state and re-renders
+- expandAllProjects(): Sets all projects to expanded
+- collapseAllProjects(): Sets all projects to collapsed
+
+#### Project Summary Bar
+
+Each project header displays aggregated metrics calculated client-side:
+- Total tokens across all agents in project
+- Total cost across all agents
+- Active agent count
+- Total execution time (summed from session durations)
+- Time since last activity
+
+#### Project Status Calculation
+
+Status is determined by activity timestamps:
+- **active** (green, pulsing): Has active agents AND activity within 60 seconds
+- **idle** (yellow): Activity within 5 minutes
+- **inactive** (gray): No recent activity
+
+### Dynamic Viewport Height
+
+The dashboard uses CSS flexbox to fill the entire viewport:
+
+Key CSS properties:
+- body: height 100vh, display flex, flex-direction column
+- container: flex 1, min-height 0 (allows shrinking)
+- grid: flex 1, min-height 0
+- panel: display flex, flex-direction column, min-height 0
+- panel-content: flex 1, overflow-y auto, min-height 150px
+
+#### Responsive Breakpoints
+
+| Viewport | Grid Configuration | Behavior |
+|----------|-------------------|----------|
+| > 1200px | 1fr 0.9fr 380px | Full 3-column layout |
+| 768-1200px | 1fr 1fr | 2-column, stacked panels |
+| < 768px | 1fr | Single column, scrollable page |
+| > 1920px | 2200px max container | Enhanced panel heights |
+| > 2560px | 2800px max container | 4K optimized |
+
+### UI Layout Configuration
+
+#### Grid Column Sizing
+
+grid-template-columns: 1fr 0.9fr 380px
+
+- 1fr: Active Sessions panel (flexible)
+- 0.9fr: Event Timeline panel (slightly narrower)
+- 380px: Statistics + Agents panel (fixed width for agent names)
+
+#### Statistics Panel Compact Sizing
+
+The statistics panel uses flex: none and min-height: auto to fit content only,
+with reduced padding (0.5rem 1rem) and compact stat items (0.4rem padding).
+The Registered Agents header has margin-top: 1rem for visual separation.
+
+### Backend: Grouped Sessions API
+
+#### Endpoint: GET /api/sessions/grouped
+
+Returns sessions organized by project with aggregated metrics.
+
+Response structure:
+- projects: Dictionary of project groups
+- project_count: Total number of projects
+- total_agents: Sum of all agents across projects
+
+Each project group contains:
+- project_name: The project identifier
+- total_tokens: Sum of all agent tokens in the project
+- total_cost: Sum of all agent costs
+- total_execution_time: Sum of session durations in seconds
+- last_activity: Most recent activity timestamp
+- active_agents: Number of agents with active status
+- agent_count: Total number of agents in the project
+- agents: List of session data for each agent
+- status: Project status (active, idle, inactive)
+
+### Backend: Subagent Name Extraction
+
+The send_event.py hook extracts subagent names from Task tool payloads.
+
+The extract_subagent_name() function:
+1. Checks if tool_name is Task
+2. Looks for explicit agent fields: subagent_type, agent, agent_name, name, subagent
+3. Looks for model fields: model, tier, agent_model
+4. Falls back to pattern matching in description/prompt fields
+5. Normalizes and validates the extracted name
+
+This enables the dashboard to display actual subagent names instead of generic claude.
+
+### Bug Fixes (v2.4.1)
+
+#### JavaScript Quote Escaping
+
+Fixed toggleProject() onclick handler for project names containing apostrophes.
+The project name is now escaped with escapedProject = project.replace("'", "\''")
+before being used in the onclick attribute.
+
+#### Token Extraction Accuracy
+
+Improved extraction from Claude Code hook payload structure:
+- Bash tool output: Read from tool_response.stdout
+- Read tool output: Read from tool_response.file.content
+- Fallback to top-level output fields if tool_response is empty
+
 
 ---
 

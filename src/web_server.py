@@ -385,7 +385,9 @@ DASHBOARD_HTML = """
         
         .grid {
             display: grid;
-            grid-template-columns: 1fr 1fr 300px;
+            grid-template-columns: 1fr 0.9fr 380px;
+            grid-template-rows: 1fr; /* Single row fills available height */
+            align-items: stretch; /* All panels same height */
             gap: 1rem;
             margin-bottom: 1rem;
             /* Fill remaining viewport height */
@@ -538,12 +540,21 @@ DASHBOARD_HTML = """
             gap: 0.5rem;
         }
 
-        /* Position Registered Agents section at 880px from viewport top */
-        #agents-header {
-            /* Calc: 880px target - ~120px header - ~250px stats section */
-            margin-top: calc(880px - 370px);
+        /* Statistics panel - compact sizing, fit content only */
+        #stats-panel {
+            flex: none;
+            min-height: auto;
+            padding: 0.5rem 1rem;
         }
-        
+        #stats-panel .stat-item {
+            padding: 0.4rem 0;
+        }
+
+        /* Registered Agents section - spacing matches project group margins */
+        #agents-header {
+            margin-top: 1rem;
+        }
+
         .agent-item {
             display: flex;
             align-items: center;
@@ -1000,7 +1011,7 @@ DASHBOARD_HTML = """
                 return;
             }
             
-            panel.innerHTML = events.slice(0, 20).map(e => {
+            panel.innerHTML = events.map(e => {
                 const emoji = EVENT_EMOJIS[e.event_type] || '📌';
                 const time = new Date(e.timestamp).toLocaleTimeString();
                 const session = sessions[e.session_id];

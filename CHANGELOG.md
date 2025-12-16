@@ -1,6 +1,67 @@
 # Changelog
 
 All notable changes to Agent Dashboard are documented here.
+
+## [2.4.1] - 2025-12-16
+
+### Features
+
+#### Collapsible Project Grouping
+- **Collapsible project sections** - Click project headers to expand/collapse agent lists within each project
+- **Expand All / Collapse All buttons** - Quick controls at top of Active Sessions panel for managing all project groups at once
+- **Project status indicators** - Color-coded dots showing activity status: active (green, pulsing), idle (yellow), inactive (gray)
+- **Enhanced project summary bars** - Display total tokens, costs, execution time, active agent count, and time since last activity
+- **Nested scrolling** - Projects container and individual agent lists scroll independently for better navigation
+- **State persistence** - Collapse/expand states preserved during real-time WebSocket updates
+
+#### Dynamic Viewport Height
+- **100vh height** - Dashboard fills entire browser viewport on any screen size
+- **Flexbox distribution** - Panels grow proportionally to fill available space
+- **Responsive scaling** - Adapts seamlessly from 1080p to 1440p to 4K displays
+- **Mobile-first fallback** - Switches to scrollable layout on small screens (below 768px)
+
+#### UI Layout Improvements
+- **Optimized grid columns** - Layout uses 1fr 0.9fr 380px for better agent name display
+- **Compact statistics panel** - Sized to fit content only, no wasted space
+- **Repositioned Registered Agents** - Placed directly below Statistics with 1rem spacing
+- **Color-coded model badges** - Opus (purple), Sonnet (blue), Haiku (green)
+
+#### Subagent Name Extraction
+- **subagent_type field extraction** - Backend extracts spawned subagent names from Task tool payloads
+- **Proper agent tracking** - Dashboard displays actual subagent names instead of generic claude
+- **Model inference** - Subagent model tier extracted when available
+
+### Improvements
+
+#### Backend Enhancements
+- **New API endpoint** - GET /api/sessions/grouped returns sessions with project aggregates
+- **Project aggregation logic** - Server-side calculation of total tokens, cost, execution time per project
+- **Session timing tracking** - start_time field tracks session duration accurately
+- **Database index** - Added index on project column for faster grouped queries
+
+#### Frontend Enhancements
+- **Smooth CSS transitions** - Animated expand/collapse actions for project groups
+- **Styled scrollbars** - Custom scrollbar styling matching dashboard theme
+- **Agent usage indicators** - Shows which agents have been active in current session
+- **Restart/Shutdown controls** - Buttons in header for dashboard lifecycle management
+
+### Bug Fixes
+- **JavaScript quote escaping** - Fixed toggleProject() onclick handler for project names containing apostrophes
+- **Python string escaping** - Corrected escaping for JavaScript output in server-side HTML generation
+- **Token extraction accuracy** - Improved extraction from tool_response.stdout and tool_response.file.content
+
+### Backend Changes
+- Updated web_server.py with grouped sessions endpoint and aggregation logic
+- Updated send_event.py with subagent_type extraction from Task tool payloads
+- Added extract_subagent_name() function for intelligent agent name detection
+- Added project status calculation based on agent activity timestamps
+
+### Commits
+- d9e0f8f - expandable and collapsable projects
+- 5eef082 - updated token tracking, restart and stop
+- 3a52e50 - Dashboard enhancements: token tracking, project totals, model colors, controls
+- 8279341 - Dashboard improvements: token accuracy, project grouping, responsive design, dynamic agents
+
 ## [2.4.0] - 2025-12-16
 
 ### Added

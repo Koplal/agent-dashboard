@@ -1,4 +1,4 @@
-# Agent Dashboard v2.4.0
+# Agent Dashboard v2.4.1
 
 > **Quick Install:** `git clone https://github.com/Koplal/agent-dashboard.git && cd agent-dashboard && ./scripts/install.sh`
 >
@@ -53,13 +53,28 @@ A comprehensive multi-agent workflow framework implementing **Test-Driven Develo
 
 ### What's New in v2.4
 
+#### Collapsible Project Grouping
 - **Collapsible Project Groups** - Click project headers to expand/collapse agent lists
 - **Expand All / Collapse All** - Controls at the top of Active Sessions panel
 - **Enhanced Project Metrics** - Total tokens, cost, execution time, and time since last activity
 - **Project Status Indicators** - Visual status (active/idle/inactive) with color-coded dots
-- **Nested Scrolling** - Independent scrolling for projects container and agent lists within
+- **Nested Scrolling** - Independent scrolling for projects container and agent lists
 - **State Persistence** - Collapse/expand states preserved during real-time updates
+
+#### Dynamic Viewport Height
+- **100vh Dashboard** - Fills entire browser viewport on any screen size (1080p to 4K)
+- **Flexbox Layout** - Panels grow proportionally to fill available space
+- **Responsive Scaling** - Adapts seamlessly across display resolutions
+
+#### UI Layout Improvements
+- **Optimized Grid** - 3-column layout with wider right pane for agent names (1fr 0.9fr 380px)
+- **Compact Statistics** - Panel sized to fit content only
+- **Color-Coded Models** - Opus (purple), Sonnet (blue), Haiku (green) badges
+
+#### Backend Enhancements
 - **New API Endpoint** - `GET /api/sessions/grouped` returns sessions with project aggregates
+- **Subagent Tracking** - Proper extraction and display of spawned subagent names
+- **Session Timing** - Accurate duration tracking via start_time field
 
 ### What's New in v2.3
 
@@ -817,28 +832,71 @@ curl -X POST http://localhost:4200/events \
 
 ## Dashboard Features
 
+### Web Dashboard Layout
+
+The web dashboard uses a responsive 3-column grid layout that fills the viewport:
+
+```
++-----------------------------------------------------------------------------------+
+|                              Agent Dashboard Header                                |
+|  [Live] Uptime: 00:00:00  Port: 4200  [Restart] [Stop]                           |
++-----------------------------------------------------------------------------------+
+|                          |                        |                               |
+|   Active Sessions (1fr)  |  Event Timeline (0.9fr)|  Statistics + Agents (380px) |
+|                          |                        |                               |
+|  +--------------------+  |  +------------------+  |  +------------------------+  |
+|  | [Expand] [Collapse]|  |  | 12:34:56 Tool... |  |  | Events: 1,234          |  |
+|  +--------------------+  |  | 12:34:55 Read... |  |  | Sessions: 12           |  |
+|  |                    |  |  | 12:34:54 Bash... |  |  | Tokens: 45.2K          |  |
+|  | > project-alpha    |  |  | ...              |  |  | Cost: $0.1234          |  |
+|  |   [3 agents] $0.05 |  |  +------------------+  |  | Active: 3              |  |
+|  |   +- orchestrator  |  |                        |  +------------------------+  |
+|  |   +- researcher    |  |                        |  |                        |  |
+|  |   +- implementer   |  |                        |  | Registered Agents      |  |
+|  |                    |  |                        |  | [Refresh]              |  |
+|  | v project-beta     |  |                        |  | > orchestrator [opus]  |  |
+|  |   (collapsed)      |  |                        |  | > researcher [sonnet]  |  |
+|  |                    |  |                        |  | > summarizer [haiku]   |  |
+|  +--------------------+  |                        |  +------------------------+  |
+|                          |                        |                               |
++-----------------------------------------------------------------------------------+
+```
+
+**Grid Configuration:** `grid-template-columns: 1fr 0.9fr 380px`
+
 ### Terminal TUI (`agent-dashboard`)
 
 - Real-time event timeline
 - Active session tracking
 - Token usage and cost monitoring
-- Agent tier visualization (◆●○)
+- Agent tier visualization (diamond/circle/outline)
 - Color-coded agents
 
 ### Web Dashboard (`agent-dashboard --web`)
 
+#### Core Features
 - WebSocket live updates
 - Interactive session cards
 - Event filtering by type/agent
 - 24-hour statistics
+
+#### Project Organization (v2.4)
 - **Collapsible Project Groups** - Click to expand/collapse agent lists per project
 - **Project Aggregates** - Total tokens, cost, execution time per project
 - **Expand/Collapse All** - Quick controls to manage all project groups
 - **Project Status Indicators** - Visual activity status (active/idle/inactive)
 - **Nested Scrolling** - Projects container and agent lists scroll independently
+
+#### Display Features
+- **Dynamic Viewport Height** - Dashboard fills 100vh, scales on any screen
 - **Dynamic Agent Registry** - Agents scanned from `/agents/*.md` files
 - **Responsive Design** - Scales from mobile (320px) to 4K (3840px)
 - **Formatted Names** - Agent names properly capitalized and formatted
+- **Color-Coded Model Badges** - Opus (purple), Sonnet (blue), Haiku (green)
+
+#### Dashboard Controls
+- **Restart Button** - Restart the dashboard server
+- **Shutdown Button** - Stop the dashboard server
 
 ---
 

@@ -204,7 +204,7 @@ def extract_subagent_name(payload, event_type, fallback_name):
     if tool_name == "Task":
         if isinstance(tool_input, dict):
             # Check for explicit agent field
-            for field in ["agent", "agent_name", "name", "subagent"]:
+            for field in ["subagent_type", "agent", "agent_name", "name", "subagent"]:
                 if field in tool_input and tool_input[field]:
                     subagent_name = str(tool_input[field]).strip()
                     break
