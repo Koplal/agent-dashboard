@@ -15,7 +15,11 @@ Environment:
 Dependencies:
     - tiktoken: Accurate token counting (optional, falls back to estimation)
 
-Version: 2.2.1
+Token Counting:
+    For accurate token counting, this module extracts content from multiple
+    payload fields including tool_input, output, content, and response data.
+
+Version: 2.3.0
 """
 
 import argparse
@@ -26,7 +30,7 @@ import subprocess
 import hashlib
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Tuple
 import urllib.request
 import urllib.error
 
@@ -174,6 +178,42 @@ def read_stdin_payload() -> Dict[str, Any]:
     return {}
 
 
+
+
+def extract_token_content(payload: Dict[str, Any]) -> Tuple[str, str]:
+    """Extract input and output content from event payload for accurate token counting.
+    
+    This fixes the token counting accuracy issue by checking multiple payload fields,
+    not just tool_input.command.
+    """
+    input_parts = []
+    output_parts = []
+    
+    tool_input = payload.get("tool_input", {})
+    if isinstance(tool_input, dict):
+        input_fields = ["command", "content", "file_path", "query", "prompt", "pattern", 
+                       "code", "message", "text", "description", "new_source", "old_string", "new_string"]
+        for field in input_fields:
+            if field in tool_input and tool_input[field]:
+                input_parts.append(str(tool_input[field]))
+        if not input_parts and tool_input:
+            input_parts.append(json.dumps(tool_input))
+    elif tool_input:
+        input_parts.append(str(tool_input))
+    
+    output_fields = ["output", "result", "response", "content", "data"]
+    for field in output_fields:
+        if field in payload and payload[field]:
+            output_parts.append(str(payload[field]))
+            break
+    
+    if "response" in payload and isinstance(payload["response"], dict):
+        resp = payload["response"]
+        if "content" in resp and resp["content"] and not output_parts:
+            output_parts.append(str(resp["content"]))
+    
+    return "\n".join(input_parts), "\n".join(output_parts)
+
 def estimate_tokens(text: str) -> int:
     """
     Estimate token count for text.
@@ -217,10 +257,10 @@ def send_event(
     # Build event data
     git_info = get_git_info()
     
-    # Estimate tokens from payload
-    payload_str = json.dumps(payload)
-    tokens_in = estimate_tokens(payload.get("tool_input", {}).get("command", ""))
-    tokens_out = estimate_tokens(payload.get("output", ""))
+    # Extract and estimate tokens using improved extraction (fixes accuracy issue)
+    input_content, output_content = extract_token_content(payload)
+    tokens_in = estimate_tokens(input_content)
+    tokens_out = estimate_tokens(output_content)
     
     event = {
         "timestamp": datetime.now().isoformat(),
