@@ -1,6 +1,36 @@
 # Changelog
 
 All notable changes to Agent Dashboard are documented here.
+## [2.4.0] - 2025-12-16
+
+### Added
+
+#### Collapsible Project Grouping
+- **Collapsible project sections** - Click project headers to expand/collapse agent lists
+- **Expand All / Collapse All buttons** - Quick controls at top of Active Sessions panel
+- **Project status indicators** - Color-coded dots showing active (green), idle (yellow), inactive (gray)
+- **Enhanced project metrics** - Total tokens, cost, execution time, time since last activity
+- **Nested scrolling** - Projects container and agent lists scroll independently
+
+#### Backend Enhancements
+- **New API endpoint** - `GET /api/sessions/grouped` returns sessions with project aggregates
+- **Project aggregation** - Backend calculates total tokens, cost, execution time per project
+- **Session timing** - Tracks start_time for accurate duration calculation
+- **Database index** - Added index on project column for faster queries
+
+#### UI/UX Improvements
+- **State persistence** - Collapse/expand states preserved during real-time data updates
+- **Smooth transitions** - CSS animations for expand/collapse actions
+- **Status indicators** - Visual project activity status with pulsing animation for active projects
+- **Improved scrollbars** - Styled scrollbars matching dashboard theme
+
+### Changed
+- Version bumped to 2.4.0
+- Updated `web_server.py` with new grouping and aggregation logic
+- Updated dashboard HTML/CSS for collapsible sections
+- Updated JavaScript state management for UI persistence
+
+
 
 ## [2.3.0] - 2025-12-14
 

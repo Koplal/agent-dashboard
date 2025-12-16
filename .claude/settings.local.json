@@ -18,7 +18,9 @@
       "Bash(rm:*)",
       "Bash(git checkout:*)",
       "Bash(curl:*)",
-      "WebFetch(domain:tai-app-opal.vercel.app)"
+      "WebFetch(domain:tai-app-opal.vercel.app)",
+      "Bash(tasklist:*)",
+      "Bash(wmic process where \"name=''python.exe''\" get processid,commandline)"
     ]
   }
 }

@@ -11,7 +11,7 @@ Usage:
 The wrapper resolves shell variable syntax (${VAR:-default}) since Windows
 doesn't expand these, then forwards arguments to send_event.py.
 
-Version: 2.4.0
+Version: 2.4.1
 """
 
 import os

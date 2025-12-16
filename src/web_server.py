@@ -333,13 +333,23 @@ DASHBOARD_HTML = """
             font-family: 'JetBrains Mono', 'Fira Code', monospace;
             background: var(--bg-primary);
             color: var(--text-primary);
-            min-height: 100vh;
+            /* Viewport-relative height: fills entire screen on any display */
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
         
         .container {
             max-width: 1800px;
             margin: 0 auto;
             padding: 1rem;
+            /* Flex to fill remaining viewport height */
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0; /* Allow flex children to shrink */
+            overflow: hidden;
         }
         
         header {
@@ -348,6 +358,7 @@ DASHBOARD_HTML = """
             padding: 1.5rem;
             margin-bottom: 1rem;
             border: 1px solid var(--bg-tertiary);
+            flex-shrink: 0; /* Header maintains fixed height */
         }
         
         header h1 {
@@ -377,6 +388,9 @@ DASHBOARD_HTML = """
             grid-template-columns: 1fr 1fr 300px;
             gap: 1rem;
             margin-bottom: 1rem;
+            /* Fill remaining viewport height */
+            flex: 1;
+            min-height: 0; /* Allow grid to shrink for overflow */
         }
         
         .panel {
@@ -384,6 +398,10 @@ DASHBOARD_HTML = """
             border-radius: 12px;
             border: 1px solid var(--bg-tertiary);
             overflow: hidden;
+            /* Flex layout for viewport-relative height */
+            display: flex;
+            flex-direction: column;
+            min-height: 0; /* Allow panel to shrink */
         }
         
         .panel-header {
@@ -393,12 +411,15 @@ DASHBOARD_HTML = """
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            flex-shrink: 0; /* Header maintains fixed height */
         }
         
         .panel-content {
             padding: 1rem;
-            max-height: 400px;
+            /* Viewport-relative: fills remaining panel height */
+            flex: 1;
             overflow-y: auto;
+            min-height: 150px; /* Minimum height for usability */
         }
         
         .session-card {
@@ -516,6 +537,12 @@ DASHBOARD_HTML = """
             flex-direction: column;
             gap: 0.5rem;
         }
+
+        /* Position Registered Agents section at 880px from viewport top */
+        #agents-header {
+            /* Calc: 880px target - ~120px header - ~250px stats section */
+            margin-top: calc(880px - 370px);
+        }
         
         .agent-item {
             display: flex;
@@ -538,18 +565,40 @@ DASHBOARD_HTML = """
             font-size: 0.75rem;
         }
         
-        /* Responsive scaling for all screen sizes */
+        /* Responsive scaling for all screen sizes - viewport-relative */
         @media (max-width: 1200px) {
             .grid { grid-template-columns: 1fr 1fr; }
-            .panel-content { max-height: 350px; }
+            .panel-content { min-height: 120px; }
         }
         @media (max-width: 768px) {
-            .grid { grid-template-columns: 1fr; }
-            .container { padding: 0.5rem; }
+            /* Mobile: switch to scrollable page layout */
+            body {
+                height: auto;
+                min-height: 100vh;
+                overflow: auto;
+            }
+            .container { 
+                padding: 0.5rem; 
+                flex: none;
+                height: auto;
+            }
+            .grid { 
+                grid-template-columns: 1fr; 
+                flex: none;
+                height: auto;
+            }
+            .panel { 
+                flex: none; 
+                height: auto;
+            }
+            .panel-content { 
+                flex: none;
+                max-height: 300px; 
+                min-height: 100px;
+            }
             header { padding: 1rem; }
             header h1 { font-size: 1.4rem; }
             .header-info { flex-wrap: wrap; gap: 0.8rem; font-size: 0.8rem; }
-            .panel-content { max-height: 300px; }
             .event-row { grid-template-columns: 60px 24px 70px 70px 80px 1fr; font-size: 0.75rem; }
             .session-card .stats { flex-wrap: wrap; gap: 0.5rem; font-size: 0.75rem; }
         }
@@ -557,17 +606,37 @@ DASHBOARD_HTML = """
             header h1 { font-size: 1.2rem; }
             .event-row { grid-template-columns: 50px 20px 60px 60px 1fr; font-size: 0.7rem; }
             .event-row .type { display: none; }
+            .panel-content { max-height: 250px; }
         }
         @media (min-width: 1920px) {
+            /* HD+ monitors: larger container, panels fill via flex */
             .container { max-width: 2200px; }
             header h1 { font-size: 2.2rem; }
-            .panel-content { max-height: 500px; }
+            .panel-content { min-height: 300px; }
         }
-        .project-group { margin-bottom: 1rem; }
-        .project-header { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: var(--bg-tertiary); border-radius: 6px; margin-bottom: 0.5rem; cursor: pointer; font-weight: 600; font-size: 0.85rem; }
-        .project-header:hover { background: var(--bg-primary); }
-        .project-count { margin-left: auto; background: var(--accent-blue); color: var(--bg-primary); padding: 0.1rem 0.5rem; border-radius: 10px; font-size: 0.75rem; }
-        .project-totals { display: flex; gap: 1rem; font-size: 0.75rem; color: var(--text-secondary); padding: 0.3rem 0.5rem; }
+        @media (min-width: 2560px) {
+            /* 4K and ultra-wide: maximize content area */
+            .container { max-width: 2800px; }
+            .panel-content { min-height: 400px; }
+        }
+        .project-group { margin-bottom: 0.75rem; background: var(--bg-primary); border-radius: 8px; border: 1px solid var(--bg-tertiary); overflow: hidden; }
+        .project-summary { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; background: linear-gradient(90deg, var(--bg-tertiary) 0%, var(--bg-primary) 100%); cursor: pointer; user-select: none; transition: background 0.2s; }
+        .project-summary:hover { background: var(--bg-tertiary); }
+        .project-toggle { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; color: var(--text-muted); transition: transform 0.2s; }
+        .project-group.collapsed .project-toggle { transform: rotate(-90deg); }
+        .project-name { font-weight: 600; color: var(--accent-cyan); font-size: 0.95rem; }
+        .project-agent-count { background: var(--accent-blue); color: var(--bg-primary); padding: 0.1rem 0.5rem; border-radius: 10px; font-size: 0.7rem; font-weight: 600; }
+        .project-metrics { display: flex; gap: 1rem; margin-left: auto; font-size: 0.75rem; color: var(--text-secondary); }
+        .project-metrics span { display: flex; align-items: center; gap: 0.25rem; }
+        .project-status { width: 8px; height: 8px; border-radius: 50%; margin-left: 0.5rem; }
+        .project-status.active { background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); animation: pulse 2s infinite; }
+        .project-status.idle { background: var(--accent-yellow); }
+        .project-status.inactive { background: var(--text-muted); }
+        .project-agents { max-height: 250px; overflow-y: auto; padding: 0.5rem; background: var(--bg-primary); border-top: 1px solid var(--bg-tertiary); }
+        .project-group.collapsed .project-agents { display: none; }
+        .panel-controls { margin-left: auto; display: flex; gap: 0.5rem; }
+        .panel-controls button { padding: 0.2rem 0.5rem; background: var(--bg-secondary); border: 1px solid var(--bg-tertiary); border-radius: 4px; color: var(--text-secondary); cursor: pointer; font-size: 0.7rem; transition: all 0.2s; }
+        .panel-controls button:hover { background: var(--accent-blue); color: var(--bg-primary); }
         .model-badge { padding: 0.2rem 0.6rem; border-radius: 4px; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; }
         .model-opus { background: var(--accent-purple); color: var(--bg-primary); }
         .model-sonnet { background: var(--accent-blue); color: var(--bg-primary); }
@@ -598,7 +667,7 @@ DASHBOARD_HTML = """
         
         <div class="grid">
             <div class="panel">
-                <div class="panel-header">📊 Active Sessions</div>
+                <div class="panel-header">Active Sessions<div class="panel-controls"><button onclick="expandAllProjects()" title="Expand All">Expand All</button><button onclick="collapseAllProjects()" title="Collapse All">Collapse All</button></div></div>
                 <div class="panel-content" id="sessions-panel">
                     <p style="color: var(--text-muted)">Waiting for sessions...</p>
                 </div>
@@ -636,7 +705,7 @@ DASHBOARD_HTML = """
                     </div>
                 </div>
                 
-                <div class="panel-header" style="margin-top: 1rem;">🤖 Registered Agents <button onclick="loadAgents()" style="margin-left: auto; padding: 0.2rem 0.5rem; background: var(--accent-blue); border: none; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">↻</button></div>
+                <div class="panel-header" id="agents-header">🤖 Registered Agents <button onclick="loadAgents()" style="margin-left: auto; padding: 0.2rem 0.5rem; background: var(--accent-blue); border: none; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">↻</button></div>
                 <div class="panel-content">
                     <div class="agent-legend" id="agents-panel">
                         <p style="color: var(--text-muted)">Loading agents...</p>
@@ -664,6 +733,10 @@ DASHBOARD_HTML = """
         let sessions = {};
         let events = [];
         let startTime = Date.now();
+        
+        // UI state - persists collapse/expand across updates
+        // Keys are project names, values are true (expanded) or false (collapsed)
+        let projectExpandState = {};
         
         function connect() {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -694,6 +767,13 @@ DASHBOARD_HTML = """
             } else if (data.type === 'init') {
                 events = data.events || [];
                 sessions = data.sessions || {};
+                // Initialize expand state for all projects (default: expanded)
+                Object.values(sessions).forEach(s => {
+                    const project = s.project || 'default';
+                    if (!(project in projectExpandState)) {
+                        projectExpandState[project] = true;
+                    }
+                });
                 updateEventsPanel();
                 updateSessionsPanel();
             } else if (data.type === 'stats') {
@@ -712,9 +792,16 @@ DASHBOARD_HTML = """
                     status: 'active',
                     total_tokens: 0,
                     total_cost: 0,
+                    start_time: event.timestamp,
                     last_activity: event.timestamp,
                     color_idx: Object.keys(sessions).length % AGENT_COLORS.length
                 };
+                
+                // Initialize expand state for new projects (default: expanded)
+                const project = event.project || 'default';
+                if (!(project in projectExpandState)) {
+                    projectExpandState[project] = true;
+                }
             }
             
             const session = sessions[sid];
@@ -739,7 +826,56 @@ DASHBOARD_HTML = """
             ).join(' ');
         }
 
-        // Group sessions by project for better organization
+        
+        // =============================================================================
+        // PROJECT COLLAPSE/EXPAND FUNCTIONS
+        // =============================================================================
+        
+        function toggleProject(projectName) {
+            projectExpandState[projectName] = !projectExpandState[projectName];
+            updateSessionsPanel();
+        }
+        
+        function expandAllProjects() {
+            Object.keys(projectExpandState).forEach(p => {
+                projectExpandState[p] = true;
+            });
+            updateSessionsPanel();
+        }
+        
+        function collapseAllProjects() {
+            Object.keys(projectExpandState).forEach(p => {
+                projectExpandState[p] = false;
+            });
+            updateSessionsPanel();
+        }
+        
+        // Determine project activity status based on agents
+        function getProjectStatus(projectSessions) {
+            const now = Date.now();
+            let hasActive = false;
+            let mostRecentActivity = 0;
+            
+            projectSessions.forEach(s => {
+                const lastActivity = new Date(s.last_activity).getTime();
+                if (lastActivity > mostRecentActivity) mostRecentActivity = lastActivity;
+                if (s.status === 'active') hasActive = true;
+            });
+            
+            const timeSinceActivity = (now - mostRecentActivity) / 1000;
+            
+            if (hasActive && timeSinceActivity < 60) return 'active';
+            if (timeSinceActivity < 300) return 'idle'; // 5 minutes
+            return 'inactive';
+        }
+        
+        function formatTokens(tokens) {
+            if (tokens >= 1000000) return (tokens / 1000000).toFixed(1) + 'M';
+            if (tokens >= 1000) return (tokens / 1000).toFixed(1) + 'K';
+            return tokens.toString();
+        }
+
+        // Group sessions by project for better organization - with collapsible sections
         function updateSessionsPanel() {
             const panel = document.getElementById('sessions-panel');
             const sorted = Object.values(sessions).sort((a, b) => 
@@ -759,46 +895,91 @@ DASHBOARD_HTML = """
                 groups[project].push(s);
             });
             
-            // Render grouped sessions with project totals
-            panel.innerHTML = Object.entries(groups).map(([project, projectSessions]) => {
-                // Calculate project totals
+            // Ensure all projects have expand state (default: expanded)
+            Object.keys(groups).forEach(p => {
+                if (!(p in projectExpandState)) {
+                    projectExpandState[p] = true;
+                }
+            });
+            
+            // Sort projects by most recent activity
+            const sortedProjects = Object.entries(groups).sort((a, b) => {
+                const aLatest = Math.max(...a[1].map(s => new Date(s.last_activity).getTime()));
+                const bLatest = Math.max(...b[1].map(s => new Date(s.last_activity).getTime()));
+                return bLatest - aLatest;
+            });
+            
+            // Render grouped sessions with collapsible project sections
+            panel.innerHTML = sortedProjects.map(([project, projectSessions]) => {
+                // Calculate project aggregates
                 const projectTokens = projectSessions.reduce((sum, s) => sum + s.total_tokens, 0);
                 const projectCost = projectSessions.reduce((sum, s) => sum + s.total_cost, 0);
+                const activeCount = projectSessions.filter(s => s.status === 'active').length;
                 
-                const sessionsHtml = projectSessions.slice(0, 5).map(s => {
+                // Calculate total execution time
+                let totalExecutionSec = 0;
+                projectSessions.forEach(s => {
+                    const start = new Date(s.start_time || s.last_activity).getTime();
+                    const end = s.status === 'completed' ? new Date(s.last_activity).getTime() : Date.now();
+                    totalExecutionSec += (end - start) / 1000;
+                });
+                
+                // Find most recent activity
+                const lastActivityTime = Math.max(...projectSessions.map(s => new Date(s.last_activity).getTime()));
+                const lastActivityAgo = getTimeAgo(new Date(lastActivityTime).toISOString());
+                
+                // Get project status
+                const projectStatus = getProjectStatus(projectSessions);
+                
+                // Check expand/collapse state
+                const isExpanded = projectExpandState[project] !== false;
+                const collapsedClass = isExpanded ? '' : 'collapsed';
+                const toggleIcon = isExpanded ? '&#9660;' : '&#9654;'; // down / right arrow
+                
+                // Format execution time
+                const execTimeStr = totalExecutionSec < 60 
+                    ? Math.floor(totalExecutionSec) + 's'
+                    : totalExecutionSec < 3600
+                        ? Math.floor(totalExecutionSec / 60) + 'm'
+                        : Math.floor(totalExecutionSec / 3600) + 'h ' + Math.floor((totalExecutionSec % 3600) / 60) + 'm';
+                
+                // Render agent cards
+                const agentsHtml = projectSessions.map(s => {
                     const color = AGENT_COLORS[s.color_idx];
-                    const statusClass = `status-${s.status}`;
+                    const statusClass = 'status-' + s.status;
                     const timeAgo = getTimeAgo(s.last_activity);
                     const displayName = formatAgentName(s.agent_name);
                     const modelClass = getModelClass(s.model);
                     
-                    return `
-                        <div class="session-card" style="border-left-color: ${color}">
-                            <div class="name" style="color: ${color}">${displayName}</div>
-                            <div class="meta"><span class="model-badge ${modelClass}">${s.model}</span></div>
-                            <div class="stats">
-                                <span class="${statusClass}">● ${s.status}</span>
-                                <span>🎯 ${s.total_tokens.toLocaleString()}</span>
-                                <span>💰 $${s.total_cost.toFixed(4)}</span>
-                                <span>⏱ ${timeAgo}</span>
-                            </div>
-                        </div>
-                    `;
+                    return '<div class="session-card" style="border-left-color: ' + color + '">' +
+                        '<div class="name" style="color: ' + color + '">' + displayName + '</div>' +
+                        '<div class="meta"><span class="model-badge ' + modelClass + '">' + s.model + '</span></div>' +
+                        '<div class="stats">' +
+                            '<span class="' + statusClass + '">&#x25CF; ' + s.status + '</span>' +
+                            '<span>Tokens: ' + formatTokens(s.total_tokens) + '</span>' +
+                            '<span>$' + s.total_cost.toFixed(4) + '</span>' +
+                            '<span>' + timeAgo + '</span>' +
+                        '</div>' +
+                    '</div>';
                 }).join('');
                 
-                return `
-                    <div class="project-group">
-                        <div class="project-header">
-                            📁 ${project}
-                            <span class="project-count">${projectSessions.length}</span>
-                        </div>
-                        <div class="project-totals">
-                            <span>🎯 ${projectTokens.toLocaleString()} tokens</span>
-                            <span>💰 $${projectCost.toFixed(4)}</span>
-                        </div>
-                        <div class="project-sessions">${sessionsHtml}</div>
-                    </div>
-                `;
+                const escapedProject = project.replace(/'/g, "\\'");
+
+                return '<div class="project-group ' + collapsedClass + '" data-project="' + project + '">' +
+                    '<div class="project-summary" onclick="toggleProject(\\'' + escapedProject + '\\')">' +
+                        '<span class="project-toggle">' + toggleIcon + '</span>' +
+                        '<span class="project-name">' + project + '</span>' +
+                        '<span class="project-agent-count">' + projectSessions.length + ' agent' + (projectSessions.length !== 1 ? 's' : '') + '</span>' +
+                        '<div class="project-metrics">' +
+                            '<span>Tokens: ' + formatTokens(projectTokens) + '</span>' +
+                            '<span>$' + projectCost.toFixed(4) + '</span>' +
+                            '<span>Time: ' + execTimeStr + '</span>' +
+                            '<span>Last: ' + lastActivityAgo + '</span>' +
+                        '</div>' +
+                        '<span class="project-status ' + projectStatus + '" title="' + projectStatus + '"></span>' +
+                    '</div>' +
+                    '<div class="project-agents">' + agentsHtml + '</div>' +
+                '</div>';
             }).join('');
         }
         
@@ -1029,6 +1210,7 @@ class WebDashboard:
             """)
             conn.execute("CREATE INDEX IF NOT EXISTS idx_events_session ON events(session_id)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_events_timestamp ON events(timestamp DESC)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_events_project ON events(project)")
             conn.commit()
     
     def _load_recent_data(self):
@@ -1068,11 +1250,15 @@ class WebDashboard:
                 "status": "active",
                 "total_tokens": 0,
                 "total_cost": 0.0,
+                "start_time": event["timestamp"],
                 "last_activity": event["timestamp"],
                 "color_idx": len(self.sessions) % 8
             }
         
         session = self.sessions[sid]
+        # Track start_time if not already set
+        if "start_time" not in session:
+            session["start_time"] = event["timestamp"]
         session["last_activity"] = event["timestamp"]
         session["total_tokens"] += event.get("tokens_in", 0) + event.get("tokens_out", 0)
         session["total_cost"] += event.get("cost", 0.0)
@@ -1098,6 +1284,87 @@ class WebDashboard:
                 "total_tokens": row[2] or 0,
                 "total_cost": row[3] or 0.0,
             }
+    
+
+    def _get_grouped_sessions(self) -> Dict[str, Any]:
+        """Get sessions grouped by project with aggregated metrics.
+        
+        Returns a dictionary with project names as keys, each containing:
+        - project_name: The project identifier
+        - total_tokens: Sum of all agent tokens in the project
+        - total_cost: Sum of all agent costs
+        - total_execution_time: Sum of session durations in seconds
+        - last_activity: Most recent activity timestamp
+        - active_agents: Number of agents with 'active' status
+        - agent_count: Total number of agents in the project
+        - agents: List of session data for each agent
+        - status: Project status ('active', 'idle', 'inactive')
+        """
+        groups = {}
+        
+        for sid, session in self.sessions.items():
+            project = session.get("project", "default")
+            
+            if project not in groups:
+                groups[project] = {
+                    "project_name": project,
+                    "total_tokens": 0,
+                    "total_cost": 0.0,
+                    "total_execution_time": 0.0,
+                    "last_activity": None,
+                    "active_agents": 0,
+                    "agent_count": 0,
+                    "agents": [],
+                    "status": "inactive"
+                }
+            
+            group = groups[project]
+            group["agents"].append(session)
+            group["agent_count"] += 1
+            group["total_tokens"] += session.get("total_tokens", 0)
+            group["total_cost"] += session.get("total_cost", 0.0)
+            
+            # Calculate session duration
+            start_time = session.get("start_time") or session.get("last_activity")
+            last_activity = session.get("last_activity")
+            if start_time and last_activity:
+                try:
+                    start_dt = datetime.fromisoformat(start_time.replace("Z", "+00:00"))
+                    end_dt = datetime.fromisoformat(last_activity.replace("Z", "+00:00"))
+                    duration_sec = (end_dt - start_dt).total_seconds()
+                    group["total_execution_time"] += max(0, duration_sec)
+                except (ValueError, TypeError):
+                    pass
+            
+            # Track most recent activity
+            if last_activity:
+                if group["last_activity"] is None or last_activity > group["last_activity"]:
+                    group["last_activity"] = last_activity
+            
+            # Count active agents
+            if session.get("status") == "active":
+                group["active_agents"] += 1
+        
+        # Determine project status based on activity
+        now = datetime.now()
+        for project, group in groups.items():
+            if group["active_agents"] > 0:
+                group["status"] = "active"
+            elif group["last_activity"]:
+                try:
+                    last_dt = datetime.fromisoformat(group["last_activity"].replace("Z", "+00:00"))
+                    if hasattr(last_dt, 'tzinfo') and last_dt.tzinfo is not None:
+                        from datetime import timezone
+                        now = datetime.now(timezone.utc)
+                    time_since = (now - last_dt).total_seconds()
+                    if time_since < 300:  # 5 minutes
+                        group["status"] = "idle"
+                    else:
+                        group["status"] = "inactive"
+                except (ValueError, TypeError):
+                    group["status"] = "inactive"
+        
+        return groups
     
     async def handle_index(self, request):
         """Serve the dashboard HTML."""
@@ -1157,6 +1424,20 @@ class WebDashboard:
     async def handle_sessions(self, request):
         """Get active sessions."""
         return web.json_response({"sessions": self.sessions})
+    
+
+    async def handle_sessions_grouped(self, request):
+        """Get sessions grouped by project with aggregated metrics.
+        
+        This endpoint returns sessions organized by project, with calculated
+        totals for tokens, cost, execution time, and activity status.
+        """
+        grouped = self._get_grouped_sessions()
+        return web.json_response({
+            "projects": grouped,
+            "project_count": len(grouped),
+            "total_agents": sum(g["agent_count"] for g in grouped.values())
+        })
     
     async def handle_stats(self, request):
         """Get statistics."""
@@ -1403,6 +1684,7 @@ class WebDashboard:
         app.router.add_post("/events", self.handle_events_post)
         app.router.add_get("/api/events", self.handle_events_get)
         app.router.add_get("/api/sessions", self.handle_sessions)
+        app.router.add_get("/api/sessions/grouped", self.handle_sessions_grouped)
         app.router.add_get("/api/stats", self.handle_stats)
         app.router.add_get("/health", self.handle_health)
         app.router.add_get("/api/agents", self.handle_agents)
@@ -1433,6 +1715,7 @@ class WebDashboard:
         print(f"[*] Agent Dashboard running at http://localhost:{self.port}")
         print(f"[>] Event endpoint: http://localhost:{self.port}/events")
         print(f"[~] WebSocket: ws://localhost:{self.port}/ws")
+        print(f"[#] Grouped sessions: http://localhost:{self.port}/api/sessions/grouped")
         if self.workflow_engine:
             print(f"[+] Workflow API: http://localhost:{self.port}/api/workflow")
             print(f"[$] Budget API: http://localhost:{self.port}/api/budget")

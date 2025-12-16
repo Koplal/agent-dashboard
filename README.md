@@ -1,4 +1,4 @@
-# Agent Dashboard v2.3.0
+# Agent Dashboard v2.4.0
 
 > **Quick Install:** `git clone https://github.com/Koplal/agent-dashboard.git && cd agent-dashboard && ./scripts/install.sh`
 >
@@ -50,6 +50,16 @@ A comprehensive multi-agent workflow framework implementing **Test-Driven Develo
 | **7-Phase Workflow** | SPEC → TEST_DESIGN → TEST_IMPL → IMPLEMENT → VALIDATE → REVIEW → DELIVER |
 | **Cost Governance** | Circuit breaker pattern with budget enforcement |
 | **Six-Layer Validation** | Static analysis, tests, TODO check, mock detection, integration, diff |
+
+### What's New in v2.4
+
+- **Collapsible Project Groups** - Click project headers to expand/collapse agent lists
+- **Expand All / Collapse All** - Controls at the top of Active Sessions panel
+- **Enhanced Project Metrics** - Total tokens, cost, execution time, and time since last activity
+- **Project Status Indicators** - Visual status (active/idle/inactive) with color-coded dots
+- **Nested Scrolling** - Independent scrolling for projects container and agent lists within
+- **State Persistence** - Collapse/expand states preserved during real-time updates
+- **New API Endpoint** - `GET /api/sessions/grouped` returns sessions with project aggregates
 
 ### What's New in v2.3
 
@@ -821,7 +831,11 @@ curl -X POST http://localhost:4200/events \
 - Interactive session cards
 - Event filtering by type/agent
 - 24-hour statistics
-- **Project Grouping** - Sessions organized by project with collapsible groups
+- **Collapsible Project Groups** - Click to expand/collapse agent lists per project
+- **Project Aggregates** - Total tokens, cost, execution time per project
+- **Expand/Collapse All** - Quick controls to manage all project groups
+- **Project Status Indicators** - Visual activity status (active/idle/inactive)
+- **Nested Scrolling** - Projects container and agent lists scroll independently
 - **Dynamic Agent Registry** - Agents scanned from `/agents/*.md` files
 - **Responsive Design** - Scales from mobile (320px) to 4K (3840px)
 - **Formatted Names** - Agent names properly capitalized and formatted

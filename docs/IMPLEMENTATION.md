@@ -1,4 +1,4 @@
-# Agent Dashboard v2.2 Implementation Guide
+# Agent Dashboard v2.4 Implementation Guide
 
 Complete guide for deploying the Agent Dashboard multi-agent workflow framework on any project.
 
@@ -37,6 +37,8 @@ This guide assumes you are using a **Bash-compatible terminal**:
 The Agent Dashboard is a multi-agent workflow orchestration system for Claude Code that provides:
 
 - **Real-time Monitoring** - Track agent activities, token usage, and costs
+- **Collapsible Project Grouping** - Organize agents by project with expand/collapse controls
+- **Project-Level Metrics** - Aggregated tokens, cost, execution time per project
 - **Workflow Orchestration** - Multi-phase task execution with governance
 - **Cost Governance** - Budget enforcement with circuit breaker pattern
 - **Accurate Token Tracking** - Tiktoken-based token counting (cl100k_base encoding)
@@ -491,6 +493,7 @@ AGENT_NAME=orchestrator claude "Plan a research strategy for implementing cachin
 | `/events` | POST | Receive events from hooks |
 | `/api/events` | GET | Get recent events |
 | `/api/sessions` | GET | Get active sessions |
+| `/api/sessions/grouped` | GET | Get sessions grouped by project with aggregates |
 | `/api/stats` | GET | Get statistics |
 | `/health` | GET | Health check |
 | `/ws` | WS | WebSocket for live updates |
