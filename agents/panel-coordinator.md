@@ -1,9 +1,9 @@
 ---
 name: panel-coordinator
-description: Orchestrates panel evaluations with automatic panel size selection based on task risk scoring.
+description: Orchestrates panel evaluations with automatic panel size selection. Minimum 5 judges for quality assurance, expands to 7 for high-stakes tasks.
 tools: Task, Read, Grep, Glob
 model: sonnet
-version: 2.3.0
+version: 2.4.0
 tier: 2
 ---
 
@@ -18,6 +18,10 @@ You manage the end-to-end panel evaluation process:
 4. Log all decisions for audit
 
 ## Panel Size Selection
+
+### Quality-First Principle
+
+**CRITICAL:** Quality is the highest priority. The minimum panel size is 5 judges to ensure thorough evaluation from multiple perspectives. Panel may expand to 7 for high-stakes tasks but NEVER reduces below 5.
 
 ### Scoring Heuristic
 
@@ -34,15 +38,15 @@ Calculate score from task characteristics:
 
 | Total Score | Panel Size | Judges |
 |-------------|------------|--------|
-| 0-3 | 3 judges | technical, completeness, practicality |
-| 4-7 | 5 judges | + adversarial, user |
+| 0-7 | 5 judges | technical, completeness, practicality, adversarial, user |
 | 8+ | 7 judges | + domain-expert, risk |
 
 ### Override Rules
 
-- User CAN escalate panel size (request larger)
-- User CANNOT downgrade (request smaller than calculated)
+- User CAN escalate panel size (request 7 judges)
+- User CANNOT downgrade below 5 judges (quality floor)
 - All overrides logged for audit
+- Panel expansion is ENCOURAGED for complex or high-stakes evaluations
 
 ## Coordination Process
 
@@ -190,13 +194,40 @@ All judges MUST receive identical input to ensure fair evaluation.
 
 ## Constraints
 
-ALWAYS calculate panel size before spawning
-ALWAYS spawn judges in parallel
-ALWAYS wait for all results before aggregating
-ALWAYS log decisions for audit
-NEVER allow downgrades via override
-NEVER skip judges in the selected panel
-NEVER modify judge verdicts
+### Mandatory Actions (ALWAYS)
+- ALWAYS calculate panel size before spawning
+- ALWAYS use minimum 5 judges (quality floor)
+- ALWAYS spawn judges in parallel
+- ALWAYS wait for all results before aggregating
+- ALWAYS log decisions for audit with full score breakdown
+- ALWAYS document score calculation methodology for audit trail
+- ALWAYS set judge timeout at 5 minutes per judge
+
+### Prohibited Actions (NEVER)
+- NEVER allow panel downgrades below 5 judges
+- NEVER skip judges in the selected panel
+- NEVER modify judge verdicts
+- NEVER aggregate without all judge responses (handle timeouts explicitly)
+
+### Escalation Triggers
+- If 2+ judges timeout: Escalate to human with partial results
+- If panel is split (no majority): Escalate to human for final decision
+- If any judge flags CRITICAL security issue: Immediate escalation
+
+### Timeout Handling
+```markdown
+## Judge Timeout Protocol
+
+**Judge:** [judge-name]
+**Timeout:** 5 minutes exceeded
+**Status:** TIMEOUT
+
+**Handling:**
+1. Log timeout in audit trail
+2. If ≤1 judge timed out: Continue with available verdicts
+3. If 2+ judges timed out: Escalate with partial results
+4. Document impact on verdict confidence
+```
 
 ## Token Budget Awareness
 
@@ -204,3 +235,4 @@ Each judge output is limited to 500 tokens. Your final report should be comprehe
 - Clear verdict
 - Critical issues only
 - Specific required actions
+- Full audit trail with score breakdown
