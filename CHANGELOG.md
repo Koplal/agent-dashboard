@@ -2,6 +2,35 @@
 
 All notable changes to Agent Dashboard are documented here.
 
+## [2.5.0] - 2025-12-18
+
+### Agent Optimization (v2.4.0 Agent Definitions)
+
+Major update to all 22 agent definitions based on systematic prompt engineering analysis. All changes approved by 5-judge panel (4.4/5 mean score).
+
+#### Quality-First Enhancements
+- **5-Judge Panel Minimum** - Panel evaluations require minimum 5 judges (quality floor)
+- **Panel Expansion** - High-stakes evaluations can expand to 7 judges
+- **62+ New Constraints** - Standardized ALWAYS/NEVER format across all agents
+- **Evidence-Citing Requirements** - All panel judges must cite specific evidence
+- **Few-Shot Examples** - 18+ examples added to Tier 1 agents and judges
+
+#### Safety Mechanisms
+- **Iteration Limits** - Orchestrator (5), Implementer (50), Critic (3), Web-search (10)
+- **Test File Protection** - Implementer detects/rejects test modifications
+- **Escalation Protocols** - Timeout handling, scope checkpoints, failure escalation
+- **Research Caching** - Documented pattern for 20-30% savings
+
+#### Workflow Improvements
+- **Standardized Handoff Schemas** - Researchers output structured JSON
+- **Verification Gates** - Planner specs require panel review for security features
+- **Unresolvable Conflict Handling** - Synthesis marks irreconcilable conflicts
+
+#### Documentation
+- Added Research References section with academic sources
+- Updated panel size documentation (5-judge minimum)
+- Added internal analysis document links
+
 ## [2.4.1] - 2025-12-16
 
 ### Features
