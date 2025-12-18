@@ -83,11 +83,11 @@ class TestInstallation:
         assert agents_dir.exists(), "agents/ directory not found"
 
     def test_agents_count(self):
-        """Should have 20 agent definitions (14 base + 6 panel judges)."""
+        """Should have 22 agent definitions (14 base + 6 panel judges + 2 prompt agents)."""
         agents_dir = Path(__file__).parent.parent / "agents"
         agent_files = list(agents_dir.glob("*.md"))
-        assert len(agent_files) == 20, \
-            f"Expected 20 agents, found {len(agent_files)}"
+        assert len(agent_files) == 22, \
+            f"Expected 22 agents, found {len(agent_files)}"
 
     def test_all_agents_have_frontmatter(self):
         """All agent files should have valid YAML frontmatter."""
@@ -215,8 +215,8 @@ class TestNoStaleReferences:
                         list(root.glob("**/*.sh"))
 
         for filepath in files_to_check:
-            # Skip git directory and test files (which contain the pattern for testing)
-            if '.git' in str(filepath) or 'test_cross_platform.py' in str(filepath):
+            # Skip git directory, test files, and historical reports
+            if '.git' in str(filepath) or 'test_cross_platform.py' in str(filepath) or 'AGENT_OPTIMIZATION_REPORT' in str(filepath):
                 continue
 
             try:
