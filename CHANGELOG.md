@@ -2,6 +2,46 @@
 
 All notable changes to Agent Dashboard are documented here.
 
+## [2.5.0] - 2025-12-18
+
+### Agent Optimization (v2.4.0 Agent Definitions)
+
+Major update to all 22 agent definitions based on systematic prompt engineering analysis. All changes approved by 5-judge panel (4.4/5 mean score).
+
+#### Quality-First Enhancements
+- **5-Judge Panel Minimum** - Panel evaluations now require minimum 5 judges (quality floor)
+- **Panel Expansion** - High-stakes evaluations can expand to 7 judges
+- **62+ New Constraints** - Added across all agents using standardized ALWAYS/NEVER format
+- **Evidence-Citing Requirements** - All panel judges must cite specific evidence for findings
+- **Few-Shot Examples** - 18+ examples added to Tier 1 agents and all panel judges
+
+#### Safety Mechanisms
+- **Iteration Limits** - Hard caps prevent unbounded loops:
+  - Orchestrator: 5 research rounds max
+  - Implementer: 50 iterations max
+  - Critic: 3 revision rounds max
+  - Web-search-researcher: 10 queries max
+- **Test File Protection** - Implementer detects/rejects test file modifications (checksum verification)
+- **Escalation Protocols** - Timeout handling, scope expansion checkpoints, failure escalation paths
+- **Research Caching** - Documented pattern for reducing redundant research (20-30% savings)
+
+#### Workflow Improvements
+- **Standardized Handoff Schemas** - All researcher agents output structured JSON for synthesis
+- **Verification Gates** - Planner specs require panel review for high-complexity/security features
+- **Unresolvable Conflict Handling** - Synthesis explicitly marks conflicts that cannot be reconciled
+- **Token Tracking** - Orchestrator tracks cumulative tool calls across delegated agents
+
+#### Agents Updated to v2.4.0 (22 total)
+- **Tier 1 (Opus):** orchestrator, critic, synthesis, planner
+- **Tier 2 (Sonnet):** panel-coordinator, judge-technical, judge-completeness, judge-practicality, judge-adversarial, judge-user, research-judge, researcher, implementer, perplexity-researcher
+- **Tier 3 (Haiku):** web-search-researcher, summarizer, test-writer, validator, installer
+
+#### Documentation
+- Added Research References section with academic sources
+- Updated panel size documentation (5-judge minimum)
+- Added internal analysis document links
+- Updated agent count to 22
+
 ## [2.4.1] - 2025-12-16
 
 ### Features

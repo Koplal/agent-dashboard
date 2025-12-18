@@ -1,4 +1,4 @@
-# Agent Dashboard v2.4.1
+# Agent Dashboard v2.5.0
 
 > **Quick Install:** `git clone https://github.com/Koplal/agent-dashboard.git && cd agent-dashboard && ./scripts/install.sh`
 >
@@ -45,15 +45,39 @@ A comprehensive multi-agent workflow framework implementing **Test-Driven Develo
 | Feature | Description |
 |---------|-------------|
 | **TDD Workflow** | Test-Driven Development with immutable tests |
-| **Multi-Agent Orchestration** | 20 specialized agents across 3 tiers (Opus/Sonnet/Haiku) |
+| **Multi-Agent Orchestration** | 22 specialized agents across 3 tiers (Opus/Sonnet/Haiku) |
 | **Real-time Monitoring** | Terminal TUI (Rich) and Web Dashboard with WebSocket updates |
 | **7-Phase Workflow** | SPEC → TEST_DESIGN → TEST_IMPL → IMPLEMENT → VALIDATE → REVIEW → DELIVER |
 | **Cost Governance** | Circuit breaker pattern with budget enforcement |
 | **Six-Layer Validation** | Static analysis, tests, TODO check, mock detection, integration, diff |
 
-### What's New in v2.4
+### What's New in v2.5.0 - Agent Optimization
 
-#### Collapsible Project Grouping
+All 22 agent definitions upgraded to v2.4.0 with comprehensive quality improvements based on systematic prompt engineering analysis.
+
+#### Quality-First Enhancements
+- **5-Judge Panel Minimum** - Panel evaluations now require minimum 5 judges (quality floor), expandable to 7 for high-stakes tasks
+- **62+ New Constraints** - Standardized ALWAYS/NEVER format across all agents
+- **Evidence-Citing Requirements** - All panel judges must cite specific evidence for every finding
+- **Few-Shot Examples** - 18+ examples added to Tier 1 agents (orchestrator, critic, synthesis, planner) and all panel judges
+
+#### Safety Mechanisms
+- **Iteration Limits** - Orchestrator (5 rounds), Implementer (50 iterations), Critic (3 rounds), Web-search (10 queries)
+- **Test File Protection** - Implementer detects and rejects test file modifications during implementation
+- **Escalation Protocols** - Clear timeout handling, scope expansion checkpoints, and failure escalation paths
+- **Research Caching** - Documented caching pattern to reduce redundant research (20-30% savings)
+
+#### Workflow Improvements
+- **Standardized Handoff Schemas** - All researcher agents output structured JSON for synthesis
+- **Verification Gates** - Planner specs require panel review for high-complexity/security features
+- **Unresolvable Conflict Handling** - Synthesis explicitly marks conflicts that cannot be reconciled
+
+#### Panel Review
+All changes approved by 5-judge panel: **4.4/5 mean score, 5 PASS votes**
+
+### What's New in v2.4.x
+
+#### Collapsible Project Grouping (v2.4.1)
 - **Collapsible Project Groups** - Click project headers to expand/collapse agent lists
 - **Expand All / Collapse All** - Controls at the top of Active Sessions panel
 - **Enhanced Project Metrics** - Total tokens, cost, execution time, and time since last activity
@@ -61,7 +85,7 @@ A comprehensive multi-agent workflow framework implementing **Test-Driven Develo
 - **Nested Scrolling** - Independent scrolling for projects container and agent lists
 - **State Persistence** - Collapse/expand states preserved during real-time updates
 
-#### Dynamic Viewport Height
+#### Dynamic Viewport Height (v2.4.0)
 - **100vh Dashboard** - Fills entire browser viewport on any screen size (1080p to 4K)
 - **Flexbox Layout** - Panels grow proportionally to fill available space
 - **Responsive Scaling** - Adapts seamlessly across display resolutions
@@ -319,7 +343,7 @@ Claude Code Session
 
 ---
 
-## Agent Registry (20 Agents)
+## Agent Registry (22 Agents)
 
 ### Tier 1 - Opus (Strategic/Quality) `$$$`
 
@@ -423,11 +447,12 @@ Tasks are scored on 4 factors to determine panel size:
 
 ### Panel Size Selection
 
+> **Quality-First Policy (v2.5.0):** Minimum panel size is now 5 judges. Panel cannot be reduced below 5 but can expand to 7 for high-stakes evaluations.
+
 | Risk Score | Panel Size | Judges |
 |------------|------------|--------|
-| 0-3 (Low) | 3 judges | technical, completeness, practicality |
-| 4-7 (Medium) | 5 judges | + adversarial, user |
-| 8+ (High) | 7 judges | + domain-expert, risk |
+| 0-7 (Standard) | 5 judges | technical, completeness, practicality, adversarial, user |
+| 8+ (High Stakes) | 7 judges | + domain-expert, risk |
 
 ### Workflow Sequence
 
@@ -453,9 +478,10 @@ Tasks are scored on 4 factors to determine panel size:
 
 ### Override Policy
 
-- Users **CAN** escalate panel size (request larger panel)
-- Users **CANNOT** downgrade (request smaller than calculated)
+- Users **CAN** escalate panel size (request 7 judges)
+- Users **CANNOT** downgrade below 5 judges (quality floor)
 - All overrides are logged for audit
+- Panel expansion is encouraged for complex or high-stakes evaluations
 
 ### Triggering a Panel Evaluation
 
@@ -1091,11 +1117,50 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
+## Research References
+
+The agent prompts and workflow architecture are informed by systematic analysis of prompt engineering research. Key references:
+
+### Academic Sources
+
+| Technique | Paper | Application in Agent Dashboard |
+|-----------|-------|-------------------------------|
+| **Chain-of-Verification** | Dhuliawala et al. (2023), Meta AI | Researcher verification loops, uncited claim detection |
+| **Tree of Thoughts** | Yao et al. (2023), Princeton/DeepMind | Orchestrator parallel research delegation |
+| **Self-Consistency** | Wang et al. (2022), Google | Panel judge consensus voting |
+| **ReAct Prompting** | Yao et al. (2022), Princeton/Google | Agent tool use patterns |
+
+### Internal Analysis Documents
+
+| Document | Purpose | Location |
+|----------|---------|----------|
+| [Agent Optimization Report](AGENT_OPTIMIZATION_REPORT.md) | Systematic analysis of 22 agent prompts with optimization recommendations | Root |
+| [Orchestrator Prompt](Research_Prompts/AGENT_OPTIMIZATION_ORCHESTRATOR_PROMPT.md) | Prompt used to analyze agent architecture | Research_Prompts/ |
+| [Critical Analysis Report](Research_Prompts/Prompt%20Engineering%20Reports/CRITICAL_ANALYSIS_COGNITIVE_ARCHITECTURES_REPORT.md) | Source verification of prompt engineering claims | Research_Prompts/Prompt Engineering Reports/ |
+
+### Key Prompt Engineering Principles Applied
+
+1. **Constraint Specification** - Explicit ALWAYS/NEVER rules reduce ambiguity
+2. **Few-Shot Examples** - Concrete examples improve calibration over abstract instructions
+3. **Iteration Limits** - Hard caps prevent unbounded loops (critical for cost control)
+4. **Evidence Requirements** - Forcing citation improves factual accuracy
+5. **Structured Output Schemas** - Standardized handoffs enable reliable multi-agent workflows
+
+### Counter-Research Considered
+
+The implementation accounts for limitations identified in recent research:
+
+- **Self-Correction Limitations** (Huang et al., ICLR 2024): LLMs struggle to self-correct reasoning without external feedback. This informed the external verification requirements in research-judge triggers.
+- **Computational Costs**: Chain-of-Verification and Tree of Thoughts have 5-20x API call overhead. Iteration limits and research caching mitigate costs.
+
+---
+
 ## Acknowledgments
 
 - [Claude Code Hooks Multi-Agent Observability](https://github.com/disler/claude-code-hooks-multi-agent-observability) - Inspiration for hooks-based monitoring
 - [Rich](https://github.com/Textualize/rich) - Beautiful terminal formatting
 - [Anthropic](https://anthropic.com) - Claude models and documentation
+- Academic researchers whose work informed the prompt engineering approach
 
 ---
 

@@ -1,11 +1,12 @@
-# Multi-Agent TDD Workflow Framework v2.2
+# Multi-Agent TDD Workflow Framework v2.5
 
 This document describes the Test-Driven Development (TDD) workflow framework implemented in the Agent Dashboard for autonomous Claude Code platforms.
 
-> **Version:** 2.2.1
-> **Last Updated:** 2025-01-09
-> **Agents:** 20 specialized agents across 3 tiers
+> **Version:** 2.5.0
+> **Last Updated:** 2025-12-18
+> **Agents:** 22 specialized agents across 3 tiers (all v2.4.0)
 > **Philosophy:** Test-Driven Development
+> **Quality Policy:** 5-judge panel minimum, quality over cost optimization
 
 ## TDD Philosophy
 
@@ -31,6 +32,68 @@ The framework implements a strict Test-Driven Development approach:
 4. **Write tests FIRST** - Tests become IMMUTABLE after approval
 5. **Implement code** - Must pass ALL tests, cannot modify tests
 6. **Validate** - Verify no TODOs, no mocks, all tests pass
+
+## v2.5.0 Agent Optimization
+
+All 22 agents have been upgraded to v2.4.0 with systematic quality improvements.
+
+### Constraint Standardization
+
+All agents now use standardized constraint format:
+
+```
+## Constraints
+
+### Mandatory Actions (ALWAYS)
+- ALWAYS [action 1]
+- ALWAYS [action 2]
+
+### Prohibited Actions (NEVER)
+- NEVER [action 1]
+- NEVER [action 2]
+```
+
+### Iteration Limits
+
+Hard caps prevent unbounded loops:
+
+| Agent | Limit | Escalation |
+|-------|-------|------------|
+| Orchestrator | 5 research rounds | Deliver with caveats |
+| Implementer | 50 iterations | Escalate to human |
+| Critic | 3 revision rounds | Accept or escalate |
+| Web-search | 10 queries | Report with partial results |
+
+### Panel Quality Policy
+
+**Minimum 5 judges** for all panel evaluations (quality floor). Panel can expand to 7 for high-stakes tasks but cannot be reduced.
+
+| Risk Score | Panel Size | Judges |
+|------------|------------|--------|
+| 0-7 | 5 judges | technical, completeness, practicality, adversarial, user |
+| 8+ | 7 judges | + domain-expert, risk |
+
+### Evidence Requirements
+
+All panel judges must cite specific evidence:
+- File paths with line numbers
+- Documentation URLs
+- Test output excerpts
+- Specific sections of work product
+
+### Handoff Schemas
+
+Researcher agents output standardized JSON:
+
+```json
+{
+  "task_id": "unique-identifier",
+  "outcome": "1-2 sentence summary",
+  "key_findings": [{"finding": "...", "source_url": "...", "confidence": "H/M/L"}],
+  "gaps": ["What couldn't be verified"],
+  "confidence": "H/M/L"
+}
+```
 
 ## Architecture
 
