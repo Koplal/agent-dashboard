@@ -565,7 +565,8 @@ agent-dashboard/
 ├── docs/                           # Documentation
 │   ├── EXAMPLE_USAGE.md            # Complete usage guide with examples
 │   ├── IMPLEMENTATION.md           # Complete deployment guide
-│   └── WORKFLOW_FRAMEWORK.md       # Design patterns & governance
+│   ├── WORKFLOW_FRAMEWORK.md       # Design patterns & governance
+│   └── PROMPT_ENGINEERING_RESEARCH.md  # Research analysis & evidence
 │
 ├── scripts/
 │   └── install.sh                  # Automated installation
@@ -1073,6 +1074,7 @@ For more troubleshooting, see [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md#tr
 | [docs/EXAMPLE_USAGE.md](docs/EXAMPLE_USAGE.md) | **Complete usage guide with examples and hook troubleshooting** |
 | [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) | Complete deployment guide with project integration |
 | [docs/WORKFLOW_FRAMEWORK.md](docs/WORKFLOW_FRAMEWORK.md) | Design patterns, governance, and validation architecture |
+| [docs/PROMPT_ENGINEERING_RESEARCH.md](docs/PROMPT_ENGINEERING_RESEARCH.md) | **Research analysis and evidence-based design decisions** |
 
 ### Quick Links
 
@@ -1119,15 +1121,34 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Research References
 
-The agent prompts and workflow architecture are informed by systematic analysis of prompt engineering research.
+The agent prompts and workflow architecture are informed by systematic analysis of peer-reviewed prompt engineering research. See [docs/PROMPT_ENGINEERING_RESEARCH.md](docs/PROMPT_ENGINEERING_RESEARCH.md) for detailed analysis.
 
-### Academic Sources
+### Validated Techniques (Implemented)
 
-| Technique | Paper | Application |
-|-----------|-------|-------------|
-| **Chain-of-Verification** | Dhuliawala et al. (2023), Meta AI | Researcher verification loops |
-| **Tree of Thoughts** | Yao et al. (2023), Princeton/DeepMind | Parallel research delegation |
-| **Self-Consistency** | Wang et al. (2022), Google | Panel judge consensus voting |
+| Technique | Research | Implementation |
+|-----------|----------|----------------|
+| **External Verification** | Huang et al., ICLR 2024 | critic, validator, research-judge, panel |
+| **Constraint-Based Prompting** | Multiple AI labs | 62+ ALWAYS/NEVER constraints |
+| **Few-Shot Examples** | Learn Prompting, ACL 2024 | 22+ examples across agents |
+| **Iteration Limits** | Shinn et al., NeurIPS 2023 | All agents have hard limits |
+| **Test-Driven Iteration** | Reflexion (NeurIPS 2023) | Implementer with test feedback |
+
+### Anti-Patterns Avoided
+
+| Pattern | Why Avoided | Research |
+|---------|-------------|----------|
+| **Self-Correction Loops** | Degrades without external feedback | ICLR 2024 |
+| **Tree of Thoughts** | 5-20x API cost, minimal benefit | NeurIPS 2024 |
+| **Elaborate Role Personas** | Examples outperform personas | Learn Prompting |
+| **Unbounded Iteration** | Diminishing returns after 2-3 cycles | Multiple studies |
+
+### Key Papers
+
+| Paper | Finding | Impact |
+|-------|---------|--------|
+| Huang et al., ICLR 2024 | LLMs cannot self-correct without external feedback | Validates external verification |
+| Katz et al., NeurIPS 2024 | ToT is prohibitively inefficient | Validates simpler patterns |
+| Shinn et al., NeurIPS 2023 | Reflexion requires external signals | Validates test-driven iteration |
 | **ReAct Prompting** | Yao et al. (2022), Princeton/Google | Agent tool use patterns |
 
 ### Internal Analysis Documents
