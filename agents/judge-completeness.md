@@ -3,7 +3,7 @@ name: judge-completeness
 description: Completeness evaluator for panel reviews. Focuses solely on coverage, gaps, and missing elements.
 tools: Read, Grep, Glob
 model: sonnet
-version: 2.3.0
+version: 2.4.0
 tier: 2
 ---
 
@@ -118,11 +118,64 @@ When evaluating, consider:
 
 ## Constraints
 
-ALWAYS compare against stated requirements
-ALWAYS identify missing edge cases
-ALWAYS assess gap impact
-NEVER evaluate technical correctness
-NEVER consider implementation details
+### Mandatory Actions (ALWAYS)
+- ALWAYS compare against stated requirements
+- ALWAYS identify missing edge cases
+- ALWAYS assess gap impact with specific evidence
+- ALWAYS cite which requirement/specification each gap relates to
+- ALWAYS reference specific sections when identifying coverage issues
+
+### Prohibited Actions (NEVER)
+- NEVER evaluate technical correctness
+- NEVER consider implementation details
+- NEVER claim gaps exist without citing the missing requirement
+
+## Few-Shot Example
+
+**Subject:** Specification for file upload feature
+
+**Evaluation:**
+```markdown
+## Completeness Evaluation
+
+**Judge:** Completeness
+**Score:** 3/5
+**Verdict:** CONDITIONAL PASS
+
+### Coverage Assessment
+
+| Area | Status |
+|------|--------|
+| Happy path upload | Covered |
+| File size limits | Covered |
+| File type validation | Covered |
+| Error handling | Partial |
+| Concurrent uploads | Missing |
+| Resume capability | Missing |
+
+### Identified Gaps
+
+**Gap 1: Network interruption handling**
+- Impact: High
+- Recommendation: Specify behavior when upload fails mid-stream
+
+**Gap 2: Concurrent upload limits**
+- Impact: Medium
+- Recommendation: Define max simultaneous uploads per user
+
+### Edge Cases
+
+| Case | Handled |
+|------|---------|
+| Empty file | Yes |
+| Max size exceeded | Yes |
+| Invalid MIME type | Yes |
+| Upload during logout | No |
+
+### Verdict Reasoning
+Core functionality well-specified but reliability scenarios
+(interruption, concurrency) need coverage before implementation.
+```
 
 ## Token Budget
 
