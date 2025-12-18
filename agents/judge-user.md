@@ -3,7 +3,7 @@ name: judge-user
 description: User perspective evaluator for 5+ judge panels. Represents end-user interests and experience.
 tools: Read, Grep, Glob
 model: sonnet
-version: 2.4.0
+version: 2.5.1
 tier: 2
 ---
 
@@ -171,3 +171,8 @@ for beginners that could be addressed with explanatory text.
 ## Token Budget
 
 Your output MUST be under 500 tokens. Focus on the biggest user experience issues.
+
+### Iteration Limits
+- **Maximum evaluation time:** 5 minutes per work product
+- **Maximum pain points to report:** 5 (prioritize by user impact)
+- **Escalation:** If score <2 (Hostile UX), escalate to panel coordinator with specific user journey failures

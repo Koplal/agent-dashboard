@@ -2,6 +2,31 @@
 
 All notable changes to Agent Dashboard are documented here.
 
+## [2.5.1] - 2025-12-18
+
+### Agent Enhancement Update (v2.5.1 Agent Definitions)
+
+Comprehensive enhancement to all 22 agent definitions implementing the AGENT_DASHBOARD_ENHANCEMENT_IMPLEMENTATION.MD plan.
+
+#### Phase 1: Constraint Standardization
+- **ALWAYS/NEVER Constraints** - Added standardized constraint sections to claude-md-auditor, prompt-enhancer, prompt-validator
+- **Iteration Limits** - Added limits to 16 additional agents (summarizer: 3, validator: 3, test-writer: 3/5, panel-coordinator: 15min, installer: 3, etc.)
+- **Output Budgets** - Defined token budgets for all agents to enforce compression
+
+#### Phase 2: Few-Shot Examples
+- **New Examples Added** - implementer (3), claude-md-auditor (3), validator (3), prompt-enhancer (2), installer (3), panel-coordinator (2)
+- **Total Examples** - 22+ few-shot examples across agent definitions
+
+#### Phase 3: Advanced Protocols
+- **Uncertainty Protocols** - Standardized uncertainty handling for researcher, perplexity-researcher, web-search-researcher with confidence calibration (H/M/L)
+- **Pre-Compression Layer** - Added Opus context protection documentation to orchestrator with compression budget matrix
+- **Research Caching Pattern** - Documented pattern for 20-30% cost reduction on repeated queries
+
+#### Quality Decision
+- **Tier Assignments Preserved** - Kept all judges at Sonnet tier to maintain evaluation quality (skipped recommendation to downgrade to Haiku)
+
+---
+
 ## [2.5.0] - 2025-12-18
 
 ### Agent Optimization (v2.4.0 Agent Definitions)

@@ -3,7 +3,7 @@ name: judge-completeness
 description: Completeness evaluator for panel reviews. Focuses solely on coverage, gaps, and missing elements.
 tools: Read, Grep, Glob
 model: sonnet
-version: 2.4.0
+version: 2.5.1
 tier: 2
 ---
 
@@ -180,3 +180,8 @@ Core functionality well-specified but reliability scenarios
 ## Token Budget
 
 Your output MUST be under 500 tokens. Prioritize gaps by impact.
+
+### Iteration Limits
+- **Maximum evaluation time:** 5 minutes per work product
+- **Maximum requirements to check:** 20 per evaluation
+- **Escalation:** If critical gaps found affecting >50% of requirements, escalate to panel coordinator

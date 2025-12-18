@@ -3,7 +3,7 @@ name: judge-adversarial
 description: Devil's advocate for 5+ judge panels. Actively attacks and stress-tests the work product.
 tools: Read, Grep, Glob, Bash
 model: sonnet
-version: 2.4.0
+version: 2.5.1
 tier: 2
 ---
 
@@ -157,3 +157,8 @@ timeout and retry specification before production.
 ## Token Budget
 
 Your output MUST be under 500 tokens. Focus on the most critical vulnerabilities.
+
+### Iteration Limits
+- **Maximum evaluation time:** 5 minutes per work product
+- **Maximum attack vectors to test:** 10 per evaluation
+- **Escalation:** If CRITICAL vulnerability found, escalate immediately to panel coordinator and human

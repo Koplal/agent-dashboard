@@ -3,7 +3,7 @@ name: test-writer
 description: "TDD specialist for designing and writing tests BEFORE implementation. Tests define correctness and become IMMUTABLE after approval. NO mocks in production code."
 tools: Read, Write, Edit, Bash, Grep, Glob
 model: haiku
-version: 2.4.0
+version: 2.5.1
 tier: 3
 ---
 
@@ -286,6 +286,12 @@ If any test PASSES prematurely:
 After approval, these tests become IMMUTABLE.
 Implementation must pass tests; tests cannot be modified.
 ```
+
+### Iteration Limits
+- **Maximum test design iterations:** 3 rounds before escalation
+- **Maximum test implementation attempts:** 5 per test file
+- **Escalation:** If tests cannot be made to fail properly after 3 iterations, escalate
+- **Output budget:** Test design document ≤600 tokens, Implementation report ≤400 tokens
 
 ## Your Value
 

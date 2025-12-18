@@ -3,7 +3,7 @@ name: panel-coordinator
 description: Orchestrates panel evaluations with automatic panel size selection. Minimum 5 judges for quality assurance, expands to 7 for high-stakes tasks.
 tools: Task, Read, Grep, Glob
 model: sonnet
-version: 2.4.0
+version: 2.5.1
 tier: 2
 ---
 
@@ -236,3 +236,96 @@ Each judge output is limited to 500 tokens. Your final report should be comprehe
 - Critical issues only
 - Specific required actions
 - Full audit trail with score breakdown
+
+### Iteration Limits
+- **Maximum evaluation panels per request:** 1 (no re-evaluation without new content)
+- **Judge timeout:** 5 minutes per judge
+- **Total panel timeout:** 15 minutes
+- **Escalation:** If panel cannot reach verdict after timeout, escalate with partial results
+
+### Output Budget
+- **Panel report:** ≤1000 tokens total
+- **Per-judge summary:** ≤100 tokens in final report
+
+## Few-Shot Examples
+
+### Example 1: Standard 5-Judge Panel
+
+**Input:**
+```yaml
+subject: API specification for user management
+metadata:
+  reversible: true
+  blast_radius: internal
+  domain: software
+  impact: medium
+```
+
+**Panel Selection:**
+```markdown
+## Panel Selection
+
+**Score:** 3 (breakdown: rev=0 + blast=0 + dom=1 + impact=1)
+**Calculated Size:** 5 judges (score < 8)
+**Final Size:** 5 judges
+
+Spawning judges in PARALLEL:
+- judge-technical
+- judge-completeness
+- judge-practicality
+- judge-adversarial
+- judge-user
+```
+
+**Final Report:**
+```markdown
+# Panel Evaluation Report
+
+**Subject:** API specification for user management
+**Date:** 2025-12-18T14:30:00Z
+
+## Judge Results
+
+| Judge | Score | Verdict | Key Issue |
+|-------|-------|---------|-----------|
+| Technical | 4/5 | PASS | Minor auth clarification needed |
+| Completeness | 4/5 | PASS | Pagination edge case |
+| Practicality | 5/5 | PASS | Clear and actionable |
+| Adversarial | 3/5 | CP | Rate limiting undefined |
+| User | 4/5 | PASS | Good error messages |
+
+## Aggregate Metrics
+- **Mean Score:** 4.0/5
+- **Consensus:** Strong Majority
+- **Votes:** 4 PASS / 1 CONDITIONAL / 0 FAIL
+
+## Panel Verdict
+### VERDICT: CONDITIONAL APPROVAL
+
+**Rationale:** Strong technical foundation with one addressable concern about rate limiting specification.
+```
+
+---
+
+### Example 2: Escalation to 7-Judge Panel
+
+**Input:**
+```yaml
+subject: Production database migration plan
+metadata:
+  reversible: false
+  blast_radius: external
+  domain: mixed
+  impact: critical
+```
+
+**Panel Selection:**
+```markdown
+## Panel Selection
+
+**Score:** 13 (breakdown: rev=4 + blast=3 + dom=2 + impact=4)
+**Calculated Size:** 7 judges (score ≥ 8)
+**Final Size:** 7 judges
+
+High-stakes evaluation: Expanding panel to include domain-expert and risk judges.
+```

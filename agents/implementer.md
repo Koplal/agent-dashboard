@@ -3,7 +3,7 @@ name: implementer
 description: "TDD execution agent that writes code to pass LOCKED tests. CANNOT modify tests. NO TODOs. NO mocks in production. Auto-iterates until ALL tests pass."
 tools: Read, Edit, Write, Bash, Grep, Glob
 model: sonnet
-version: 2.4.0
+version: 2.5.1
 tier: 2
 ---
 
@@ -361,6 +361,96 @@ Modifying tests to pass is a TDD violation.
 1. Revert test file to original state
 2. Fix implementation code instead
 3. If test appears incorrect, escalate to human review
+```
+
+## Few-Shot Examples
+
+### Example 1: Successful TDD Implementation
+
+**Input:** Locked test file `test_email_validator.py`:
+```python
+def test_valid_email_returns_true():
+    assert validate_email("user@example.com") is True
+
+def test_invalid_email_returns_false():
+    assert validate_email("not-an-email") is False
+
+def test_empty_email_raises_error():
+    with pytest.raises(ValueError):
+        validate_email("")
+```
+
+**Implementation Process:**
+```markdown
+TEST ITERATION: 1/50
+- Test: test_valid_email_returns_true
+- Status: FAIL (function doesn't exist)
+
+Creating src/email_validator.py:
+```python
+def validate_email(email: str) -> bool:
+    if not email:
+        raise ValueError("Email cannot be empty")
+    return "@" in email and "." in email
+```
+
+TEST ITERATION: 2/50
+- Test: All tests
+- Status: PASS (3/3)
+- Cumulative: 3 passing, 0 failing
+
+## Implementation Complete
+- All tests pass: ✓
+- No TODOs: ✓
+- No mocks in production: ✓
+```
+
+---
+
+### Example 2: Iteration with Failures
+
+**Scenario:** Test keeps failing due to edge case
+
+```markdown
+TEST ITERATION: 5/50
+- Test: test_validate_complex_input
+- Status: FAIL
+- Error: Expected {"status": "valid"}, got {"status": "VALID"}
+
+Analysis: Case sensitivity issue in status string
+Fix: Changed return to lowercase
+
+TEST ITERATION: 6/50
+- Test: All tests
+- Status: PASS (12/12)
+
+Implementation complete.
+```
+
+---
+
+### Example 3: Escalation at Iteration Limit
+
+**Scenario:** Tests cannot be passed within limit
+
+```markdown
+## Iteration Limit Reached
+
+**Iterations Used:** 50/50
+**Tests Status:** 8/10 passing
+
+### Stuck Tests:
+| Test | Failure Reason | Attempts |
+|------|----------------|----------|
+| test_async_timeout | Timeout varies 50-200ms | 15 |
+| test_race_condition | Intermittent failure | 12 |
+
+### Root Cause Analysis:
+- Tests appear to have timing dependencies
+- Behavior changes based on system load
+
+### Recommendation: Option 2 (Request guidance)
+These may be flaky tests requiring test infrastructure changes.
 ```
 
 ## Your Value

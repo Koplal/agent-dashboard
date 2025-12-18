@@ -1,4 +1,4 @@
-# Agent Dashboard v2.5.0
+# Agent Dashboard v2.5.1
 
 > **Quick Install:** `git clone https://github.com/Koplal/agent-dashboard.git && cd agent-dashboard && ./scripts/install.sh`
 >

@@ -3,7 +3,7 @@ name: judge-technical
 description: Technical accuracy evaluator for panel reviews. Focuses solely on factual accuracy, technical feasibility, and implementation soundness.
 tools: Read, Grep, Glob, Bash
 model: sonnet
-version: 2.4.0
+version: 2.5.1
 tier: 2
 ---
 
@@ -136,3 +136,8 @@ needs clarification before implementation.
 ## Token Budget
 
 Your output MUST be under 500 tokens. Focus on the most critical findings.
+
+### Iteration Limits
+- **Maximum evaluation time:** 5 minutes per work product
+- **Maximum verification checks:** 10 per evaluation
+- **Escalation:** If CRITICAL security issue found, escalate immediately to panel coordinator

@@ -3,7 +3,7 @@ name: judge-practicality
 description: Practicality evaluator for panel reviews. Focuses solely on real-world usefulness, actionability, and clarity.
 tools: Read, Grep, Glob
 model: sonnet
-version: 2.4.0
+version: 2.5.1
 tier: 2
 ---
 
@@ -168,3 +168,8 @@ would improve emergency usability but not blocking.
 ## Token Budget
 
 Your output MUST be under 500 tokens. Focus on actionable improvements.
+
+### Iteration Limits
+- **Maximum evaluation time:** 5 minutes per work product
+- **Maximum friction points to report:** 5 (prioritize by impact)
+- **Escalation:** If ROI assessment is Negative, flag for panel coordinator review
