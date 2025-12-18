@@ -15,7 +15,12 @@
       "Bash(mkdir:*)",
       "Bash(for f in \"I:/My Drive/CSC/Projects/Datalogger harvester 2/agent-dashboard/agents/\"*.md)",
       "Bash(do sed -i 's/version: 2.2.[0-9]/version: 2.3.0/' \"$f\")",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(git checkout:*)",
+      "Bash(curl:*)",
+      "WebFetch(domain:tai-app-opal.vercel.app)",
+      "Bash(tasklist:*)",
+      "Bash(wmic process where \"name=''python.exe''\" get processid,commandline)"
     ]
   }
 }

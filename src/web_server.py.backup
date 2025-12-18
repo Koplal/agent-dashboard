@@ -333,23 +333,13 @@ DASHBOARD_HTML = """
             font-family: 'JetBrains Mono', 'Fira Code', monospace;
             background: var(--bg-primary);
             color: var(--text-primary);
-            /* Viewport-relative height: fills entire screen on any display */
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+            min-height: 100vh;
         }
         
         .container {
             max-width: 1800px;
             margin: 0 auto;
             padding: 1rem;
-            /* Flex to fill remaining viewport height */
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 0; /* Allow flex children to shrink */
-            overflow: hidden;
         }
         
         header {
@@ -358,7 +348,6 @@ DASHBOARD_HTML = """
             padding: 1.5rem;
             margin-bottom: 1rem;
             border: 1px solid var(--bg-tertiary);
-            flex-shrink: 0; /* Header maintains fixed height */
         }
         
         header h1 {
@@ -385,14 +374,9 @@ DASHBOARD_HTML = """
         
         .grid {
             display: grid;
-            grid-template-columns: 1fr 0.9fr 380px;
-            grid-template-rows: 1fr; /* Single row fills available height */
-            align-items: stretch; /* All panels same height */
+            grid-template-columns: 1fr 1fr 300px;
             gap: 1rem;
             margin-bottom: 1rem;
-            /* Fill remaining viewport height */
-            flex: 1;
-            min-height: 0; /* Allow grid to shrink for overflow */
         }
         
         .panel {
@@ -400,10 +384,6 @@ DASHBOARD_HTML = """
             border-radius: 12px;
             border: 1px solid var(--bg-tertiary);
             overflow: hidden;
-            /* Flex layout for viewport-relative height */
-            display: flex;
-            flex-direction: column;
-            min-height: 0; /* Allow panel to shrink */
         }
         
         .panel-header {
@@ -413,15 +393,12 @@ DASHBOARD_HTML = """
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            flex-shrink: 0; /* Header maintains fixed height */
         }
         
         .panel-content {
             padding: 1rem;
-            /* Viewport-relative: fills remaining panel height */
-            flex: 1;
+            max-height: 400px;
             overflow-y: auto;
-            min-height: 150px; /* Minimum height for usability */
         }
         
         .session-card {
@@ -539,22 +516,7 @@ DASHBOARD_HTML = """
             flex-direction: column;
             gap: 0.5rem;
         }
-
-        /* Statistics panel - compact sizing, fit content only */
-        #stats-panel {
-            flex: none;
-            min-height: auto;
-            padding: 0.5rem 1rem;
-        }
-        #stats-panel .stat-item {
-            padding: 0.4rem 0;
-        }
-
-        /* Registered Agents section - spacing matches project group margins */
-        #agents-header {
-            margin-top: 1rem;
-        }
-
+        
         .agent-item {
             display: flex;
             align-items: center;
@@ -576,40 +538,18 @@ DASHBOARD_HTML = """
             font-size: 0.75rem;
         }
         
-        /* Responsive scaling for all screen sizes - viewport-relative */
+        /* Responsive scaling for all screen sizes */
         @media (max-width: 1200px) {
             .grid { grid-template-columns: 1fr 1fr; }
-            .panel-content { min-height: 120px; }
+            .panel-content { max-height: 350px; }
         }
         @media (max-width: 768px) {
-            /* Mobile: switch to scrollable page layout */
-            body {
-                height: auto;
-                min-height: 100vh;
-                overflow: auto;
-            }
-            .container { 
-                padding: 0.5rem; 
-                flex: none;
-                height: auto;
-            }
-            .grid { 
-                grid-template-columns: 1fr; 
-                flex: none;
-                height: auto;
-            }
-            .panel { 
-                flex: none; 
-                height: auto;
-            }
-            .panel-content { 
-                flex: none;
-                max-height: 300px; 
-                min-height: 100px;
-            }
+            .grid { grid-template-columns: 1fr; }
+            .container { padding: 0.5rem; }
             header { padding: 1rem; }
             header h1 { font-size: 1.4rem; }
             .header-info { flex-wrap: wrap; gap: 0.8rem; font-size: 0.8rem; }
+            .panel-content { max-height: 300px; }
             .event-row { grid-template-columns: 60px 24px 70px 70px 80px 1fr; font-size: 0.75rem; }
             .session-card .stats { flex-wrap: wrap; gap: 0.5rem; font-size: 0.75rem; }
         }
@@ -617,18 +557,11 @@ DASHBOARD_HTML = """
             header h1 { font-size: 1.2rem; }
             .event-row { grid-template-columns: 50px 20px 60px 60px 1fr; font-size: 0.7rem; }
             .event-row .type { display: none; }
-            .panel-content { max-height: 250px; }
         }
         @media (min-width: 1920px) {
-            /* HD+ monitors: larger container, panels fill via flex */
             .container { max-width: 2200px; }
             header h1 { font-size: 2.2rem; }
-            .panel-content { min-height: 300px; }
-        }
-        @media (min-width: 2560px) {
-            /* 4K and ultra-wide: maximize content area */
-            .container { max-width: 2800px; }
-            .panel-content { min-height: 400px; }
+            .panel-content { max-height: 500px; }
         }
         .project-group { margin-bottom: 0.75rem; background: var(--bg-primary); border-radius: 8px; border: 1px solid var(--bg-tertiary); overflow: hidden; }
         .project-summary { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; background: linear-gradient(90deg, var(--bg-tertiary) 0%, var(--bg-primary) 100%); cursor: pointer; user-select: none; transition: background 0.2s; }
@@ -716,7 +649,7 @@ DASHBOARD_HTML = """
                     </div>
                 </div>
                 
-                <div class="panel-header" id="agents-header">🤖 Registered Agents <button onclick="loadAgents()" style="margin-left: auto; padding: 0.2rem 0.5rem; background: var(--accent-blue); border: none; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">↻</button></div>
+                <div class="panel-header" style="margin-top: 1rem;">🤖 Registered Agents <button onclick="loadAgents()" style="margin-left: auto; padding: 0.2rem 0.5rem; background: var(--accent-blue); border: none; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">↻</button></div>
                 <div class="panel-content">
                     <div class="agent-legend" id="agents-panel">
                         <p style="color: var(--text-muted)">Loading agents...</p>
@@ -1011,7 +944,7 @@ DASHBOARD_HTML = """
                 return;
             }
             
-            panel.innerHTML = events.map(e => {
+            panel.innerHTML = events.slice(0, 20).map(e => {
                 const emoji = EVENT_EMOJIS[e.event_type] || '📌';
                 const time = new Date(e.timestamp).toLocaleTimeString();
                 const session = sessions[e.session_id];
