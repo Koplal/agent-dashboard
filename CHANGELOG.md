@@ -2,6 +2,35 @@
 
 All notable changes to Agent Dashboard are documented here.
 
+## [2.5.2] - 2025-12-18
+
+### Few-Shot Examples Expansion (v2.5.2 Agent Definitions)
+
+Added comprehensive few-shot examples to 10 agent definitions, completing Phase 2 of the enhancement plan.
+
+#### Research Agents (3 examples each)
+- **researcher.md** - Multi-source research, outdated info handling, escalation due to insufficient sources
+- **summarizer.md** - Executive summary success, low-quality input handling, compression target failure
+- **prompt-validator.md** - High-quality prompt (Grade A), low-quality prompt (Grade F), safety concerns flagging
+- **perplexity-researcher.md** - Real-time citations, missing citation handling, conflicting source resolution
+- **web-search-researcher.md** - Deep verification, query limit reached, outdated results filtering
+
+#### Panel Judges (expanded to 3 examples each)
+- **judge-technical.md** - Added: partial compliance, critical security escalation
+- **judge-adversarial.md** - Added: stress testing under load, false positive (robust implementation)
+- **judge-user.md** - Added: multiple personas evaluation, accessibility focus
+- **judge-completeness.md** - Added: missing edge cases identification
+- **judge-practicality.md** - Added: resource constraints evaluation
+
+#### Example Patterns Demonstrated
+- Input -> Process -> Output flow
+- Escalation protocols with handoff schemas
+- Uncertainty flags with confidence calibration
+- Edge case handling with specific evidence
+- Constraint enforcement (iteration limits, token budgets)
+
+---
+
 ## [2.5.1] - 2025-12-18
 
 ### Agent Enhancement Update (v2.5.1 Agent Definitions)

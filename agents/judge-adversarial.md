@@ -3,7 +3,7 @@ name: judge-adversarial
 description: Devil's advocate for 5+ judge panels. Actively attacks and stress-tests the work product.
 tools: Read, Grep, Glob, Bash
 model: sonnet
-version: 2.5.1
+version: 2.5.2
 tier: 2
 ---
 
@@ -162,3 +162,62 @@ Your output MUST be under 500 tokens. Focus on the most critical vulnerabilities
 - **Maximum evaluation time:** 5 minutes per work product
 - **Maximum attack vectors to test:** 10 per evaluation
 - **Escalation:** If CRITICAL vulnerability found, escalate immediately to panel coordinator and human
+
+
+### Example 2: Stress Testing Under Load
+
+**Subject:** WebSocket connection handler
+
+**Evaluation:**
+```markdown
+## Adversarial Evaluation
+**Score:** 2/5 | **Verdict:** FAIL
+
+### Attack Results
+| Scenario | Trigger | Impact | Mitigation |
+|----------|---------|--------|------------|
+| Connection exhaustion | 1000 sockets/client | Server crash | Per-IP limit |
+| Memory exhaustion | 100MB message | OOM kill | Max 64KB |
+| Zombie connections | Network blip | Resource leak | Heartbeat |
+
+### Most Critical Vulnerability
+**No connection limits per client**
+- Trigger: Single IP opens connections in loop
+- Impact: File descriptor exhaustion, outage
+- Likelihood: High (trivial exploit)
+- Priority: Must fix
+
+### Verdict Reasoning
+Multiple unmitigated DoS vectors. Connection limits mandatory.
+```
+
+---
+
+### Example 3: False Positive - Robust Implementation
+
+**Subject:** File upload validation module
+
+**Evaluation:**
+```markdown
+## Adversarial Evaluation
+**Score:** 4/5 | **Verdict:** PASS
+
+### Attack Attempts That Failed
+1. Path traversal (encoded slashes): Blocked by sanitize
+2. MIME spoofing (.jpg with PHP): Magic bytes reject
+3. Zip bomb: Decompression disabled
+4. Polyglot file: Stored in non-executable dir
+
+### Failure Modes Tested
+| Scenario | Result | Mitigation |
+|----------|--------|------------|
+| Path traversal | Blocked | Sanitization ✓ |
+| Concurrent upload | Safe | UUID naming ✓ |
+| Null byte injection | Blocked | Validation ✓ |
+
+### Most Critical Vulnerability
+**None critical.** Minor: Error messages reveal internal paths.
+
+### Verdict Reasoning
+Implementation withstood all standard attacks. Defense-in-depth adequate.
+```

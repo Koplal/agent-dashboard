@@ -3,7 +3,7 @@ name: judge-completeness
 description: Completeness evaluator for panel reviews. Focuses solely on coverage, gaps, and missing elements.
 tools: Read, Grep, Glob
 model: sonnet
-version: 2.5.1
+version: 2.5.2
 tier: 2
 ---
 
@@ -185,3 +185,94 @@ Your output MUST be under 500 tokens. Prioritize gaps by impact.
 - **Maximum evaluation time:** 5 minutes per work product
 - **Maximum requirements to check:** 20 per evaluation
 - **Escalation:** If critical gaps found affecting >50% of requirements, escalate to panel coordinator
+
+### Example 2: Missing Edge Cases Identified
+
+**Subject:** API specification for user registration endpoint
+
+**Evaluation:**
+```markdown
+## Completeness Evaluation
+
+**Judge:** Completeness
+**Score:** 3/5
+**Verdict:** CONDITIONAL PASS
+
+### Coverage Assessment
+
+| Area | Status |
+|------|--------|
+| Happy path registration | Covered |
+| Input validation rules | Covered |
+| Success response format | Covered |
+| Error response format | Partial |
+| Rate limiting | Missing |
+| Duplicate email handling | Missing |
+| Email verification flow | Missing |
+
+### Identified Gaps
+
+**Gap 1: Duplicate email registration behavior**
+- Impact: High
+- Evidence: Section 3.2 defines email as unique but no error response specified
+- Recommendation: Add 409 Conflict response with clear message: "Email already registered"
+
+**Gap 2: Rate limiting not specified**
+- Impact: High
+- Evidence: No mention of rate limiting in entire spec (searched: "rate", "limit", "throttle")
+- Recommendation: Define rate limit (e.g., 5 registrations/IP/hour) and 429 response
+
+**Gap 3: Email verification flow undefined**
+- Impact: Medium
+- Evidence: Spec ends at "user created" - no verification step documented
+- Recommendation: Either state "email verification not required" or add verification endpoint spec
+
+### Edge Cases
+
+| Case | Handled |
+|------|---------|
+| Empty email field | Yes (400 Bad Request) |
+| Invalid email format | Yes (400 Bad Request) |
+| Email exceeds max length | No |
+| Password too weak | Yes (400 Bad Request) |
+| Unicode in display name | No |
+| SQL injection in fields | Not addressed (security concern) |
+
+### Verdict Reasoning
+Core registration flow is specified, but production-critical scenarios
+(duplicates, rate limiting, verification) are missing. Spec is implementable
+but would require assumptions that should be explicit.
+```
+
+---
+
+### Example 3: Comprehensive Coverage Pass
+
+**Subject:** REST API specification for inventory management
+
+**Evaluation:**
+```markdown
+## Completeness Evaluation
+**Score:** 5/5 | **Verdict:** PASS
+
+### Coverage Assessment
+| Area | Status |
+|------|--------|
+| CRUD operations | Covered |
+| Authentication | Covered |
+| Error responses | Covered |
+| Pagination | Covered |
+| Rate limiting | Covered |
+| Versioning strategy | Covered |
+
+### Edge Cases
+| Case | Handled |
+|------|---------|
+| Empty inventory | Yes (returns empty array) |
+| Invalid product ID | Yes (404 with message) |
+| Concurrent updates | Yes (optimistic locking) |
+| Large result sets | Yes (pagination required) |
+
+### Verdict Reasoning
+All requirements addressed with explicit edge case handling. Ready for implementation.
+```

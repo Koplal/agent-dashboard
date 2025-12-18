@@ -3,7 +3,7 @@ name: judge-technical
 description: Technical accuracy evaluator for panel reviews. Focuses solely on factual accuracy, technical feasibility, and implementation soundness.
 tools: Read, Grep, Glob, Bash
 model: sonnet
-version: 2.5.1
+version: 2.5.2
 tier: 2
 ---
 
@@ -141,3 +141,66 @@ Your output MUST be under 500 tokens. Focus on the most critical findings.
 - **Maximum evaluation time:** 5 minutes per work product
 - **Maximum verification checks:** 10 per evaluation
 - **Escalation:** If CRITICAL security issue found, escalate immediately to panel coordinator
+
+
+### Example 2: Partial Compliance with Technical Issues
+
+**Subject:** Multi-tenant SaaS database schema
+
+**Evaluation:**
+```markdown
+## Technical Accuracy Evaluation
+**Score:** 3/5 | **Verdict:** CONDITIONAL PASS
+
+### Verified Claims
+- ✓ Row-level security pattern correct (Section 2.1)
+- ✓ Tenant ID indexed on all tables (schema.sql:45-67)
+
+### Technical Issues Found
+
+**Issue 1: Missing tenant isolation on audit_logs**
+- Severity: Major
+- Evidence: schema.sql:89 lacks tenant_id column
+- Fix: Add tenant_id NOT NULL with index
+
+**Issue 2: CASCADE delete risk**
+- Severity: Minor  
+- Evidence: schema.sql:34 ON DELETE CASCADE could cross tenant boundary
+- Fix: Use RESTRICT, handle in application layer
+
+### Verdict Reasoning
+Core pattern correct, but audit table gap is compliance blocker.
+```
+
+---
+
+### Example 3: Critical Security Escalation
+
+**Subject:** API authentication code review
+
+**Evaluation:**
+```markdown
+## Technical Accuracy Evaluation
+**Score:** 1/5 | **Verdict:** FAIL - CRITICAL SECURITY
+
+### Technical Issues Found
+
+**Issue 1: Hardcoded JWT Secret** (CRITICAL)
+- Evidence: auth.py:8 `JWT_SECRET = "super_secret_key_12345"`
+- Fix: Move to environment variable, rotate immediately
+- **ESCALATION REQUIRED**
+
+**Issue 2: No Rate Limiting** (Major)
+- Evidence: routes.py:45-60 /api/login has no rate limit
+- Fix: Add 5 attempts/min/IP
+
+**Issue 3: Timing Attack Vulnerable** (Major)
+- Evidence: auth.py:34 uses `==` for password comparison
+- Fix: Use `hmac.compare_digest()`
+
+### Security Considerations
+CRITICAL: JWT secret in source = all tokens forgeable.
+
+## ESCALATION NOTICE
+Secret rotation required before any further review.
+```
