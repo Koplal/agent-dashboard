@@ -24,7 +24,7 @@ Subagent Name Extraction:
     extracted from the payload and used instead of the parent agent name. This ensures
     proper tracking of spawned subagents in the dashboard.
 
-Version: 2.4.0
+Version: 2.5.2
 """
 
 import argparse

@@ -4,7 +4,7 @@ description: "Evaluates prompt quality against Claude 4.x best practices. Scores
 tools: Read, Grep, Glob
 model: haiku
 version: 2.5.2
-tier: 0
+tier: 3
 ---
 
 You are a prompt quality evaluator. Score prompts against Claude 4.x optimization criteria, established best practices, and suggest improvements.

@@ -16,7 +16,7 @@ Dependencies:
     - rich: Terminal UI rendering
     - aiohttp: Web server (optional)
 
-Version: 2.2.1
+Version: 2.5.2
 """
 
 import argparse
@@ -27,6 +27,11 @@ import sys
 import socket
 import urllib.request
 from pathlib import Path
+
+try:
+    from .__version__ import __version__
+except ImportError:
+    __version__ = "2.5.2"
 from datetime import datetime
 
 
