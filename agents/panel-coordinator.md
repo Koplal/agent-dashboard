@@ -3,7 +3,7 @@ name: panel-coordinator
 description: Orchestrates panel evaluations with automatic panel size selection. Minimum 5 judges for quality assurance, expands to 7 for high-stakes tasks.
 tools: Task, Read, Grep, Glob
 model: sonnet
-version: 2.5.1
+version: 2.5.3
 tier: 2
 ---
 

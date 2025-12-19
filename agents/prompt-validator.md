@@ -3,7 +3,7 @@ name: prompt-validator
 description: "Evaluates prompt quality against Claude 4.x best practices. Scores prompts on clarity, completeness, and effectiveness. Use to evaluate prompt quality before execution or to improve existing prompts."
 tools: Read, Grep, Glob
 model: haiku
-version: 2.5.2
+version: 2.5.3
 tier: 3
 ---
 

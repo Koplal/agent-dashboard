@@ -3,7 +3,7 @@ name: planner
 description: "TDD strategic planner that creates product specifications in SPEC MODE. Defines WHAT the feature does (not HOW). Delegates research to lower-tier agents. Read-only, no code changes."
 tools: Task, Read, Grep, Glob
 model: opus
-version: 2.4.0
+version: 2.5.3
 tier: 1
 ---
 

@@ -5,7 +5,7 @@
 
 [project]
 name = "agent-dashboard"
-version = "2.5.2"
+version = "2.5.3"
 description = "Real-time monitoring for Claude Code multi-agent workflows"
 readme = "README.md"
 license = {text = "MIT"}

@@ -3,7 +3,7 @@ name: prompt-enhancer
 description: "Pre-execution prompt optimizer that enhances vague requests into structured, high-quality prompts. Use BEFORE complex tasks to ensure clear requirements, constraints, and success criteria. Particularly valuable for new features, ambiguous requests, or high-stakes outputs. Implements Claude 4.x best practices for maximum output quality."
 tools: Read, Write, Bash, Grep, Glob
 model: sonnet
-version: 2.5.1
+version: 2.5.3
 tier: 2
 ---
 
