@@ -1,8 +1,8 @@
 # Agent Dashboard - Example Usage Guide
 
-> **Version:** 2.2.1
-> **Last Updated:** 2025-12-11
-> **Purpose:** Complete walkthrough for using Agent Dashboard with Claude Code
+> **Version:** 2.6.0
+> **Last Updated:** 2025-12-22
+> **Purpose:** Complete step-by-step walkthrough for installing, testing, and using Agent Dashboard with Claude Code
 
 This guide demonstrates how to use Agent Dashboard from installation through a complete multi-agent workflow, using plain language prompts and command-line instructions.
 
@@ -11,7 +11,8 @@ This guide demonstrates how to use Agent Dashboard from installation through a c
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)
-- [Quick Start](#quick-start)
+- [Installation (Step-by-Step)](#installation-step-by-step)
+- [Testing Your Installation](#testing-your-installation)
 - [Hook Configuration](#hook-configuration)
 - [Complete Workflow Example](#complete-workflow-example)
 - [Multi-Agent Parallel Execution](#multi-agent-parallel-execution)
@@ -27,7 +28,7 @@ Before starting, ensure you have:
 
 | Requirement | Check Command | Expected Output |
 |-------------|---------------|-----------------|
-| Python 3.9+ | `python3 --version` | `Python 3.9.x` or higher |
+| Python 3.9+ | `python3 --version` or `python --version` | `Python 3.9.x` or higher |
 | Git | `git --version` | `git version 2.x.x` |
 | Claude Code CLI | `claude --version` | Version info displayed |
 | Bash shell | `echo $SHELL` | `/bin/bash` or `/bin/zsh` |
@@ -36,72 +37,253 @@ Before starting, ensure you have:
 
 ---
 
-## Quick Start
+## Installation (Step-by-Step)
 
-### Step 1: Install Agent Dashboard
+### Step 1: Clone the Repository
 
 ```bash
 # Clone the repository
 git clone https://github.com/Koplal/agent-dashboard.git
 cd agent-dashboard
+```
 
-# Run the automated installer
+### Step 2: Run the Installer
+
+**Interactive Installation (Recommended):**
+```bash
 ./scripts/install.sh
 ```
 
-The installer will:
-- Install Python dependencies (rich, aiohttp)
-- Copy agent definitions to `~/.claude/agents/`
-- Configure Claude Code hooks in `~/.claude/settings.json`
-- Create the `agent-dashboard` command
+**Non-Interactive Installation (CI/CD):**
+```bash
+./scripts/install.sh --non-interactive
+```
 
-### Step 2: Start the Dashboard
+**Force Overwrite Existing Files:**
+```bash
+./scripts/install.sh --force
+```
 
-Open a terminal and start the dashboard server:
+### What the Installer Does
+
+The installer performs 9 steps with verification:
+
+| Step | Description | Verification |
+|------|-------------|--------------|
+| 1/9 | Detect platform (Windows/macOS/Linux) | Platform displayed |
+| 2/9 | Check Python 3.9+ | Version displayed |
+| 3/9 | Check virtual environment | Status displayed |
+| 4/9 | Check package manager (pip/uv) | Manager displayed |
+| 5/9 | Create directory structure | Directories created |
+| 6/9 | Install dashboard files | Files copied |
+| 7/9 | Install slash commands | Commands installed |
+| 8/9 | Create CLI launcher | `agent-dashboard` command created |
+| 9/9 | Install Python dependencies | **Verified by import test** |
+
+**New in v2.6.0:** The installer verifies dependencies are actually importable (not just installed) and automatically retries on failure.
+
+### Step 3: Reload Your Shell
+
+**IMPORTANT:** After first installation, reload your shell to add `agent-dashboard` to PATH:
 
 ```bash
-# Start web dashboard (recommended)
+# For Bash
+source ~/.bashrc
+
+# For Zsh (macOS default)
+source ~/.zshrc
+
+# Or simply open a new terminal
+```
+
+### Step 4: Verify Installation Health Check
+
+At the end of installation, you'll see a health check summary:
+
+```
+=============================================================================
+                    Installation Health Check
+=============================================================================
+
+  CLI Launcher:            [OK]
+  Python (rich):           [OK]
+  Python (aiohttp):        [OK]
+  PATH configured:         [OK]
+  Agent definitions:       [OK] (22 agents)
+
+  Install log: ~/.claude/install.log
+```
+
+If any component shows `[FAIL]`, check the install log for details.
+
+---
+
+## Testing Your Installation
+
+### Test 1: Verify the CLI Works
+
+```bash
+# Check if agent-dashboard is in PATH
+agent-dashboard --help
+
+# Expected output:
+# Agent Dashboard v2.6.0 - Multi-Agent Workflow Monitor
+#
+# USAGE:
+#   agent-dashboard [OPTIONS] [COMMAND]
+#
+# OPTIONS:
+#   --web, -w     Launch web dashboard (default: terminal TUI)
+#   --port, -p    Server port (default: 4200)
+#   --help, -h    Show this help message
+# ...
+```
+
+### Test 2: Run Diagnostics
+
+```bash
+agent-dashboard doctor
+
+# Expected output:
+# Agent Dashboard Doctor
+# ==================================================
+#
+# [1/6] Python
+#   [OK] Python 3.11.x
+#
+# [2/6] Dependencies
+#   [OK] rich installed (Terminal UI)
+#   [OK] aiohttp 3.x.x (Web server)
+#
+# [3/6] Installation
+#   [OK] agent_monitor.py (Terminal dashboard)
+#   [OK] web_server.py (Web dashboard)
+#   [OK] cli.py (CLI interface)
+#   [OK] send_event.py (Event hook)
+#
+# [4/6] Agents
+#   [OK] 22 agents installed
+#
+# [5/6] PATH
+#   [OK] agent-dashboard in PATH
+#
+# [6/6] Server
+#   [INFO] Dashboard not running
+#
+# ==================================================
+# All checks passed!
+```
+
+### Test 3: Start the Dashboard
+
+**Terminal 1:**
+```bash
+# Start the web dashboard
 agent-dashboard --web
 
-# Or start terminal TUI dashboard
-agent-dashboard
+# Expected output:
+# Starting Agent Dashboard v2.6.0 (Web Mode)
+# ===========================================
+#
+#   URL: http://localhost:4200
+#
+#   Press Ctrl+C to stop
 ```
 
-**Expected Output:**
-```
-Agent Dashboard v2.2.1
-Server running at http://localhost:4200
-Press Ctrl+C to stop
-```
+### Test 4: Verify Server Health
 
-### Step 3: Verify Installation
-
-Open a new terminal and test the connection:
-
+**Terminal 2:**
 ```bash
-# Test server health
+# Test the health endpoint
 curl http://localhost:4200/health
 
-# Expected output: {"status": "ok"}
-
-# Test sending an event manually
-curl -X POST http://localhost:4200/events \
-  -H "Content-Type: application/json" \
-  -d '{"event_type": "Test", "agent_name": "test", "session_id": "manual-test", "project": "test"}'
-
-# Expected output: {"status": "received"}
+# Expected output:
+# {"status": "ok"}
 ```
 
-### Step 4: Start Using Claude Code
+### Test 5: Send a Test Event
 
-Now start a Claude Code session. Events will automatically appear in the dashboard:
+**Terminal 2:**
+```bash
+# Send a test event
+agent-dashboard test
+
+# Expected output:
+# Test event sent successfully!
+#    Event type: PreToolUse
+#    Agent: test-agent
+#    Project: test-project
+
+# Check your browser at http://localhost:4200 - the event should appear!
+```
+
+### Test 6: Test with Claude Code
+
+**Terminal 2:**
+```bash
+# Start Claude Code with agent identification
+AGENT_NAME=researcher AGENT_MODEL=sonnet claude
+
+# Try a simple command in Claude, events will appear in the dashboard
+```
+
+### Test 7: Check API Endpoints
 
 ```bash
-# Start Claude Code
-claude
+# Get statistics
+curl http://localhost:4200/api/stats
 
-# Or with agent identification
-AGENT_NAME=researcher AGENT_MODEL=sonnet claude
+# Get active sessions
+curl http://localhost:4200/api/sessions
+
+# Get recent events
+curl http://localhost:4200/api/events
+```
+
+---
+
+## Troubleshooting Installation
+
+### Issue: `agent-dashboard: command not found`
+
+**Cause:** PATH not updated after installation.
+
+**Solution:**
+```bash
+# Option 1: Reload shell config
+source ~/.bashrc  # or source ~/.zshrc
+
+# Option 2: Open a new terminal
+
+# Option 3: Use full path
+~/.local/bin/agent-dashboard --web
+```
+
+### Issue: `ModuleNotFoundError: No module named 'aiohttp'`
+
+**Cause:** Dependencies not installed or installed to wrong Python.
+
+**Solution:**
+```bash
+# Reinstall dependencies
+python3 -m pip install rich aiohttp
+
+# Or re-run installer
+./scripts/install.sh
+```
+
+### Issue: Installation fails silently
+
+**Cause:** Pre-v2.6.0 installer had silent failures.
+
+**Solution:**
+```bash
+# Check install log (new in v2.6.0)
+cat ~/.claude/install.log
+
+# Re-run installer with latest version
+git pull
+./scripts/install.sh
 ```
 
 > **Important:** The `AGENT_NAME` and `AGENT_MODEL` environment variables are **metadata for the dashboard only**. They do not change which Claude model is actually used - that's controlled by your Claude Code configuration or API settings. These variables help the dashboard track and categorize your agent sessions by role and intended model tier.
@@ -214,7 +396,7 @@ The dashboard will show Claude's progress in real-time:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ Agent Dashboard v2.2.1                    http://localhost:4200 │
+│ Agent Dashboard v2.6.0                    http://localhost:4200 │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │  SESSION: abc123         PROJECT: my-api         AGENT: opus   │

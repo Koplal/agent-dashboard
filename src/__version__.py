@@ -8,5 +8,5 @@ Or within the src package:
     from .__version__ import __version__
 """
 
-__version__ = "2.5.3"
+__version__ = "2.6.0"
 __version_info__ = tuple(int(x) for x in __version__.split("."))

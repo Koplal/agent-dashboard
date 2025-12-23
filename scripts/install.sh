@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# install.sh - Agent Dashboard v2.4.1 Installation Script
+# install.sh - Agent Dashboard v2.6.0 Installation Script
 # =============================================================================
 #
 # DESCRIPTION:
@@ -16,12 +16,44 @@
 #
 # USAGE:
 #   ./scripts/install.sh
+#   ./scripts/install.sh --non-interactive  # Skip prompts
+#   ./scripts/install.sh --force            # Overwrite existing files
 #
-# VERSION: 2.4.1
+# VERSION: 2.6.0
 # =============================================================================
 
-# Exit immediately if any command fails
-set -e
+# Note: set -e removed for controlled error handling
+# Critical errors are handled explicitly with verification steps
+
+# =============================================================================
+# COMMAND LINE ARGUMENT PARSING
+# =============================================================================
+NON_INTERACTIVE=false
+FORCE_INSTALL=false
+
+for arg in "$@"; do
+    case $arg in
+        --non-interactive|-y)
+            NON_INTERACTIVE=true
+            ;;
+        --force|-f)
+            FORCE_INSTALL=true
+            ;;
+        --help|-h)
+            echo "Usage: install.sh [OPTIONS]"
+            echo ""
+            echo "Options:"
+            echo "  --non-interactive, -y  Skip all prompts, use defaults"
+            echo "  --force, -f            Force overwrite existing files"
+            echo "  --help, -h             Show this help message"
+            exit 0
+            ;;
+    esac
+done
+
+if [ "$NON_INTERACTIVE" = true ]; then
+    echo -e "\033[0;36m[INFO]\033[0m Running in non-interactive mode"
+fi
 
 # =============================================================================
 # LINE ENDING NORMALIZATION (Windows Fix)
@@ -54,6 +86,88 @@ MAGENTA='\033[0;35m'
 NC='\033[0m'
 
 # =============================================================================
+# ERROR HANDLING FRAMEWORK
+# =============================================================================
+INSTALL_LOG="$HOME/.claude/install.log"
+
+# Severity levels
+SEVERITY_CRITICAL="CRITICAL"
+SEVERITY_WARNING="WARNING"
+SEVERITY_INFO="INFO"
+
+# Installation status tracking
+declare -A INSTALL_STATUS=(
+    [cli_launcher]="pending"
+    [dependency_rich]="pending"
+    [dependency_aiohttp]="pending"
+    [path_update]="pending"
+)
+
+# Log message to install log file
+log_message() {
+    local message="$1"
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    mkdir -p "$(dirname "$INSTALL_LOG")" 2>/dev/null
+    echo "[$timestamp] $message" >> "$INSTALL_LOG" 2>/dev/null
+}
+
+# Show formatted error message
+show_error() {
+    local severity="$1"
+    local code="$2"
+    local message="$3"
+    local suggestion="$4"
+    
+    case "$severity" in
+        CRITICAL) echo -e "${RED}[$severity]${NC} $message" ;;
+        WARNING)  echo -e "${YELLOW}[$severity]${NC} $message" ;;
+        INFO)     echo -e "${CYAN}[$severity]${NC} $message" ;;
+    esac
+    
+    if [ -n "$suggestion" ]; then
+        echo -e "         ${CYAN}Suggestion:${NC} $suggestion"
+    fi
+    
+    log_message "[$severity] $code: $message"
+}
+
+# Prompt user for action (Retry/Continue/Abort)
+prompt_user() {
+    local prompt_message="$1"
+    local default="${2:-a}"  # Default to abort
+    
+    if [ "$NON_INTERACTIVE" = true ]; then
+        echo "Non-interactive mode: using default ($default)"
+        echo "$default"
+        return
+    fi
+    
+    echo ""
+    echo -e "${YELLOW}$prompt_message${NC}"
+    echo -e "  [${GREEN}R${NC}]etry  |  [${YELLOW}C${NC}]ontinue anyway  |  [${RED}A${NC}]bort"
+    read -p "  Choice [$default]: " -n 1 -r choice
+    echo ""
+    
+    choice=${choice:-$default}
+    echo "${choice,,}"  # Return lowercase
+}
+
+# Verify Python package is importable
+verify_python_import() {
+    local package="$1"
+    $PYTHON_CMD -c "import $package" 2>/dev/null
+    return $?
+}
+
+# Update installation status
+update_status() {
+    local component="$1"
+    local status="$2"
+    INSTALL_STATUS[$component]="$status"
+    log_message "Status update: $component = $status"
+}
+
+# =============================================================================
 # DIRECTORY CONFIGURATION
 # =============================================================================
 INSTALL_DIR="$HOME/.claude/dashboard"
@@ -63,12 +177,17 @@ COMMANDS_DIR="$HOME/.claude/commands"
 BIN_DIR="$HOME/.local/bin"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+# Initialize install log
+log_message "=== Installation started ==="
+log_message "Platform: $OSTYPE"
+log_message "Non-interactive: $NON_INTERACTIVE"
+
 # =============================================================================
 # INSTALLATION BANNER
 # =============================================================================
 echo -e "${MAGENTA}"
 echo "============================================================================="
-echo "                    Agent Dashboard v2.4.1 Installer                           "
+echo "                    Agent Dashboard v2.6.0 Installer                           "
 echo "            Multi-Agent Workflow Framework for Claude Code                   "
 echo "============================================================================="
 echo ""
@@ -86,7 +205,7 @@ echo -e "${NC}"
 # =============================================================================
 # PLATFORM DETECTION
 # =============================================================================
-echo -e "${BLUE}[1/8] Detecting platform...${NC}"
+echo -e "${BLUE}[1/9] Detecting platform...${NC}"
 
 IS_MACOS=false
 IS_LINUX=false
@@ -190,7 +309,7 @@ find_pip() {
     return 1
 }
 
-echo -e "\n${BLUE}[2/8] Checking Python installation...${NC}"
+echo -e "\n${BLUE}[2/9] Checking Python installation...${NC}"
 
 # Ensure Homebrew Python is in PATH (macOS)
 if [ "$IS_MACOS" = true ] && [ -d "$HOMEBREW_PREFIX/bin" ]; then
@@ -253,7 +372,7 @@ export PYTHON_VERSION
 # =============================================================================
 # VIRTUAL ENVIRONMENT DETECTION
 # =============================================================================
-echo -e "\n${BLUE}[3/8] Checking Python environment...${NC}"
+echo -e "\n${BLUE}[3/9] Checking Python environment...${NC}"
 
 IN_VENV=false
 
@@ -283,7 +402,7 @@ fi
 # =============================================================================
 # PACKAGE MANAGER CHECK
 # =============================================================================
-echo -e "\n${BLUE}[4/8] Checking package manager...${NC}"
+echo -e "\n${BLUE}[4/9] Checking package manager...${NC}"
 
 PKG_MANAGER=""
 PIP_CMD=""
@@ -320,7 +439,7 @@ fi
 # =============================================================================
 # CREATE DIRECTORY STRUCTURE
 # =============================================================================
-echo -e "\n${BLUE}[5/8] Creating directory structure...${NC}"
+echo -e "\n${BLUE}[5/9] Creating directory structure...${NC}"
 
 mkdir -p "$INSTALL_DIR/hooks"
 mkdir -p "$AGENTS_DIR"
@@ -335,7 +454,7 @@ echo -e "  ${GREEN}[OK]${NC} $BIN_DIR"
 # =============================================================================
 # INSTALL DASHBOARD FILES
 # =============================================================================
-echo -e "\n${BLUE}[6/8] Installing dashboard files...${NC}"
+echo -e "\n${BLUE}[6/9] Installing dashboard files...${NC}"
 
 # Core Python modules
 cp "$SCRIPT_DIR/dashboard/agent_monitor.py" "$INSTALL_DIR/"
@@ -402,8 +521,8 @@ for agent_file in "$SCRIPT_DIR/agents/"*.md; do
         agent_name=$(basename "$agent_file")
         target_file="$AGENTS_DIR/$agent_name"
         if [ -f "$target_file" ]; then
-            # File exists - check if source is newer
-            if [ "$agent_file" -nt "$target_file" ]; then
+            # File exists - check if source is newer or force install
+            if [ "$FORCE_INSTALL" = true ] || [ "$agent_file" -nt "$target_file" ]; then
                 cp "$agent_file" "$target_file"
                 AGENT_COUNT=$((AGENT_COUNT + 1))
             else
@@ -485,6 +604,21 @@ fi
 # =============================================================================
 echo -e "\n${BLUE}[8/9] Creating CLI launcher...${NC}"
 
+# Pre-flight: Ensure BIN_DIR exists and is writable
+if [ ! -d "$BIN_DIR" ]; then
+    mkdir -p "$BIN_DIR" 2>/dev/null
+    if [ $? -ne 0 ]; then
+        show_error "$SEVERITY_CRITICAL" "E001" \
+            "Cannot create directory $BIN_DIR" \
+            "Run: mkdir -p $BIN_DIR"
+        choice=$(prompt_user "Directory creation failed. What would you like to do?" "a")
+        case "$choice" in
+            c) update_status "cli_launcher" "skipped" ;;
+            *) exit 1 ;;
+        esac
+    fi
+fi
+
 cat > "$BIN_DIR/agent-dashboard" << 'LAUNCHER_EOF'
 #!/usr/bin/env bash
 # =============================================================================
@@ -549,7 +683,7 @@ while [[ $# -gt 0 ]]; do
             break
             ;;
         --help|-h)
-            echo "Agent Dashboard v2.4.1 - Multi-Agent Workflow Monitor"
+            echo "Agent Dashboard v2.6.0 - Multi-Agent Workflow Monitor"
             echo ""
             echo "USAGE:"
             echo "  agent-dashboard [OPTIONS] [COMMAND]"
@@ -641,7 +775,7 @@ done
 # Launch dashboard
 if [ "$WEB_MODE" = true ]; then
     echo ""
-    echo "Starting Agent Dashboard v2.4.1 (Web Mode)"
+    echo "Starting Agent Dashboard v2.6.0 (Web Mode)"
     echo "==========================================="
     echo ""
     echo "  URL: http://localhost:$PORT"
@@ -654,7 +788,7 @@ if [ "$WEB_MODE" = true ]; then
     $PYTHON_CMD "$DASHBOARD_DIR/web_server.py" --port "$PORT"
 else
     echo ""
-    echo "Starting Agent Dashboard v2.4.1 (Terminal TUI)"
+    echo "Starting Agent Dashboard v2.6.0 (Terminal TUI)"
     echo "============================================="
     echo ""
     echo "  Press 'q' to quit"
@@ -664,7 +798,40 @@ fi
 LAUNCHER_EOF
 
 chmod +x "$BIN_DIR/agent-dashboard"
-echo -e "  ${GREEN}[OK]${NC} Created $BIN_DIR/agent-dashboard"
+
+# Verify launcher was created successfully
+if [ ! -f "$BIN_DIR/agent-dashboard" ]; then
+    show_error "$SEVERITY_CRITICAL" "E004" \
+        "CLI launcher was not created at $BIN_DIR/agent-dashboard" \
+        "Check that $BIN_DIR exists and is writable"
+    
+    choice=$(prompt_user "CLI launcher creation failed. What would you like to do?" "a")
+    case "$choice" in
+        r) 
+            # Retry logic - attempt mkdir and recreate
+            mkdir -p "$BIN_DIR" 2>/dev/null
+            echo -e "${YELLOW}Please re-run the installer to retry launcher creation${NC}"
+            update_status "cli_launcher" "failed"
+            ;;
+        c)
+            update_status "cli_launcher" "failed"
+            echo -e "${YELLOW}Continuing without CLI launcher...${NC}"
+            ;;
+        *)
+            echo -e "${RED}Installation aborted.${NC}"
+            exit 1
+            ;;
+    esac
+elif [ ! -x "$BIN_DIR/agent-dashboard" ]; then
+    show_error "$SEVERITY_WARNING" "E003" \
+        "CLI launcher exists but is not executable" \
+        "Run: chmod +x $BIN_DIR/agent-dashboard"
+    chmod +x "$BIN_DIR/agent-dashboard" 2>/dev/null || true
+    update_status "cli_launcher" "warning"
+else
+    update_status "cli_launcher" "success"
+    echo -e "  ${GREEN}[OK]${NC} Created $BIN_DIR/agent-dashboard"
+fi
 
 # =============================================================================
 # INSTALL PYTHON DEPENDENCIES
@@ -710,6 +877,60 @@ install_tokenizer() {
     fi
 }
 
+# Verify and retry installation function
+verify_and_retry_install() {
+    local package="$1"
+    local description="$2"
+    local retry_count=0
+    local max_retries=1
+    
+    while [ $retry_count -le $max_retries ]; do
+        if verify_python_import "$package"; then
+            local version=$($PYTHON_CMD -c "import $package; print(getattr($package, '__version__', 'installed'))" 2>/dev/null)
+            echo -e "  ${GREEN}[OK]${NC} $package $version ($description)"
+            update_status "dependency_$package" "success"
+            return 0
+        fi
+        
+        if [ $retry_count -lt $max_retries ]; then
+            echo -e "  ${YELLOW}[RETRY]${NC} $package import failed, retrying installation..."
+            log_message "Retrying $package installation (attempt $((retry_count + 2)))"
+            
+            if [ "$IN_VENV" = true ]; then
+                $PYTHON_CMD -m pip install --quiet "$package" 2>/dev/null
+            else
+                $PYTHON_CMD -m pip install --quiet --user "$package" 2>/dev/null
+            fi
+        fi
+        
+        retry_count=$((retry_count + 1))
+    done
+    
+    # Failed after retries
+    show_error "$SEVERITY_CRITICAL" "E006" \
+        "Package '$package' installed but cannot be imported" \
+        "Run: $PYTHON_CMD -m pip install $package"
+    
+    update_status "dependency_$package" "failed"
+    
+    choice=$(prompt_user "Dependency verification failed. What would you like to do?" "c")
+    case "$choice" in
+        r)
+            $PYTHON_CMD -m pip install "$package"
+            if verify_python_import "$package"; then
+                update_status "dependency_$package" "success"
+            fi
+            ;;
+        c)
+            echo -e "${YELLOW}Continuing without $package...${NC}"
+            ;;
+        *)
+            echo -e "${RED}Installation aborted.${NC}"
+            exit 1
+            ;;
+    esac
+}
+
 # Install core dependencies first
 echo "  Installing core dependencies..."
 if [ "$PKG_MANAGER" = "uv" ]; then
@@ -720,8 +941,10 @@ else
     install_core_deps
 fi
 
-echo -e "  ${GREEN}[OK]${NC} rich (terminal UI)"
-echo -e "  ${GREEN}[OK]${NC} aiohttp (web server)"
+# Verify dependencies after installation
+echo "  Verifying dependencies..."
+verify_and_retry_install "rich" "terminal UI"
+verify_and_retry_install "aiohttp" "web server"
 
 # Tokenizer selection
 echo ""
@@ -730,7 +953,13 @@ echo "   1) transformers (recommended, ~95% accuracy for Claude)"
 echo "   2) tiktoken (legacy, ~70-85% accuracy)"
 echo "   3) skip (use character estimation)"
 echo ""
-read -p "  Install tokenizer? [1/2/3] (default: 1): " tokenizer_choice
+
+if [ "$NON_INTERACTIVE" = true ]; then
+    tokenizer_choice=1
+    echo "  Non-interactive mode: selecting option 1 (transformers)"
+else
+    read -p "  Install tokenizer? [1/2/3] (default: 1): " tokenizer_choice
+fi
 tokenizer_choice=${tokenizer_choice:-1}
 
 case $tokenizer_choice in
@@ -766,7 +995,8 @@ esac
 # UPDATE PATH
 # =============================================================================
 if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
-    echo -e "\n${YELLOW}[PATH]${NC} Adding $BIN_DIR to PATH..."
+    echo -e "
+${YELLOW}[PATH]${NC} Adding $BIN_DIR to PATH..."
 
     SHELL_RC=""
     if [ -n "$ZSH_VERSION" ] || [ -f "$HOME/.zshrc" ]; then
@@ -778,23 +1008,43 @@ if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
     if [ -n "$SHELL_RC" ]; then
         if ! grep -q "Agent Dashboard" "$SHELL_RC" 2>/dev/null; then
             echo "" >> "$SHELL_RC"
-            echo "# Agent Dashboard v2.4.1" >> "$SHELL_RC"
+            echo "# Agent Dashboard v2.6.0" >> "$SHELL_RC"
             echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$SHELL_RC"
-            echo -e "  ${GREEN}[OK]${NC} Added to $SHELL_RC"
         fi
+        
+        # Verify PATH was added
+        if grep -q "Agent Dashboard" "$SHELL_RC" 2>/dev/null; then
+            echo -e "  ${GREEN}[OK]${NC} Added to $SHELL_RC"
+            update_status "path_update" "success"
+        else
+            show_error "$SEVERITY_WARNING" "E007"                 "Could not verify PATH update in $SHELL_RC"                 "Add manually: export PATH=\"\$HOME/.local/bin:\$PATH\""
+            update_status "path_update" "warning"
+        fi
+        
+        echo ""
+        echo -e "  ${CYAN}[ACTION REQUIRED]${NC} Run one of these to activate:"
+        echo -e "    ${GREEN}source $SHELL_RC${NC}  (current terminal)"
+        echo -e "    Or open a new terminal"
     fi
 fi
 
 # =============================================================================
 # CONFIGURE CLAUDE CODE HOOKS
 # =============================================================================
-echo -e "\n${BLUE}Configure Claude Code hooks?${NC}"
+echo -e "
+${BLUE}Configure Claude Code hooks?${NC}"
 echo ""
 echo "  This will update ~/.claude/settings.json to send events to the dashboard."
 echo "  Events: PreToolUse, PostToolUse, UserPromptSubmit, Stop, SubagentStop"
 echo ""
-read -p "  Proceed with hook configuration? [y/N] " -n 1 -r
-echo ""
+
+if [ "$NON_INTERACTIVE" = true ]; then
+    REPLY="y"
+    echo "  Non-interactive mode: proceeding with hook configuration"
+else
+    read -p "  Proceed with hook configuration? [y/N] " -n 1 -r
+    echo ""
+fi
 
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     SETTINGS_FILE="$CONFIG_DIR/settings.json"
@@ -831,7 +1081,7 @@ except (json.JSONDecodeError, FileNotFoundError):
     existing = {}
 
 # Parse new hooks
-new_hooks = json.loads('''$DASHBOARD_HOOKS''')
+new_hooks = json.loads('"'"'$DASHBOARD_HOOKS'"'"')
 
 # Merge hooks - add dashboard hooks without removing existing ones
 if "hooks" not in existing:
@@ -863,6 +1113,71 @@ MERGE_SCRIPT
 else
     echo -e "  ${YELLOW}[SKIP]${NC} Hook configuration skipped"
 fi
+
+# =============================================================================
+# INSTALLATION HEALTH CHECK
+# =============================================================================
+show_health_check() {
+    echo ""
+    echo -e "${CYAN}=============================================================================${NC}"
+    echo -e "${CYAN}                    Installation Health Check                                ${NC}"
+    echo -e "${CYAN}=============================================================================${NC}"
+    echo ""
+    
+    local has_failures=false
+    
+    # Check CLI Launcher
+    printf "  %-25s" "CLI Launcher:"
+    if [ -x "$BIN_DIR/agent-dashboard" ]; then
+        echo -e "${GREEN}[OK]${NC}"
+    elif [ -f "$BIN_DIR/agent-dashboard" ]; then
+        echo -e "${YELLOW}[WARN]${NC} Exists but not executable"
+        has_failures=true
+    else
+        echo -e "${RED}[FAIL]${NC} Not found"
+        has_failures=true
+    fi
+    
+    # Check Python dependencies
+    for pkg in rich aiohttp; do
+        printf "  %-25s" "Python ($pkg):"
+        if verify_python_import "$pkg" 2>/dev/null; then
+            echo -e "${GREEN}[OK]${NC}"
+        else
+            echo -e "${RED}[FAIL]${NC} Not importable"
+            has_failures=true
+        fi
+    done
+    
+    # Check PATH
+    printf "  %-25s" "PATH configured:"
+    if [[ ":$PATH:" == *":$BIN_DIR:"* ]] || grep -q ".local/bin" "$HOME/.bashrc" 2>/dev/null || grep -q ".local/bin" "$HOME/.zshrc" 2>/dev/null; then
+        echo -e "${GREEN}[OK]${NC}"
+    else
+        echo -e "${YELLOW}[WARN]${NC} May need shell restart"
+    fi
+    
+    # Check agents
+    printf "  %-25s" "Agent definitions:"
+    local agent_count=$(ls -1 "$AGENTS_DIR"/*.md 2>/dev/null | wc -l)
+    if [ "$agent_count" -ge 10 ]; then
+        echo -e "${GREEN}[OK]${NC} ($agent_count agents)"
+    else
+        echo -e "${YELLOW}[WARN]${NC} Only $agent_count agents found"
+    fi
+    
+    echo ""
+    
+    if [ "$has_failures" = true ]; then
+        echo -e "  ${YELLOW}Some issues detected. Run:${NC} ${GREEN}agent-dashboard doctor${NC}"
+    fi
+    
+    echo -e "  ${CYAN}Install log:${NC} $INSTALL_LOG"
+    echo ""
+}
+
+# Call health check before final banner
+show_health_check
 
 # =============================================================================
 # INSTALLATION COMPLETE
@@ -936,3 +1251,5 @@ echo ""
 echo -e "${YELLOW}NOTE:${NC} Open a new terminal or run:"
 echo -e "      ${GREEN}source ~/.bashrc${NC}  (Bash) or ${GREEN}source ~/.zshrc${NC}  (Zsh)"
 echo ""
+
+log_message "=== Installation completed ==="

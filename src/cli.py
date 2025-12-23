@@ -16,7 +16,7 @@ Dependencies:
     - rich: Terminal UI rendering
     - aiohttp: Web server (optional)
 
-Version: 2.5.2
+Version: 2.6.0
 """
 
 import argparse
@@ -31,7 +31,7 @@ from pathlib import Path
 try:
     from .__version__ import __version__
 except ImportError:
-    __version__ = "2.5.2"
+    __version__ = "2.6.0"
 from datetime import datetime
 
 

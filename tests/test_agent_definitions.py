@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """test_agent_definitions.py - Validation tests for agent definition files.
 
-Version: 2.5.2
+Version: 2.6.0
 """
 
 import re
