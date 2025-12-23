@@ -1,6 +1,8 @@
-# Agent Dashboard v2.5.1
+# Agent Dashboard v2.6.0
 
 > **Quick Install:** `git clone https://github.com/Koplal/agent-dashboard.git && cd agent-dashboard && ./scripts/install.sh`
+>
+> **Non-Interactive Install (CI/CD):** `./scripts/install.sh --non-interactive`
 >
 > **Platform-specific instructions:** See [INSTALL.md](INSTALL.md)
 > **Troubleshooting:** See [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
@@ -50,6 +52,38 @@ A comprehensive multi-agent workflow framework implementing **Test-Driven Develo
 | **7-Phase Workflow** | SPEC → TEST_DESIGN → TEST_IMPL → IMPLEMENT → VALIDATE → REVIEW → DELIVER |
 | **Cost Governance** | Circuit breaker pattern with budget enforcement |
 | **Six-Layer Validation** | Static analysis, tests, TODO check, mock detection, integration, diff |
+
+### What's New in v2.6.0 - Robust Installation
+
+The installer has been completely overhauled with comprehensive error handling, dependency verification, and user-friendly diagnostics.
+
+#### Installation Improvements
+- **Error Handling Framework** - Silent failures are now caught and reported with actionable suggestions
+- **Dependency Verification** - `rich` and `aiohttp` are verified after installation with automatic retry
+- **Health Check Summary** - Final summary shows status of all components (CLI, dependencies, PATH, agents)
+- **Non-Interactive Mode** - `--non-interactive` or `-y` flag for CI/CD pipelines
+- **Install Logging** - All events logged to `~/.claude/install.log` for debugging
+
+#### New Installer Features
+- **Pre-flight Checks** - Verifies directories exist and are writable before operations
+- **Retry Logic** - Automatic retry for pip install failures with clear error messages
+- **User Prompts** - On critical failures: Retry / Continue anyway / Abort options
+- **Step Consistency** - Fixed step numbering to show `[1/9]` through `[9/9]` consistently
+
+#### Usage
+```bash
+# Standard interactive installation
+./scripts/install.sh
+
+# Non-interactive installation (CI/CD)
+./scripts/install.sh --non-interactive
+
+# Force overwrite existing files
+./scripts/install.sh --force
+
+# Show help
+./scripts/install.sh --help
+```
 
 ### What's New in v2.5.0 - Agent Optimization
 
@@ -192,7 +226,7 @@ For detailed documentation, see [docs/WORKFLOW_FRAMEWORK.md](docs/WORKFLOW_FRAME
 
 ### Installation
 
-**Bash/Zsh Terminal:**
+**Step 1: Clone and Install**
 ```bash
 # Clone the repository
 git clone https://github.com/Koplal/agent-dashboard.git
@@ -200,6 +234,16 @@ cd agent-dashboard
 
 # Run the automated installer
 ./scripts/install.sh
+
+# Or for CI/CD (no prompts)
+./scripts/install.sh --non-interactive
+```
+
+**Step 2: Reload Your Shell** (required after first install)
+```bash
+source ~/.bashrc   # Bash
+# or
+source ~/.zshrc    # Zsh
 ```
 
 **VS Code Integrated Terminal:**
@@ -210,28 +254,76 @@ cd agent-dashboard
 
 **Manual Installation:**
 ```bash
-pip install rich aiohttp tiktoken
+pip install rich aiohttp transformers tokenizers
 ```
 
 ### Launch the Dashboard
 
 ```bash
+# Web dashboard (recommended)
+agent-dashboard --web
+# Open http://localhost:4200 in your browser
+
 # Terminal TUI dashboard
 agent-dashboard
 
-# Web dashboard (recommended)
-agent-dashboard --web
-# Open http://localhost:4200
+# Use a different port
+agent-dashboard --web --port 4201
 ```
 
 ### Quick Test
 
+**Step 1: Start the Dashboard**
 ```bash
-# Send a test event
+# Terminal 1: Start the dashboard
+agent-dashboard --web
+```
+
+**Step 2: Verify Installation**
+```bash
+# Terminal 2: Run diagnostics
+agent-dashboard doctor
+
+# Expected output:
+# [1/6] Python
+#   [OK] Python 3.11.x
+# [2/6] Dependencies
+#   [OK] rich installed
+#   [OK] aiohttp 3.x.x
+# ...
+# All checks passed!
+```
+
+**Step 3: Test Event Sending**
+```bash
+# Terminal 2: Send a test event
 agent-dashboard test
 
-# Or manually test the API
+# Expected output:
+# Test event sent successfully!
+#    Event type: PreToolUse
+#    Agent: test-agent
+#    Project: test-project
+
+# Verify in browser at http://localhost:4200
+```
+
+**Step 4: Test with Claude Code**
+```bash
+# Terminal 2: Start Claude Code with agent identification
+AGENT_NAME=researcher AGENT_MODEL=sonnet claude
+
+# Events will appear in the dashboard in real-time
+```
+
+### Verify Health Check
+```bash
+# Check server health
 curl http://localhost:4200/health
+# Expected: {"status": "ok"}
+
+# Check API endpoints
+curl http://localhost:4200/api/stats
 ```
 
 ### See It In Action

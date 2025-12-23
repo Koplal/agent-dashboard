@@ -25,7 +25,7 @@ Override Rules: User can escalate only (not downgrade)
 Dependencies:
     - sqlite3: Audit database persistence (optional)
 
-Version: 2.5.2
+Version: 2.6.0
 """
 
 import json

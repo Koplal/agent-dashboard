@@ -21,7 +21,7 @@ Dependencies:
     - aiohttp: Async HTTP/WebSocket server
     - workflow_engine: Workflow orchestration (optional)
 
-Version: 2.5.2
+Version: 2.6.0
 """
 
 import asyncio

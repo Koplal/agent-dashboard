@@ -6,7 +6,7 @@ Tests critical CLI paths:
 - Test event when server unavailable
 - Recent events with empty/populated database
 
-Version: 2.5.2
+Version: 2.6.0
 """
 
 import sys

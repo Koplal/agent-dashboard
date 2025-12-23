@@ -23,7 +23,7 @@ Dependencies:
     - tiktoken: Accurate token counting (optional, falls back to estimation)
     - validation: Base validation classes
 
-Version: 2.5.2
+Version: 2.6.0
 """
 
 import json

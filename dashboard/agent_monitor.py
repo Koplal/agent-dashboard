@@ -16,7 +16,7 @@ Dependencies:
     - sqlite3: Event persistence
     - aiohttp: HTTP server for receiving events (optional)
 
-Version: 2.2.1
+Version: 2.6.0
 """
 
 import asyncio
