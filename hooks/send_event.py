@@ -40,34 +40,75 @@ from typing import Optional, Dict, Any, Tuple
 import urllib.request
 import urllib.error
 
-# Token counting - standalone implementation for hook usage
-# This avoids import path issues when running from ~/.claude/dashboard/hooks/
+# Token counting - prefer centralized module, fall back to standalone for hook usage
+# Hooks run from ~/.claude/dashboard/hooks/ which may not have src in path
+_CENTRAL_COUNTER_AVAILABLE = False
+_count_tokens_central = None
+_get_tokenizer_info_central = None
+
+# Try to import from centralized token counter (preferred)
+try:
+    # Add dashboard directory to path for centralized import
+    _dashboard_dir = Path(__file__).resolve().parent.parent
+    if str(_dashboard_dir) not in sys.path:
+        sys.path.insert(0, str(_dashboard_dir))
+    from src.token_counter import count_tokens as _count_tokens_central
+    from src.token_counter import get_tokenizer_info as _get_tokenizer_info_central
+    _CENTRAL_COUNTER_AVAILABLE = True
+except (ImportError, Exception):
+    pass  # Fall back to standalone implementation
+
+# Standalone fallback implementation
 _TIKTOKEN_AVAILABLE = False
 _encoding = None
 
-try:
-    import tiktoken
-    _encoding = tiktoken.get_encoding("cl100k_base")
-    _TIKTOKEN_AVAILABLE = True
-except (ImportError, Exception):
-    pass  # Silently fall back to character estimation
+if not _CENTRAL_COUNTER_AVAILABLE:
+    try:
+        import tiktoken
+        _encoding = tiktoken.get_encoding("cl100k_base")
+        _TIKTOKEN_AVAILABLE = True
+    except (ImportError, Exception):
+        pass  # Silently fall back to character estimation
 
 
 def count_tokens(text: str, **kwargs) -> int:
-    """Count tokens using tiktoken or character estimation fallback."""
+    """
+    Count tokens using centralized token counter or fallback.
+
+    Priority:
+    1. Centralized src.token_counter (multi-tier fallback with Claude HF tokenizer)
+    2. Local tiktoken (cl100k_base)
+    3. Character estimation (~4 chars per token)
+    """
     if not text:
         return 0
+
+    # Prefer centralized counter
+    if _CENTRAL_COUNTER_AVAILABLE and _count_tokens_central is not None:
+        try:
+            return _count_tokens_central(text)
+        except Exception:
+            pass
+
+    # Fallback to local tiktoken
     if _TIKTOKEN_AVAILABLE and _encoding:
         try:
             return len(_encoding.encode(text))
         except Exception:
             pass
+
     # Character estimation fallback (~4 chars per token)
     return len(text) // 4
 
 
 def get_tokenizer_info():
     """Get tokenizer info for diagnostics."""
+    if _CENTRAL_COUNTER_AVAILABLE and _get_tokenizer_info_central is not None:
+        try:
+            return _get_tokenizer_info_central()
+        except Exception:
+            pass
+
     return type('TokenizerInfo', (), {
         'name': 'tiktoken' if _TIKTOKEN_AVAILABLE else 'character',
         'accuracy': '~70-85%' if _TIKTOKEN_AVAILABLE else '~60-70%'

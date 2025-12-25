@@ -25,6 +25,7 @@ A comprehensive multi-agent workflow framework implementing **Test-Driven Develo
 - [Architecture](#-architecture)
 - [Agent Registry](#-agent-registry-20-agents)
 - [Panel Judge Workflow](#-panel-judge-workflow)
+- [Neurosymbolic Modules](#neurosymbolic-modules-v260)
 - [Repository Structure](#-repository-structure)
 - [Dependencies](#-dependencies)
 - [Configuration](#-configuration)
@@ -600,11 +601,58 @@ curl -X POST http://localhost:4200/api/panel \
 
 ---
 
+## Neurosymbolic Modules (v2.6.0)
+
+The experiment/neuro-symbolic branch introduces 9 advanced modules for formal verification, knowledge management, and learning capabilities.
+
+### Module Overview
+
+| Module | Directory | Purpose | Key Features |
+|--------|-----------|---------|--------------|
+| NESY-001 | `src/validators/` | Output Validation | Pydantic schemas, retry generation |
+| NESY-002 | `src/constraints/` | Grammar-Constrained Generation | Schema enforcement, tool_use |
+| NESY-003 | `src/judges/` | Heterogeneous Judge Panel | Diversified evaluation, consensus |
+| NESY-004 | `src/knowledge/` | Knowledge Graph | Entity extraction, semantic search |
+| NESY-005 | `src/verification/` | Z3 Constraint Solver | Formal verification, SMT solving |
+| NESY-006 | `src/ledger/` | Progress Tracking | Task ledger, loop detection |
+| NESY-007 | `src/specifications/` | Formal DSL | Agent behavior specification |
+| NESY-008 | `src/learning/` | Neurosymbolic Learning | Rule extraction, effectiveness |
+| NESY-009 | `src/audit/` | Audit Trail | Hash chains, compliance reports |
+
+### Quick Usage
+
+```python
+# NESY-001: Output Validation
+from src.validators import OutputValidator, create_pydantic_schema
+validator = OutputValidator(schema=MyOutputSchema)
+result = validator.validate(llm_output)
+
+# NESY-004: Knowledge Graph
+from src.knowledge import KnowledgeGraph
+kg = KnowledgeGraph(":memory:")
+kg.add_claim("Python is a programming language", source="manual")
+results = kg.search("programming")
+
+# NESY-007: Formal Specifications
+from src.specifications import SpecificationParser, SpecificationEnforcedAgent
+spec = SpecificationParser().parse_file("specs/researcher.spec")
+agent = SpecificationEnforcedAgent(wrapped_agent, spec)
+
+# NESY-009: Audit Trail
+from src.audit import AuditTrail
+trail = AuditTrail(storage_path="./audit.db")
+trail.log("task_completed", {"task_id": "123", "status": "success"})
+```
+
+For comprehensive documentation, see [docs/NESY-ARCHITECTURE.md](docs/NESY-ARCHITECTURE.md).
+
+---
+
 ## Repository Structure
 
 ```
 agent-dashboard/
-├── agents/                         # Agent definitions (20 agents)
+├── agents/                         # Agent definitions (22 agents)
 │   ├── orchestrator.md             # ◆ Tier 1 - Strategic coordinator
 │   ├── synthesis.md                # ◆ Tier 1 - Research synthesizer
 │   ├── critic.md                   # ◆ Tier 1 - Devil's advocate
@@ -634,7 +682,22 @@ agent-dashboard/
 │   ├── validation.py               # Six-layer validation stack
 │   ├── compression_gate.py         # Token budgeting for handoffs
 │   ├── panel_selector.py           # Judge panel selection logic
-│   └── synthesis_validator.py      # Synthesis output validation
+│   ├── synthesis_validator.py      # Synthesis output validation
+│   ├── audit/                      # NESY-009: Audit trail with hash chaining
+│   ├── constraints/                # NESY-002: Grammar-constrained generation
+│   ├── judges/                     # NESY-003: Heterogeneous judge panel
+│   ├── knowledge/                  # NESY-004: Knowledge graph layer
+│   ├── learning/                   # NESY-008: Neurosymbolic learning
+│   ├── ledger/                     # NESY-006: Progress ledger
+│   ├── schemas/                    # Pydantic output schemas
+│   ├── specifications/             # NESY-007: Formal specification DSL
+│   ├── validators/                 # NESY-001: Output validators
+│   └── verification/               # NESY-005: Z3 symbolic verification
+│
+├── specs/                          # Formal specification files (.spec)
+│   ├── researcher.spec             # Research agent constraints
+│   ├── code_reviewer.spec          # Code review constraints
+│   └── summarizer.spec             # Summarization constraints
 │
 ├── dashboard/
 │   └── agent_monitor.py            # Terminal TUI dashboard (Rich)
@@ -1024,7 +1087,7 @@ The web dashboard uses a responsive 3-column grid layout that fills the viewport
 ### Running Tests
 
 ```bash
-# Run all tests (249 total)
+# Run all tests (785+ total including NESY modules)
 # Use 'python' on Windows, 'python3' on Linux/macOS
 python -m pytest tests/ -v
 
@@ -1050,7 +1113,24 @@ python -m pytest tests/ --cov=src --cov=hooks --cov-report=html
 | `test_send_event.py` | 22 | Token estimation, cost calculation, event sending |
 | `test_cross_platform.py` | 20 | Cross-platform compatibility, Python detection |
 | `test_integration.py` | 13 | End-to-end integration, API endpoints |
-| **Total** | **249** | |
+| **Core Total** | **249** | |
+
+#### NESY Module Tests (v2.6.0)
+
+| File | Tests | Coverage Areas |
+|------|-------|----------------|
+| `test_specifications.py` | 103 | DSL parsing, AST, specification enforcement |
+| `test_validators.py` | 68 | Pydantic validation, retry generation |
+| `test_learning.py` | 58 | Rule extraction, effectiveness tracking |
+| `test_knowledge.py` | 56 | Knowledge graph, semantic search |
+| `test_constraints.py` | 52 | Grammar constraints, tool schema |
+| `test_judges.py` | 48 | Judge panel, consensus calculation |
+| `test_ledger.py` | 45 | Task tracking, loop detection |
+| `test_audit.py` | 42 | Hash chains, compliance reports |
+| `test_verification.py` | 38 | Z3 solver, claim verification |
+| `test_schemas.py` | 26 | Output schemas, JSON generation |
+| **NESY Total** | **536** | |
+| **Grand Total** | **785+** | |
 
 ### Verification Commands
 

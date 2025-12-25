@@ -33,14 +33,13 @@ from datetime import datetime
 from typing import Optional, Dict, Any, List, Tuple
 from enum import Enum, auto
 
-# Try to import tiktoken for accurate token counting
+# Import centralized token counter
 try:
-    import tiktoken
-    _encoding = tiktoken.get_encoding("cl100k_base")
-    _TIKTOKEN_AVAILABLE = True
-except (ImportError, Exception):
-    _encoding = None
-    _TIKTOKEN_AVAILABLE = False
+    from src.token_counter import count_tokens as _count_tokens_central
+    _CENTRAL_COUNTER_AVAILABLE = True
+except ImportError:
+    _CENTRAL_COUNTER_AVAILABLE = False
+    _count_tokens_central = None
 
 from validation import (
     ValidationAction,
@@ -183,24 +182,27 @@ class CompressionGate:
 
     def count_tokens(self, text: str) -> int:
         """
-        Count tokens in text using tiktoken or fallback estimation.
+        Count tokens in text using centralized token counter.
+
+        Delegates to src.token_counter for accurate counting with
+        multi-tier fallback (Claude HF -> Anthropic API -> tiktoken -> char).
 
         Args:
             text: Text to count tokens for
 
         Returns:
-            Estimated token count
+            Token count
         """
         if not text:
             return 0
 
-        if _TIKTOKEN_AVAILABLE and _encoding is not None:
+        if _CENTRAL_COUNTER_AVAILABLE and _count_tokens_central is not None:
             try:
-                return len(_encoding.encode(text))
+                return _count_tokens_central(text)
             except Exception:
                 pass
 
-        # Fallback: ~4 chars per token
+        # Emergency fallback: ~4 chars per token
         return len(text) // 4
 
     def get_budget(self, source_tier: AgentTier, target_tier: AgentTier) -> int:

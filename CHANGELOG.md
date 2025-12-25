@@ -2,6 +2,90 @@
 
 All notable changes to Agent Dashboard are documented here.
 
+## [2.6.0] - 2025-12-25
+
+### Neurosymbolic Architecture (experiment/neuro-symbolic branch)
+
+Major implementation of 9 neurosymbolic modules providing formal verification,
+knowledge management, and learning capabilities.
+
+#### NESY-001: Pydantic Output Validators (`src/validators/`)
+- Output validation with Pydantic schemas
+- Automatic retry prompt generation
+- Field-level verification
+- JSON Schema generation from Pydantic models
+
+#### NESY-002: Grammar-Constrained Generation (`src/constraints/`)
+- Schema enforcement using Claude's tool_use feature
+- Tool schema registry for structured outputs
+- Optional local model support via Outlines library
+
+#### NESY-003: Heterogeneous Judge Panel (`src/judges/`)
+- Diversified judge configurations (adversarial, rubric, domain-expert, skeptic, end-user)
+- Consensus calculation with weighted voting
+- Escalation handling for split decisions
+- Panel persistence and resumption
+
+#### NESY-004: Knowledge Graph (`src/knowledge/`)
+- Entity and claim storage with relationships
+- Semantic search with embedding support
+- Contradiction detection between claims
+- SQLite backend with FTS5 full-text search
+
+#### NESY-005: Z3 Constraint Solver (`src/verification/`)
+- Formal verification with Z3 theorem prover
+- Claim classification (logical, mathematical, empirical)
+- Hybrid verification combining symbolic and LLM evaluation
+- Satisfiability checking with model extraction
+
+#### NESY-006: Progress Ledger (`src/ledger/`)
+- Task lifecycle tracking (pending → active → complete)
+- Loop detection for stuck tasks
+- Runtime metrics and timing
+- Multi-agent task coordination
+
+#### NESY-007: Formal Specification Language (`src/specifications/`)
+- Custom DSL for agent behavior constraints
+- AST representation and Lark grammar parsing
+- SpecificationEnforcedAgent wrapper
+- Limit enforcement (timeout, tool calls, iterations)
+
+#### NESY-008: Neurosymbolic Learning (`src/learning/`)
+- Rule extraction from successful executions
+- Effectiveness tracking with Bayesian updates
+- Semantic search for rule matching
+- SQLite and memory-based rule stores
+
+#### NESY-009: Audit Trail Infrastructure (`src/audit/`)
+- Tamper-evident hash chaining
+- Multiple storage backends (file, SQLite, memory)
+- Compliance report generation
+- Query engine with filters
+
+### Changed
+- Version bumped to 2.6.0 across all modules
+- Unified token counting across codebase (compression_gate.py, send_event.py)
+- Added centralized token_counter.py with 4-tier fallback
+- Added 21 test files for NESY modules (785+ tests total)
+- Added formal specification files in `specs/` directory
+
+### Added
+- `src/audit/` - Audit trail with hash chaining
+- `src/constraints/` - Grammar-constrained generation
+- `src/judges/` - Heterogeneous judge panel
+- `src/knowledge/` - Knowledge graph layer
+- `src/learning/` - Neurosymbolic learning
+- `src/ledger/` - Progress ledger
+- `src/schemas/` - Pydantic output schemas
+- `src/specifications/` - Formal specification DSL
+- `src/validators/` - Output validators
+- `src/verification/` - Z3 symbolic verification
+- `specs/` - Formal specification files (.spec)
+- `docs/Pre-Testing-Tasks-Plan.md` - Pre-merge testing plan
+- `docs/NESY-Integration-Tests-Ledger.md` - Integration test checklist
+
+---
+
 ## [2.5.2] - 2025-12-18
 
 ### Few-Shot Examples Expansion (v2.5.2 Agent Definitions)

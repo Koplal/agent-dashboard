@@ -1,4 +1,4 @@
-# Agent Dashboard v2.4.1 Implementation Guide
+# Agent Dashboard v2.6.0 Implementation Guide
 
 Complete guide for deploying the Agent Dashboard multi-agent workflow framework on any project.
 
@@ -29,6 +29,7 @@ This guide assumes you are using a **Bash-compatible terminal**:
 8. [Testing](#testing)
 9. [Project Integration Guide](#project-integration-guide)
 10. [Troubleshooting](#troubleshooting)
+11. [Neurosymbolic Modules](#neurosymbolic-modules-v260)
 
 ---
 
@@ -1099,6 +1100,90 @@ sqlite3 ~/.claude/agent_dashboard.db "SELECT COUNT(*) FROM events"
 rm ~/.claude/agent_dashboard.db
 agent-dashboard --web  # Recreates on startup
 ```
+
+---
+
+## Neurosymbolic Modules (v2.6.0)
+
+The experiment/neuro-symbolic branch adds 9 advanced modules for formal verification, knowledge management, and learning capabilities.
+
+### Module Installation
+
+All NESY modules are included in the standard installation. Optional dependencies provide enhanced functionality:
+
+```bash
+# Full installation with all NESY features
+pip install agent-dashboard[all]
+
+# Or install specific optional dependencies
+pip install z3-solver      # NESY-005: Formal verification
+pip install lark           # NESY-007: Specification parsing (recommended)
+```
+
+### Module Overview
+
+| Module | Purpose | Key Classes |
+|--------|---------|-------------|
+| NESY-001 | Output Validation | `OutputValidator`, `create_pydantic_schema` |
+| NESY-002 | Grammar Constraints | `ConstraintEnforcer`, `ToolSchemaRegistry` |
+| NESY-003 | Judge Panel | `HeterogeneousPanel`, `JudgeConfig` |
+| NESY-004 | Knowledge Graph | `KnowledgeGraph`, `ClaimStore` |
+| NESY-005 | Z3 Verification | `Z3Verifier`, `HybridVerifier` |
+| NESY-006 | Progress Ledger | `ProgressLedger`, `TaskEntry` |
+| NESY-007 | Specifications | `SpecificationParser`, `SpecificationEnforcedAgent` |
+| NESY-008 | Learning | `LearningOrchestrator`, `RuleStore` |
+| NESY-009 | Audit Trail | `AuditTrail`, `ComplianceReporter` |
+
+### Quick Usage Examples
+
+```python
+# NESY-001: Validate LLM outputs against Pydantic schemas
+from src.validators import OutputValidator
+from pydantic import BaseModel
+
+class ResearchOutput(BaseModel):
+    summary: str
+    confidence: float
+    sources: list[str]
+
+validator = OutputValidator(schema=ResearchOutput)
+result = validator.validate(llm_output)
+if not result.valid:
+    retry_prompt = result.get_retry_prompt()
+
+# NESY-004: Build knowledge graph from research
+from src.knowledge import KnowledgeGraph
+kg = KnowledgeGraph("./research.db")
+kg.add_claim("Python 3.12 adds pattern matching", source="docs.python.org")
+contradictions = kg.find_contradictions()
+
+# NESY-007: Enforce agent specifications
+from src.specifications import SpecificationParser, SpecificationEnforcedAgent
+spec = SpecificationParser().parse_file("specs/researcher.spec")
+wrapped = SpecificationEnforcedAgent(my_agent, spec)
+result = wrapped.run(task)  # Enforces limits automatically
+
+# NESY-009: Audit trail for compliance
+from src.audit import AuditTrail
+trail = AuditTrail(storage_path="./audit.db")
+trail.log("decision_made", {"decision": "approved", "reason": "passed review"})
+report = trail.generate_compliance_report(start_date, end_date)
+```
+
+### NESY Test Suite
+
+The NESY modules include 536 additional tests:
+
+```bash
+# Run NESY tests only
+python -m pytest tests/test_validators.py tests/test_knowledge.py \
+  tests/test_specifications.py tests/test_learning.py tests/test_audit.py -v
+
+# Run all tests including NESY (785+ total)
+python -m pytest tests/ -v
+```
+
+For comprehensive NESY documentation, see [docs/NESY-ARCHITECTURE.md](NESY-ARCHITECTURE.md).
 
 ---
 
