@@ -3,7 +3,7 @@ name: judge-completeness
 description: Completeness evaluator for panel reviews. Focuses solely on coverage, gaps, and missing elements.
 tools: Read, Grep, Glob
 model: sonnet
-version: 2.5.3
+version: 2.6.0
 tier: 2
 ---
 

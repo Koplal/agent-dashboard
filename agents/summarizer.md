@@ -3,7 +3,7 @@ name: summarizer
 description: "Compression specialist that distills information into concise summaries. Use for condensing long documents, extracting key points, and creating executive summaries."
 tools: Read, Grep, Glob
 model: haiku
-version: 2.5.3
+version: 2.6.0
 tier: 3
 ---
 

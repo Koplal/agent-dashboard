@@ -3,7 +3,7 @@ name: test-writer
 description: "TDD specialist for designing and writing tests BEFORE implementation. Tests define correctness and become IMMUTABLE after approval. NO mocks in production code."
 tools: Read, Write, Edit, Bash, Grep, Glob
 model: haiku
-version: 2.5.3
+version: 2.6.0
 tier: 3
 ---
 
