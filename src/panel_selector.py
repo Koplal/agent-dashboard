@@ -832,3 +832,102 @@ async def evaluate_with_symbolic_verification(
     )
 
     return selection, verdict, verification_report
+
+
+# ============================================================================
+# INTEGRATION WITH STRUCTURED GENERATION
+# ============================================================================
+
+async def evaluate_with_structured_generation(
+    content: str,
+    description: str,
+    context: Optional[Dict[str, Any]] = None,
+    content_type: str = "research",
+    api_client: Optional[Any] = None,
+) -> Tuple[PanelSelection, "AggregatedVerdict"]:
+    """
+    Evaluate content using structured generation for judge verdicts.
+
+    Uses grammar-constrained generation to ensure all judge verdicts
+    conform to the expected schema, eliminating parsing failures.
+
+    Args:
+        content: Content to evaluate
+        description: Task description for panel sizing
+        context: Additional context for judges
+        content_type: Type of content being evaluated
+        api_client: Optional API client for LLM calls
+
+    Returns:
+        Tuple of (PanelSelection, AggregatedVerdict)
+
+    Example:
+        selection, verdict = await evaluate_with_structured_generation(
+            content="Research findings on quantum computing...",
+            description="Technical research review",
+            content_type="research"
+        )
+        print(f"Verdict: {'PASS' if verdict.passed else 'FAIL'}")
+    """
+    from .judges import JudgePanel, AggregatedVerdict
+    from .constraints import StructuredGenerator
+
+    # Select panel size based on task
+    selection = quick_select_panel(description)
+
+    # Create generator for structured verdicts
+    generator = StructuredGenerator(client=api_client)
+
+    # Create and run panel with structured generation
+    panel = create_judge_panel_from_selection(selection, api_client)
+    panel.structured_generator = generator
+
+    context = context or {}
+    context["original_request"] = description
+    context["panel_size"] = selection.panel_size
+    context["risk_score"] = selection.score
+    context["use_structured_generation"] = True
+
+    verdict = await panel.evaluate(
+        content=content,
+        context=context,
+        content_type=content_type,
+        task_id=selection.task_id,
+    )
+
+    return selection, verdict
+
+
+def create_structured_tool_call(
+    context: str,
+    tools: Optional[List[str]] = None,
+    api_client: Optional[Any] = None,
+) -> Dict[str, Any]:
+    """
+    Generate a structured tool call using grammar constraints.
+
+    Args:
+        context: Context for tool selection
+        tools: Optional list of tool names to include
+        api_client: Optional API client
+
+    Returns:
+        Dict with tool_name, tool_id, and parameters
+    """
+    from .constraints import StructuredGenerator, get_tools_for_claude
+
+    generator = StructuredGenerator(client=api_client)
+
+    # Get tool definitions
+    from .constraints.tool_schemas import get_tools_for_claude as get_tools
+    available_tools = get_tools(tools)
+
+    result = generator.generate_tool_call(
+        context=context,
+        available_tools=available_tools,
+    )
+
+    if result.success:
+        return result.output
+    else:
+        raise ValueError(f"Tool call generation failed: {result.error}")
