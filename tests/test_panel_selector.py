@@ -355,12 +355,21 @@ class TestAuditLogging:
 
             # Check database
             import sqlite3
-            with sqlite3.connect(db_path) as conn:
+            conn = sqlite3.connect(db_path)
+            try:
                 cursor = conn.execute("SELECT COUNT(*) FROM panel_selections")
                 count = cursor.fetchone()[0]
                 assert count == 1
+            finally:
+                conn.close()
         finally:
-            os.unlink(db_path)
+            # On Windows, need to ensure file handles are released
+            import gc
+            gc.collect()
+            try:
+                os.unlink(db_path)
+            except PermissionError:
+                pass  # File in use, will be cleaned up by OS later
 
 
 # ============================================================================

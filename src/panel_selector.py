@@ -931,3 +931,169 @@ def create_structured_tool_call(
         return result.output
     else:
         raise ValueError(f"Tool call generation failed: {result.error}")
+
+
+# ============================================================================
+# INTEGRATION WITH AUDIT TRAIL
+# ============================================================================
+
+async def evaluate_with_audit(
+    content: str,
+    description: str,
+    context: Optional[Dict[str, Any]] = None,
+    content_type: str = "research",
+    api_client: Optional[Any] = None,
+    audit_manager: Optional["AuditTrailManager"] = None,
+    session_id: Optional[str] = None,
+) -> Tuple[PanelSelection, "AggregatedVerdict", List["AuditEntry"]]:
+    """
+    Evaluate content with full audit trail logging.
+
+    Records all decisions to the audit trail for compliance and debugging:
+    - Panel selection decision
+    - Each judge verdict
+    - Final aggregated verdict
+
+    Args:
+        content: Content to evaluate
+        description: Task description for panel sizing
+        context: Additional context for judges
+        content_type: Type of content being evaluated
+        api_client: Optional API client for LLM calls
+        audit_manager: Optional audit manager (uses default if not provided)
+        session_id: Optional session ID for audit entries
+
+    Returns:
+        Tuple of (PanelSelection, AggregatedVerdict, List[AuditEntry])
+
+    Example:
+        selection, verdict, audit_entries = await evaluate_with_audit(
+            content="Research findings...",
+            description="Critical security analysis",
+            session_id="review-session-123"
+        )
+        print(f"Recorded {len(audit_entries)} audit entries")
+    """
+    from .judges import JudgePanel, AggregatedVerdict
+    from .audit import (
+        AuditTrailManager,
+        AuditEntry,
+        DecisionType,
+        get_default_manager,
+    )
+
+    # Get or create audit manager
+    if audit_manager is None:
+        audit_manager = get_default_manager()
+
+    if session_id:
+        audit_manager.session_id = session_id
+
+    audit_entries: List[AuditEntry] = []
+
+    # Select panel size based on task
+    selection = quick_select_panel(description)
+
+    # Record panel selection decision
+    panel_entry = audit_manager.record(
+        decision_type=DecisionType.PANEL_SELECTION,
+        agent_id="panel_selector",
+        inputs={"description": description, "content_type": content_type},
+        outputs={
+            "panel_size": selection.panel_size,
+            "risk_score": selection.score,
+            "score_breakdown": selection.score_breakdown.to_dict(),
+        },
+        action=f"select_panel_{selection.panel_size}",
+        confidence=1.0,
+        reasoning=f"Risk score {selection.score} -> {selection.panel_size} judges",
+        metadata={"task_id": selection.task_id},
+    )
+    audit_entries.append(panel_entry)
+
+    # Create and run panel
+    panel = create_judge_panel_from_selection(selection, api_client)
+
+    context = context or {}
+    context["original_request"] = description
+    context["panel_size"] = selection.panel_size
+    context["risk_score"] = selection.score
+
+    verdict = await panel.evaluate(
+        content=content,
+        context=context,
+        content_type=content_type,
+        task_id=selection.task_id,
+    )
+
+    # Record each judge verdict
+    for judge_verdict in verdict.individual_verdicts:
+        judge_entry = audit_manager.record(
+            decision_type=DecisionType.JUDGE_VERDICT,
+            agent_id=judge_verdict.get("judge_id", "unknown"),
+            inputs={"content_hash": hash(content) % (10**8)},
+            outputs={
+                "verdict": judge_verdict.get("verdict", "unknown"),
+                "score": judge_verdict.get("score", 0.0),
+            },
+            action=f"verdict_{judge_verdict.get('verdict', 'unknown')}",
+            confidence=judge_verdict.get("confidence", 0.0),
+            reasoning=judge_verdict.get("reasoning", ""),
+            parent_id=panel_entry.entry_id,
+            metadata={"persona": judge_verdict.get("persona", "")},
+        )
+        audit_entries.append(judge_entry)
+
+    # Record final aggregated verdict
+    final_entry = audit_manager.record(
+        decision_type=DecisionType.VERIFICATION,
+        agent_id="panel_aggregator",
+        inputs={"panel_size": selection.panel_size},
+        outputs={
+            "passed": verdict.passed,
+            "consensus": verdict.consensus,
+            "average_score": verdict.average_score,
+        },
+        action="pass" if verdict.passed else "fail",
+        confidence=verdict.consensus,
+        reasoning=f"Consensus: {verdict.consensus:.2f}, Avg Score: {verdict.average_score:.2f}",
+        parent_id=panel_entry.entry_id,
+    )
+    audit_entries.append(final_entry)
+
+    return selection, verdict, audit_entries
+
+
+def record_panel_decision(
+    selection: PanelSelection,
+    audit_manager: Optional["AuditTrailManager"] = None,
+) -> "AuditEntry":
+    """
+    Record a panel selection decision to the audit trail.
+
+    Args:
+        selection: PanelSelection to record
+        audit_manager: Optional audit manager
+
+    Returns:
+        The created AuditEntry
+    """
+    from .audit import (
+        AuditTrailManager,
+        DecisionType,
+        get_default_manager,
+    )
+
+    if audit_manager is None:
+        audit_manager = get_default_manager()
+
+    return audit_manager.record_panel_selection(
+        description=selection.description,
+        panel_size=selection.panel_size,
+        risk_score=selection.score,
+        metadata={
+            "task_id": selection.task_id,
+            "calculated_size": selection.calculated_size,
+            "override_applied": selection.override_applied,
+        },
+    )
