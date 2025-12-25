@@ -754,3 +754,81 @@ async def evaluate_with_panel(
     )
 
     return selection, verdict
+
+
+async def evaluate_with_symbolic_verification(
+    content: str,
+    description: str,
+    claims: Optional[List[str]] = None,
+    context: Optional[Dict[str, Any]] = None,
+    content_type: str = "research",
+    api_client: Optional[Any] = None,
+) -> Tuple[PanelSelection, "AggregatedVerdict", "VerificationReport"]:
+    """
+    Complete evaluation with both judge panel and symbolic verification.
+
+    Runs symbolic verification on applicable claims, then uses
+    judge panel for quality assessment.
+
+    Args:
+        content: Content to evaluate
+        description: Task description for panel sizing
+        claims: Pre-extracted claims (optional)
+        context: Additional context
+        content_type: Type of content
+        api_client: Optional API client
+
+    Returns:
+        Tuple of (PanelSelection, AggregatedVerdict, VerificationReport)
+
+    Example:
+        selection, verdict, verification = await evaluate_with_symbolic_verification(
+            content="Budget: $50,000. Spent: $42,000. Remaining: $8,000.",
+            description="Financial report review"
+        )
+        if verification.has_refuted:
+            print("Arithmetic errors found!")
+        if verdict.passed:
+            print("Quality approved by panel")
+    """
+    from .judges import JudgePanel, AggregatedVerdict
+    from .verification import HybridVerifier, VerificationReport
+
+    # Run symbolic verification first
+    hybrid_verifier = HybridVerifier()
+    verification_report = await hybrid_verifier.verify_content(
+        content=content,
+        context=context or {},
+        claims=claims,
+    )
+
+    # Select panel size based on task
+    selection = quick_select_panel(description)
+
+    # Enhance context with verification results
+    enhanced_context = context.copy() if context else {}
+    enhanced_context["original_request"] = description
+    enhanced_context["symbolic_verification"] = {
+        "verified_count": len(verification_report.verified_claims),
+        "refuted_count": len(verification_report.refuted_claims),
+        "uncertain_count": len(verification_report.uncertain_claims),
+    }
+
+    # If symbolic verification found refuted claims, note it
+    if verification_report.has_refuted:
+        enhanced_context["pre_verification_issues"] = [
+            c.output.explanation if hasattr(c.output, 'explanation') else str(c.output)
+            for c in verification_report.refuted_claims
+        ]
+
+    # Create and run panel
+    panel = create_judge_panel_from_selection(selection, api_client)
+
+    verdict = await panel.evaluate(
+        content=content,
+        context=enhanced_context,
+        content_type=content_type,
+        task_id=selection.task_id,
+    )
+
+    return selection, verdict, verification_report
