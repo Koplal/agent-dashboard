@@ -668,3 +668,89 @@ def format_panel_selection(selection: PanelSelection) -> str:
     ])
 
     return "\n".join(lines)
+
+
+# ============================================================================
+# INTEGRATION WITH HETEROGENEOUS JUDGES
+# ============================================================================
+
+def create_judge_panel_from_selection(
+    selection: PanelSelection,
+    api_client: Optional[Any] = None,
+) -> "JudgePanel":
+    """
+    Create a JudgePanel from a PanelSelection.
+
+    Bridges the panel size selection with the heterogeneous
+    judge configuration system.
+
+    Args:
+        selection: PanelSelection with determined panel size
+        api_client: Optional API client for LLM calls
+
+    Returns:
+        Configured JudgePanel instance
+    """
+    from .judges import JudgePanel, get_default_panel_configs
+
+    configs = get_default_panel_configs(selection.panel_size)
+
+    return JudgePanel(
+        configs=configs,
+        api_client=api_client,
+        consensus_threshold=0.7 if selection.score < 8 else 0.8,
+    )
+
+
+async def evaluate_with_panel(
+    content: str,
+    description: str,
+    context: Optional[Dict[str, Any]] = None,
+    content_type: str = "research",
+    api_client: Optional[Any] = None,
+    user_override: Optional[int] = None,
+) -> Tuple[PanelSelection, "AggregatedVerdict"]:
+    """
+    Complete evaluation workflow: select panel size and run evaluation.
+
+    Args:
+        content: Content to evaluate
+        description: Task description for panel sizing
+        context: Additional context for judges
+        content_type: Type of content being evaluated
+        api_client: Optional API client for LLM calls
+        user_override: Optional user-specified panel size
+
+    Returns:
+        Tuple of (PanelSelection, AggregatedVerdict)
+
+    Example:
+        selection, verdict = await evaluate_with_panel(
+            content="Research findings...",
+            description="Critical security analysis",
+            content_type="research"
+        )
+        print(f"Panel: {selection.panel_size} judges")
+        print(f"Result: {'PASS' if verdict.passed else 'FAIL'}")
+    """
+    from .judges import JudgePanel, AggregatedVerdict
+
+    # Select panel size based on task
+    selection = quick_select_panel(description, user_override)
+
+    # Create and run panel
+    panel = create_judge_panel_from_selection(selection, api_client)
+
+    context = context or {}
+    context["original_request"] = description
+    context["panel_size"] = selection.panel_size
+    context["risk_score"] = selection.score
+
+    verdict = await panel.evaluate(
+        content=content,
+        context=context,
+        content_type=content_type,
+        task_id=selection.task_id,
+    )
+
+    return selection, verdict
