@@ -327,12 +327,15 @@ class SQLiteGraphBackend(GraphStorageBackend):
                     metadata TEXT
                 );
 
-                -- Entities table
+                -- Entities table (KG-002: added temporal fields)
                 CREATE TABLE IF NOT EXISTS entities (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT NOT NULL,
                     entity_type TEXT NOT NULL,
                     metadata TEXT,
+                    valid_from TEXT,
+                    valid_to TEXT,
+                    source_location TEXT,
                     UNIQUE(name, entity_type)
                 );
 
@@ -420,12 +423,20 @@ class SQLiteGraphBackend(GraphStorageBackend):
                 "{}",
             ))
 
-            # Store and link entities
+            # Store and link entities (KG-002: include temporal fields)
             for entity in claim.entities:
                 conn.execute("""
-                    INSERT OR IGNORE INTO entities (name, entity_type, metadata)
-                    VALUES (?, ?, ?)
-                """, (entity.name, entity.entity_type.value, json.dumps(entity.metadata)))
+                    INSERT OR IGNORE INTO entities
+                    (name, entity_type, metadata, valid_from, valid_to, source_location)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (
+                    entity.name,
+                    entity.entity_type.value,
+                    json.dumps(entity.metadata),
+                    entity.valid_from.isoformat() if entity.valid_from else None,
+                    entity.valid_to.isoformat() if entity.valid_to else None,
+                    entity.source_location,
+                ))
 
                 cursor = conn.execute(
                     "SELECT id FROM entities WHERE name = ? AND entity_type = ?",
@@ -472,9 +483,10 @@ class SQLiteGraphBackend(GraphStorageBackend):
             if not row:
                 return None
 
-            # Get entities
+            # Get entities (KG-002: include temporal fields)
             entity_cursor = conn.execute("""
-                SELECT e.name, e.entity_type, e.metadata
+                SELECT e.name, e.entity_type, e.metadata,
+                       e.valid_from, e.valid_to, e.source_location
                 FROM entities e
                 JOIN claim_entities ce ON e.id = ce.entity_id
                 WHERE ce.claim_id = ?
@@ -484,6 +496,9 @@ class SQLiteGraphBackend(GraphStorageBackend):
                     name=r["name"],
                     entity_type=EntityType(r["entity_type"]),
                     metadata=json.loads(r["metadata"]) if r["metadata"] else {},
+                    valid_from=datetime.fromisoformat(r["valid_from"]) if r["valid_from"] else None,
+                    valid_to=datetime.fromisoformat(r["valid_to"]) if r["valid_to"] else None,
+                    source_location=r["source_location"],
                 )
                 for r in entity_cursor
             ]

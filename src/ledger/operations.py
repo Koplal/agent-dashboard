@@ -10,7 +10,7 @@ Version: 2.6.0
 import json
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 
@@ -78,7 +78,7 @@ class LedgerManager:
         ledger_path = self._get_ledger_path()
         data = {
             "version": "1.0.0",
-            "updated_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
             "tasks": [task.to_dict() for task in self.tasks.values()],
         }
         try:
@@ -119,7 +119,7 @@ class LedgerManager:
         if task_id in self.tasks:
             raise ValueError(f"Task {task_id} already exists")
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         task = TaskLedger(
             task_id=task_id,
             phase=phase,
@@ -153,7 +153,7 @@ class LedgerManager:
         task = self.tasks.get(task_id)
         if task:
             task.status = status
-            task.updated_at = datetime.utcnow()
+            task.updated_at = datetime.now(timezone.utc)
             self._save()
             logger.info(f"Updated {task_id} status to {status.value}")
 
@@ -275,7 +275,7 @@ class LedgerManager:
         task = self.tasks.get(task_id)
         if task:
             task.artifacts.append(artifact)
-            task.updated_at = datetime.utcnow()
+            task.updated_at = datetime.now(timezone.utc)
             self._save()
 
     def complete_task(self, task_id: str, final_notes: str = "") -> None:
@@ -288,7 +288,7 @@ class LedgerManager:
         task = self.tasks.get(task_id)
         if task:
             task.status = TaskStatus.COMPLETED
-            task.updated_at = datetime.utcnow()
+            task.updated_at = datetime.now(timezone.utc)
             if final_notes:
                 task.notes += f"\n[COMPLETED] {final_notes}"
             self._save()
@@ -301,7 +301,7 @@ class LedgerManager:
             Complete ledger state as dictionary
         """
         return {
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": datetime.now(timezone.utc).isoformat(),
             "summaries": self.get_all_summaries(),
             "tasks": [task.to_dict() for task in self.tasks.values()],
             "blocked_tasks": [t.task_id for t in self.get_blocked_tasks()],

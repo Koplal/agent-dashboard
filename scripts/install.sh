@@ -991,6 +991,73 @@ case $tokenizer_choice in
         ;;
 esac
 
+# Optional: Z3 theorem prover for symbolic verification tests
+echo ""
+echo -e "${CYAN}Optional test dependencies:${NC}"
+echo "   1) z3-solver (symbolic verification, ~50MB)"
+echo "   2) skip"
+echo ""
+
+if [ "$NON_INTERACTIVE" = true ]; then
+    z3_choice=1
+    echo "  Non-interactive mode: selecting option 1 (z3-solver)"
+else
+    read -p "  Install Z3 theorem prover? [1/2] (default: 1): " z3_choice
+fi
+z3_choice=${z3_choice:-1}
+
+case $z3_choice in
+    1)
+        echo "  Installing Z3 theorem prover..."
+        if [ "$IN_VENV" = true ]; then
+            $PYTHON_CMD -m pip install --quiet z3-solver 2>/dev/null || \
+            $PYTHON_CMD -m pip install z3-solver
+        else
+            $PYTHON_CMD -m pip install --quiet --user z3-solver 2>/dev/null || \
+            $PYTHON_CMD -m pip install --user z3-solver
+        fi
+        echo -e "  ${GREEN}[OK]${NC} z3-solver (symbolic verification)"
+        ;;
+    *)
+        echo -e "  ${YELLOW}[SKIP]${NC} Z3 installation skipped"
+        echo "         6 symbolic verification tests will be skipped"
+        ;;
+esac
+
+# Optional: Outlines for grammar-constrained local model generation
+echo ""
+echo -e "${CYAN}Local model support (grammar-constrained generation):${NC}"
+echo "   1) outlines + Phi-3-mini (~2.5GB download on first use)"
+echo "   2) skip"
+echo ""
+
+if [ "$NON_INTERACTIVE" = true ]; then
+    outlines_choice=2
+    echo "  Non-interactive mode: skipping (large download)"
+else
+    read -p "  Install Outlines for local model support? [1/2] (default: 2): " outlines_choice
+fi
+outlines_choice=${outlines_choice:-2}
+
+case $outlines_choice in
+    1)
+        echo "  Installing Outlines..."
+        if [ "$IN_VENV" = true ]; then
+            $PYTHON_CMD -m pip install --quiet outlines 2>/dev/null || \
+            $PYTHON_CMD -m pip install outlines
+        else
+            $PYTHON_CMD -m pip install --quiet --user outlines 2>/dev/null || \
+            $PYTHON_CMD -m pip install --user outlines
+        fi
+        echo -e "  ${GREEN}[OK]${NC} outlines (grammar-constrained generation)"
+        echo -e "  ${CYAN}[INFO]${NC} Phi-3-mini model (~2.4GB) will download on first use"
+        ;;
+    *)
+        echo -e "  ${YELLOW}[SKIP]${NC} Outlines installation skipped"
+        echo "         Local model grammar-constrained tests will be skipped"
+        ;;
+esac
+
 # =============================================================================
 # UPDATE PATH
 # =============================================================================

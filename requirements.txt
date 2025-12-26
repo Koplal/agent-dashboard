@@ -16,6 +16,17 @@ aiohttp>=3.9.0                  # Async web server + WebSocket
 # Development dependencies
 pytest>=7.0.0                   # Testing framework
 pytest-asyncio>=0.21.0          # Async test support
+mypy>=1.0.0                     # Static type checking
+
+# Optional dependencies for full test coverage
+z3-solver>=4.12.0               # Symbolic verification (Z3 theorem prover)
+outlines>=0.0.34                # Grammar-constrained generation for local models
+
+# Optional: Local LLM generation (requires GPU for practical use)
+# pip install torch transformers<4.49 outlines accelerate sentencepiece
+# Model: microsoft/Phi-3-mini-4k-instruct (~2.4GB, downloads on first use)
+# Note: CPU-only inference is impractical (~12+ min/generation)
+# Note: Windows requires MSVC for torch.compile() optimization
 
 # Platform-specific optimizations
 uvloop>=0.19.0; platform_system != "Windows"  # Faster event loop on Unix

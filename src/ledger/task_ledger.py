@@ -11,7 +11,7 @@ Version: 2.6.0
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
 from enum import Enum
 
@@ -153,7 +153,7 @@ class TaskLedger:
             None
         )
         if first_progress:
-            delta = datetime.utcnow() - first_progress.timestamp
+            delta = datetime.now(timezone.utc) - first_progress.timestamp
             return delta.total_seconds() / 3600
         return None
 

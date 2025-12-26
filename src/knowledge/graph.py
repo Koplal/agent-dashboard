@@ -21,7 +21,12 @@ def utc_now() -> datetime:
 
 
 class EntityType(str, Enum):
-    """Types of entities that can be extracted from claims."""
+    """Types of entities that can be extracted from claims.
+
+    Includes both general entity types and code-specific types
+    for source code analysis use cases.
+    """
+    # General entity types
     PERSON = "person"
     ORGANIZATION = "organization"
     LOCATION = "location"
@@ -32,6 +37,13 @@ class EntityType(str, Enum):
     EVENT = "event"
     METRIC = "metric"
     OTHER = "other"
+    # Code entity types (KG-001)
+    FILE = "file"
+    FUNCTION = "function"
+    CLASS = "class"
+    MODULE = "module"
+    VARIABLE = "variable"
+    DEPENDENCY = "dependency"
 
 
 class RelationType(str, Enum):
@@ -55,10 +67,61 @@ class Entity:
         name: Entity name/label
         entity_type: Type classification
         metadata: Additional entity metadata
+        valid_from: Start of temporal validity (KG-002)
+        valid_to: End of temporal validity (KG-002)
+        source_location: Source code location, e.g. "file.py:42" (KG-002)
     """
     name: str
     entity_type: EntityType = EntityType.OTHER
     metadata: Dict[str, Any] = field(default_factory=dict)
+    valid_from: Optional[datetime] = None
+    valid_to: Optional[datetime] = None
+    source_location: Optional[str] = None
+
+    def is_valid(self, as_of: Optional[datetime] = None) -> bool:
+        """Check if entity is valid at a given point in time.
+
+        Args:
+            as_of: Datetime to check validity at. Defaults to current UTC time.
+                   Timezone-naive datetimes are treated as UTC.
+
+        Returns:
+            True if entity is valid at the specified time, False otherwise.
+            Entities without temporal bounds are always valid.
+            Boundaries are inclusive (valid_from <= as_of <= valid_to).
+
+        Note:
+            - None for valid_from means 'valid since the beginning of time'
+            - None for valid_to means 'valid indefinitely into the future'
+        """
+        if as_of is None:
+            as_of = utc_now()
+        elif as_of.tzinfo is None:
+            # Treat naive datetimes as UTC to avoid comparison errors
+            as_of = as_of.replace(tzinfo=timezone.utc)
+
+        # No bounds means always valid
+        if self.valid_from is None and self.valid_to is None:
+            return True
+
+        # Normalize bounds to UTC if naive
+        valid_from = self.valid_from
+        if valid_from is not None and valid_from.tzinfo is None:
+            valid_from = valid_from.replace(tzinfo=timezone.utc)
+
+        valid_to = self.valid_to
+        if valid_to is not None and valid_to.tzinfo is None:
+            valid_to = valid_to.replace(tzinfo=timezone.utc)
+
+        # Check lower bound (inclusive)
+        if valid_from is not None and as_of < valid_from:
+            return False
+
+        # Check upper bound (inclusive)
+        if valid_to is not None and as_of > valid_to:
+            return False
+
+        return True
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
@@ -66,15 +129,29 @@ class Entity:
             "name": self.name,
             "type": self.entity_type.value,
             "metadata": self.metadata,
+            "valid_from": self.valid_from.isoformat() if self.valid_from else None,
+            "valid_to": self.valid_to.isoformat() if self.valid_to else None,
+            "source_location": self.source_location,
         }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Entity":
         """Create from dictionary."""
+        valid_from = None
+        if data.get("valid_from"):
+            valid_from = datetime.fromisoformat(data["valid_from"])
+
+        valid_to = None
+        if data.get("valid_to"):
+            valid_to = datetime.fromisoformat(data["valid_to"])
+
         return cls(
             name=data["name"],
             entity_type=EntityType(data.get("type", "other")),
             metadata=data.get("metadata", {}),
+            valid_from=valid_from,
+            valid_to=valid_to,
+            source_location=data.get("source_location"),
         )
 
 

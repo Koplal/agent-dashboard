@@ -4,7 +4,7 @@ Knowledge Graph Infrastructure Module.
 Provides knowledge graph capabilities for research output storage,
 semantic search, provenance tracking, and contradiction detection.
 
-Version: 2.6.0
+Version: 2.8.0
 """
 
 from .graph import (
@@ -41,6 +41,31 @@ from .agent import (
     ResearchAgentProtocol,
     MockResearchAgent,
 )
+from .retriever import (
+    HybridRetrieverConfig,
+    HybridRetrievalResult,
+    HybridRetriever,
+)
+from .embeddings import (
+    DualEmbeddingConfig,
+    SemanticEmbedder,
+    StructuralEmbedder,
+    DualEmbedder,
+    EmbeddingCache,
+)
+from .bm25 import (
+    BM25Config,
+    BM25Index,
+    reciprocal_rank_fusion,
+    HybridBM25Retriever,
+    # P1-002: Three-Way Hybrid
+    ThreeWayHybridConfig,
+    ThreeWayRetrievalResult,
+    HybridRetrieverV2,
+    TokenizerConfig,
+    Tokenizer,
+)
+
 
 __all__ = [
     # Enums
@@ -71,4 +96,25 @@ __all__ = [
     "ResearchOutput",
     "ResearchAgentProtocol",
     "MockResearchAgent",
+    # Retriever (RETR-001)
+    "HybridRetrieverConfig",
+    "HybridRetrievalResult",
+    "HybridRetriever",
+    # Dual Embeddings (P1-001)
+    "DualEmbeddingConfig",
+    "SemanticEmbedder",
+    "StructuralEmbedder",
+    "DualEmbedder",
+    "EmbeddingCache",
+    # BM25 Hybrid (P1-002)
+    "BM25Config",
+    "BM25Index",
+    "reciprocal_rank_fusion",
+    "HybridBM25Retriever",
+    # Three-Way Hybrid (P1-002)
+    "ThreeWayHybridConfig",
+    "ThreeWayRetrievalResult",
+    "HybridRetrieverV2",
+    "TokenizerConfig",
+    "Tokenizer",
 ]

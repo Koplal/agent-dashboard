@@ -38,6 +38,11 @@ from .compliance import (
     ComplianceReport,
     ComplianceReportGenerator,
 )
+from .provenance import (
+    EntityRole,
+    EntityProvenance,
+    EntityProvenanceTracker,
+)
 
 __all__ = [
     # Trail
@@ -65,4 +70,8 @@ __all__ = [
     # Compliance
     "ComplianceReport",
     "ComplianceReportGenerator",
+    # Provenance (AUDIT-001)
+    "EntityRole",
+    "EntityProvenance",
+    "EntityProvenanceTracker",
 ]

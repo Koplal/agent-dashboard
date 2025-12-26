@@ -10,11 +10,12 @@ Version: 2.6.0
 import asyncio
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional, List, Callable, Awaitable
 
 from .task_ledger import TaskStatus, TaskLedger
 from .operations import LedgerManager
+from .summarizer import HierarchicalSummary, HierarchicalSummarizer
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +125,7 @@ class RuntimeLedgerTracker:
 
     async def _check_for_issues(self) -> None:
         """Check for stale tasks and other issues."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         for task_id, task in self.ledger.tasks.items():
             # Check for stale in-progress tasks
@@ -148,7 +149,7 @@ class RuntimeLedgerTracker:
         Returns:
             RuntimeMetrics with current state
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         one_hour_ago = now - timedelta(hours=1)
 
         tasks = list(self.ledger.tasks.values())
@@ -260,7 +261,7 @@ class RuntimeLedgerTracker:
                 "title": next_task.title,
                 "priority": next_task.priority.name,
             } if next_task else None,
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": datetime.now(timezone.utc).isoformat(),
         }
 
     def get_task_timeline(self, task_id: str) -> List[Dict[str, Any]]:
@@ -327,7 +328,7 @@ class RuntimeLedgerTracker:
         stale_count = sum(
             1 for t in self.ledger.tasks.values()
             if t.status == TaskStatus.IN_PROGRESS
-            and datetime.utcnow() - t.updated_at > self.stale_threshold
+            and datetime.now(timezone.utc) - t.updated_at > self.stale_threshold
         )
         if stale_count > 0:
             warnings.append(f"{stale_count} task(s) appear stale (no recent progress)")
@@ -350,5 +351,22 @@ class RuntimeLedgerTracker:
                 "blocked": metrics.blocked_tasks,
                 "completed_last_hour": metrics.completed_tasks_last_hour,
             },
-            "checked_at": datetime.utcnow().isoformat(),
+            "checked_at": datetime.now(timezone.utc).isoformat(),
         }
+
+    def get_session_summary(self) -> HierarchicalSummary:
+        """Get hierarchical session summary.
+
+        Generates a SESSION-level summary of all tasks in the ledger,
+        including phase detection, accomplishment/blocker extraction,
+        and hierarchical aggregation.
+
+        Returns:
+            HierarchicalSummary at SESSION level with nested phases and tasks
+        """
+        # Get all tasks from ledger
+        tasks = list(self.ledger.tasks.values())
+        
+        # Use summarizer to generate full session summary
+        summarizer = HierarchicalSummarizer()
+        return summarizer.generate_full_session_summary(tasks)
