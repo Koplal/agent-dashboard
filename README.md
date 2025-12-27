@@ -631,6 +631,7 @@ python -m pytest tests/ --cov=src --cov-report=html
 | Document | Description |
 |----------|-------------|
 | [README.md](README.md) | This file |
+| [Multi-Project Guide](docs/Agent%20dashboard%20multi%20project%20guide.md) | Deploy agent-dashboard across multiple isolated projects |
 | [docs/CONFIG_REFERENCE.md](docs/CONFIG_REFERENCE.md) | Configuration parameters |
 | [docs/MANUAL_TESTING_STRATEGY.md](docs/MANUAL_TESTING_STRATEGY.md) | Manual test procedures |
 | [docs/testing/](docs/testing/) | Test guides and checklists |
