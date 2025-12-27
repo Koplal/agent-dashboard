@@ -84,6 +84,14 @@ from .hnsw_index import (
 )
 
 
+from .reranker import (
+    # P3-002: Cross-Encoder Re-Ranking
+    ReRankerConfig,
+    ReRankResult,
+    ReRanker,
+    CROSSENCODER_AVAILABLE,
+)
+
 __all__ = [
     # Enums
     "EntityType",
@@ -147,4 +155,9 @@ __all__ = [
     "HNSWIndex",
     "CapacityError",
     "HNSWLIB_AVAILABLE",
+    # Re-Ranker (P3-002)
+    "ReRankerConfig",
+    "ReRankResult",
+    "ReRanker",
+    "CROSSENCODER_AVAILABLE",
 ]
