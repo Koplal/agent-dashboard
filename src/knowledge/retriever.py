@@ -9,7 +9,7 @@ Implements RETR-001 with:
 - HybridRetrievalResult for scored results with provenance
 - HybridRetriever class combining vector and graph signals
 
-Version: 2.6.0
+Version: 2.7.0
 """
 
 from dataclasses import dataclass, field
@@ -160,13 +160,40 @@ class HybridRetriever:
     ) -> List[HybridRetrievalResult]:
         """Retrieve claims using hybrid vector+graph approach.
 
+        Performs vector similarity search followed by graph expansion from
+        seed results. Scores are fused using configurable weights.
+
         Args:
-            query: Search query text
-            limit: Maximum results to return
-            config: Override config for this query (optional)
+            query: Search query text (will be embedded automatically)
+            limit: Maximum number of results to return (default: 10)
+            config: Override default config for this query. If None,
+                uses the config provided at initialization.
 
         Returns:
-            List of HybridRetrievalResult sorted by combined_score descending
+            List of HybridRetrievalResult sorted by combined_score descending.
+            Each result contains:
+            - claim: The matched KGClaim object
+            - combined_score: Fused score (0.0-1.0)
+            - vector_score: Contribution from vector similarity
+            - graph_score: Contribution from graph relationships
+            - retrieval_path: "vector", "graph", or "both"
+
+        Example:
+            >>> from src.knowledge.retriever import HybridRetriever, HybridRetrieverConfig
+            >>> from src.knowledge.storage import MemoryGraphBackend
+            >>> from src.knowledge.manager import default_embedding_function
+            >>> backend = MemoryGraphBackend()
+            >>> retriever = HybridRetriever(
+            ...     storage=backend,
+            ...     embedding_fn=default_embedding_function,
+            ... )
+            >>> results = retriever.retrieve("Python data science", limit=5)
+            >>> isinstance(results, list)
+            True
+
+        Note:
+            Empty queries return an empty list without raising an exception.
+            For best results, use descriptive multi-word queries.
         """
         if not query or not query.strip():
             return []

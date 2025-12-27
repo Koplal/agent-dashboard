@@ -4,7 +4,10 @@ Knowledge Graph Storage Backends.
 Provides storage implementations for the knowledge graph,
 including in-memory (testing) and SQLite (lightweight production).
 
-Version: 2.6.0
+Supports both synchronous and asynchronous operations for flexibility.
+Use sync methods for simple scripts, async for high-concurrency services.
+
+Version: 2.7.0
 """
 
 import json
@@ -14,6 +17,14 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Set, Tuple
+
+# Optional async imports
+try:
+    import aiosqlite
+    ASYNC_AVAILABLE = True
+except ImportError:
+    aiosqlite = None
+    ASYNC_AVAILABLE = False
 
 from .graph import (
     GraphStorageBackend,
@@ -750,6 +761,150 @@ class SQLiteGraphBackend(GraphStorageBackend):
         with self._get_connection() as conn:
             cursor = conn.execute("SELECT COUNT(*) FROM entities")
             return cursor.fetchone()[0]
+
+
+    # ==================== ASYNC METHODS (P4-003) ====================
+
+    _async_conn = None  # Class-level attribute for async connection
+
+    def _check_async_available(self) -> None:
+        """Check if async dependencies are available."""
+        if not ASYNC_AVAILABLE:
+            raise ImportError(
+                "aiosqlite is required for async operations. "
+                "Install with: pip install aiosqlite"
+            )
+
+    async def _get_async_connection(self):
+        """Get async database connection."""
+        self._check_async_available()
+        if self._async_conn is None:
+            self._async_conn = await aiosqlite.connect(str(self.db_path))
+            self._async_conn.row_factory = aiosqlite.Row
+        return self._async_conn
+
+    async def store_claim_async(self, claim: KGClaim) -> str:
+        """Store a claim asynchronously."""
+        conn = await self._get_async_connection()
+        await conn.execute(
+            "INSERT OR REPLACE INTO claims "
+            "(claim_id, text, confidence, source_url, source_title, "
+            "publication_date, agent_id, session_id, embedding, created_at, metadata) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (claim.claim_id, claim.text, claim.confidence, claim.source_url,
+             claim.source_title,
+             claim.publication_date.isoformat() if claim.publication_date else None,
+             claim.agent_id, claim.session_id,
+             json.dumps(claim.embedding) if claim.embedding else None,
+             claim.created_at.isoformat(), json.dumps(claim.metadata)))
+
+        await conn.execute(
+            "INSERT OR IGNORE INTO sources (url, title, publication_date, last_accessed, metadata) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (claim.source_url, claim.source_title,
+             claim.publication_date.isoformat() if claim.publication_date else None,
+             utc_now().isoformat(), "{}"))
+
+        for entity in claim.entities:
+            await conn.execute(
+                "INSERT OR IGNORE INTO entities "
+                "(name, entity_type, metadata, valid_from, valid_to, source_location) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (entity.name, entity.entity_type.value, json.dumps(entity.metadata),
+                 entity.valid_from.isoformat() if entity.valid_from else None,
+                 entity.valid_to.isoformat() if entity.valid_to else None,
+                 entity.source_location))
+            cursor = await conn.execute(
+                "SELECT id FROM entities WHERE name = ? AND entity_type = ?",
+                (entity.name, entity.entity_type.value))
+            row = await cursor.fetchone()
+            await conn.execute(
+                "INSERT OR IGNORE INTO claim_entities (claim_id, entity_id) VALUES (?, ?)",
+                (claim.claim_id, row[0]))
+
+        for topic in claim.topics:
+            await conn.execute("INSERT OR IGNORE INTO topics (name) VALUES (?)", (topic,))
+            await conn.execute(
+                "INSERT OR IGNORE INTO claim_topics (claim_id, topic_name) VALUES (?, ?)",
+                (claim.claim_id, topic))
+
+        await conn.execute(
+            "INSERT OR REPLACE INTO relationships "
+            "(from_id, to_id, relation_type, metadata, created_at) VALUES (?, ?, ?, ?, ?)",
+            (claim.claim_id, claim.source_url, RelationType.SOURCED_FROM.value,
+             json.dumps({"agent_id": claim.agent_id}), utc_now().isoformat()))
+
+        await conn.commit()
+        return claim.claim_id
+
+    async def get_claim_async(self, claim_id: str) -> Optional[KGClaim]:
+        """Get a claim asynchronously."""
+        conn = await self._get_async_connection()
+        cursor = await conn.execute("SELECT * FROM claims WHERE claim_id = ?", (claim_id,))
+        row = await cursor.fetchone()
+        if not row:
+            return None
+
+        entity_cursor = await conn.execute(
+            "SELECT e.name, e.entity_type, e.metadata, e.valid_from, e.valid_to, e.source_location "
+            "FROM entities e JOIN claim_entities ce ON e.id = ce.entity_id WHERE ce.claim_id = ?",
+            (claim_id,))
+        entity_rows = await entity_cursor.fetchall()
+        entities = [
+            Entity(name=r["name"], entity_type=EntityType(r["entity_type"]),
+                   metadata=json.loads(r["metadata"]) if r["metadata"] else {},
+                   valid_from=datetime.fromisoformat(r["valid_from"]) if r["valid_from"] else None,
+                   valid_to=datetime.fromisoformat(r["valid_to"]) if r["valid_to"] else None,
+                   source_location=r["source_location"])
+            for r in entity_rows]
+
+        topic_cursor = await conn.execute(
+            "SELECT topic_name FROM claim_topics WHERE claim_id = ?", (claim_id,))
+        topic_rows = await topic_cursor.fetchall()
+        topics = [r["topic_name"] for r in topic_rows]
+
+        return KGClaim(
+            claim_id=row["claim_id"], text=row["text"], confidence=row["confidence"],
+            source_url=row["source_url"], source_title=row["source_title"] or "",
+            publication_date=datetime.fromisoformat(row["publication_date"]) if row["publication_date"] else None,
+            agent_id=row["agent_id"] or "", session_id=row["session_id"] or "",
+            embedding=json.loads(row["embedding"]) if row["embedding"] else None,
+            created_at=datetime.fromisoformat(row["created_at"]),
+            metadata=json.loads(row["metadata"]) if row["metadata"] else {},
+            entities=entities, topics=topics)
+
+    async def find_claims_by_embedding_async(
+        self, embedding: List[float], limit: int = 10, min_similarity: float = 0.5
+    ) -> List[Tuple[KGClaim, float]]:
+        """Find claims by embedding similarity asynchronously."""
+        conn = await self._get_async_connection()
+        cursor = await conn.execute(
+            "SELECT claim_id, embedding FROM claims WHERE embedding IS NOT NULL")
+        rows = await cursor.fetchall()
+        results = []
+        for row in rows:
+            stored_embedding = json.loads(row["embedding"])
+            similarity = cosine_similarity(embedding, stored_embedding)
+            if similarity >= min_similarity:
+                claim = await self.get_claim_async(row["claim_id"])
+                if claim:
+                    results.append((claim, similarity))
+        results.sort(key=lambda x: x[1], reverse=True)
+        return results[:limit]
+
+    async def close_async(self) -> None:
+        """Close async connection."""
+        if self._async_conn is not None:
+            await self._async_conn.close()
+            self._async_conn = None
+
+    async def __aenter__(self):
+        """Async context manager entry."""
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit."""
+        await self.close_async()
 
     def close(self) -> None:
         """Close any open connections."""
