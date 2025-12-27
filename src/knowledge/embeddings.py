@@ -49,6 +49,23 @@ class DualEmbeddingConfig:
 
 
 def _hash_embedding(text: str, dim: int = 384) -> List[float]:
+    """
+    Hash-based embedding fallback for TESTING ONLY.
+
+    WARNING: This produces deterministic but semantically meaningless embeddings.
+    Similar texts will NOT have similar embeddings. This fallback is only used
+    when sentence-transformers is not installed.
+
+    For production use, install sentence-transformers:
+        pip install sentence-transformers
+
+    Args:
+        text: Input text to embed
+        dim: Embedding dimension (default: 384)
+
+    Returns:
+        Normalized hash-based vector (NOT suitable for semantic similarity)
+    """
     h = hashlib.sha256(text.encode()).hexdigest()
     emb = [int(h[i % 64], 16) / 8.0 - 1.0 for i in range(dim)]
     norm = math.sqrt(sum(x*x for x in emb))
@@ -89,6 +106,15 @@ class EmbeddingCache:
 
 
 class SemanticEmbedder:
+    """
+    Semantic text embedder using sentence-transformers.
+
+    WARNING: When sentence-transformers is not installed, falls back to
+    hash-based embeddings which are NOT suitable for production semantic
+    similarity. Install sentence-transformers for production:
+        pip install sentence-transformers
+    """
+
     def __init__(self, model_name="all-MiniLM-L6-v2", embedding_dim=384, fallback_mode=False):
         self.model_name = model_name
         self.embedding_dim = embedding_dim
@@ -96,6 +122,7 @@ class SemanticEmbedder:
         self._model = None
 
     def embed(self, text: str) -> List[float]:
+        """Embed text. Uses hash fallback if sentence-transformers unavailable."""
         return _hash_embedding(text, self.embedding_dim)
 
     def embed_batch(self, texts: List[str]) -> List[List[float]]:
