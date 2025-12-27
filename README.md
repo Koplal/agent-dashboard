@@ -1,43 +1,245 @@
-# Agent Dashboard v2.6.0
+# Agent Dashboard v2.7.0
 
 > **Quick Install:** `git clone https://github.com/Koplal/agent-dashboard.git && cd agent-dashboard && ./scripts/install.sh`
 >
-> **Non-Interactive Install (CI/CD):** `./scripts/install.sh --non-interactive`
+> **Cross-Platform Install:** `python scripts/install.py`
 >
 > **Platform-specific instructions:** See [INSTALL.md](INSTALL.md)
 > **Troubleshooting:** See [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 
-**Real-time monitoring and orchestration for Claude Code multi-agent workflows.**
+**Real-time monitoring and orchestration for Claude Code multi-agent workflows with advanced knowledge graph retrieval.**
 
-A comprehensive multi-agent workflow framework implementing **Test-Driven Development (TDD)** with tiered model architecture (Opus/Sonnet/Haiku), cost governance, and six-layer validation. Built for production-grade AI workflows where tests define correctness.
+A comprehensive multi-agent workflow framework implementing **Test-Driven Development (TDD)** with tiered model architecture (Opus/Sonnet/Haiku), **neurosymbolic knowledge management**, cost governance, and six-layer validation. Built for production-grade AI workflows where tests define correctness.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Python](https://img.shields.io/badge/python-3.9+-green.svg)
+![Python](https://img.shields.io/badge/python-3.10+-green.svg)
 ![Claude](https://img.shields.io/badge/Claude-Code-purple.svg)
+![Tests](https://img.shields.io/badge/tests-1%2C240%20passing-brightgreen.svg)
 
 ---
 
 ## Table of Contents
 
+- [What's New in v2.7.0](#-whats-new-in-v270---knowledge-enhanced-retrieval)
 - [Features](#-features)
-- [TDD Philosophy](#-tdd-philosophy)
 - [Quick Start](#-quick-start)
+- [Knowledge Graph & Retrieval](#-knowledge-graph--retrieval)
+- [Multi-Agent Demo Workflow](#-multi-agent-demo-workflow)
 - [Architecture](#-architecture)
-- [Agent Registry](#-agent-registry-20-agents)
-- [Panel Judge Workflow](#-panel-judge-workflow)
-- [Neurosymbolic Modules](#neurosymbolic-modules-v260)
-- [Repository Structure](#-repository-structure)
-- [Dependencies](#-dependencies)
-- [Configuration](#-configuration)
-- [Workflow Engine](#-workflow-engine)
+- [Agent Registry](#-agent-registry-22-agents)
+- [Manual Testing](#-manual-testing)
 - [API Reference](#-api-reference)
-- [Dashboard Features](#-dashboard-features)
+- [Configuration](#-configuration)
 - [Testing](#-testing)
-- [Best Practices](#-best-practices)
-- [Troubleshooting](#-troubleshooting)
 - [Documentation](#-documentation)
-- [Contributing](#-contributing)
 - [License](#-license)
+
+---
+
+## What's New in v2.7.0 - Knowledge-Enhanced Retrieval
+
+The **experiment/neuro-symbolic** branch introduces major enhancements for knowledge management, hybrid retrieval, and production-ready testing infrastructure.
+
+### Key Highlights
+
+| Feature | Description | Tests |
+|---------|-------------|-------|
+| **Hybrid Retrieval System** | BM25 + Vector + Graph fusion with RRF ranking | 110+ |
+| **Knowledge Graph Layer** | Entity tracking, temporal validity, provenance | 82+ |
+| **Community Detection** | Leiden algorithm for graph clustering | 21 |
+| **HNSW Vector Index** | Sub-linear approximate nearest neighbor search | 33 |
+| **Embedding Visualization** | Interactive 2D/3D plots with UMAP/PCA | 21 |
+| **Cross-Encoder Re-Ranking** | Semantic re-ranking for improved precision | 22 |
+| **Comprehensive Manual Testing** | 25 test cases, fixtures, execution scripts | 30 files |
+
+**Total New Tests:** 445+ (bringing total to 1,240+)
+
+### P1: Core Retrieval Enhancements
+
+#### Dual Embedding Strategy (`src/knowledge/embeddings.py`)
+```python
+from src.knowledge.embeddings import DualEmbedder, EmbeddingCache
+
+# Combines semantic + structural embeddings
+embedder = DualEmbedder(cache=EmbeddingCache(default_ttl=3600))
+embedding = embedder.embed_text("Python machine learning frameworks")
+```
+
+- **Semantic embeddings** via sentence-transformers (or hash fallback)
+- **Structural embeddings** via Node2Vec graph walks
+- **Configurable weights** (default: 70% semantic, 30% structural)
+- **TTL-based caching** to prevent memory bloat
+
+#### BM25 Three-Way Hybrid Search (`src/knowledge/bm25.py`)
+```python
+from src.knowledge.bm25 import BM25Index, HybridRetrieverV2
+
+# Create and populate BM25 index
+index = BM25Index()
+index.add_document("doc1", "REST API best practices")
+index.add_document("doc2", "Database connection pooling")
+
+# Search with BM25
+results = index.search("API design", limit=10)
+```
+
+- **Porter Stemmer** with intelligent caching
+- **Reciprocal Rank Fusion (RRF)** for multi-signal combination
+- **Configurable k parameter** for RRF (default: 60)
+- **54 unit tests** covering all edge cases
+
+#### Hierarchical Session Summarizer (`src/ledger/summarizer.py`)
+```python
+from src.ledger.summarizer import HierarchicalSummarizer, SummaryLevel
+
+summarizer = HierarchicalSummarizer(gap_threshold_minutes=90)
+phases = summarizer.detect_phases(task_list)
+session_summary = summarizer.summarize_session(phase_summaries)
+```
+
+- **4-level hierarchy:** SESSION → PHASE → TASK → ATOMIC
+- **Phase detection** based on time gaps (configurable threshold)
+- **Token-budgeted context loading** for LLM queries
+- **37 unit tests** with comprehensive coverage
+
+#### Entity-Aware Provenance (`src/audit/provenance.py`)
+```python
+from src.audit.provenance import EntityProvenanceTracker, EntityRole
+from src.knowledge.graph import Entity, EntityType
+
+tracker = EntityProvenanceTracker()
+entity = Entity(name="UserService", entity_type=EntityType.CLASS)
+tracker.record(entity, EntityRole.SUBJECT, "audit-entry-001")
+
+# Query provenance
+history = tracker.get_entities_by_name("UserService")
+timeline = tracker.get_entity_timeline("UserService")
+```
+
+- **Full entity lifecycle tracking** across sessions
+- **Role-based classification** (SUBJECT, OBJECT, INSTRUMENT)
+- **Integrity verification** with hash chains
+- **48 unit tests** for provenance tracking
+
+### P2: Advanced Knowledge Features
+
+#### Leiden Community Detection (`src/knowledge/community.py`)
+```python
+from src.knowledge.community import CommunityDetector, CommunityConfig
+
+detector = CommunityDetector(CommunityConfig(resolution=1.0))
+result = detector.detect(graph)
+
+print(f"Found {len(result.communities)} communities")
+print(f"Modularity: {result.modularity:.3f}")
+```
+
+- **Leiden algorithm** (faster than Louvain)
+- **Hierarchical community structure**
+- **Modularity scoring** for partition quality
+- **Graceful fallback** when igraph unavailable
+
+#### HNSW Vector Index (`src/knowledge/hnsw_index.py`)
+```python
+from src.knowledge.hnsw_index import HNSWIndex, HNSWConfig
+
+index = HNSWIndex(HNSWConfig(dim=384, max_elements=100000))
+index.add("doc1", embedding_vector)
+results = index.search(query_vector, k=10)
+index.save("index.bin")
+```
+
+- **Approximate nearest neighbor** with <10ms p50 latency
+- **Incremental updates** without full rebuild
+- **Filtered search** with ID whitelist/blacklist
+- **Persistence** with atomic save/load
+
+#### Tiered Token Counting (`src/utils/tiered_token_counter.py`)
+```python
+from src.utils.tiered_token_counter import TieredTokenCounter
+
+counter = TieredTokenCounter()
+result = counter.count("Hello, world!")
+print(f"Tokens: {result.count}, Method: {result.method}, Confidence: {result.confidence}")
+```
+
+- **Fallback chain:** xenova → tiktoken → character estimation
+- **Never fails** - always returns estimation
+- **Result caching** with configurable TTL
+- **Batch counting** support
+
+### P3: Visualization & Benchmarks
+
+#### Graph Embedding Visualization (`src/visualization/embedding_viz.py`)
+```python
+from src.visualization.embedding_viz import EmbeddingVisualizer
+
+visualizer = EmbeddingVisualizer()
+fig = visualizer.visualize(embeddings, labels=labels, dimensions=2)
+visualizer.save_html(fig, "embeddings.html")
+```
+
+- **Interactive Plotly charts** (2D and 3D)
+- **UMAP dimensionality reduction** with PCA fallback
+- **Cluster color mapping** for community visualization
+- **HTML and JSON export**
+
+#### Cross-Encoder Re-Ranking (`src/knowledge/reranker.py`)
+```python
+from src.knowledge.reranker import ReRanker
+
+reranker = ReRanker()
+ranked = reranker.rerank(query="Python API", candidates=documents, top_k=5)
+```
+
+- **Cross-encoder scoring** via sentence-transformers
+- **Jaccard similarity fallback** when unavailable
+- **Batch re-ranking** for efficiency
+- **22 unit tests**
+
+#### Benchmark Suite (`tests/benchmarks/`)
+```bash
+python -m pytest tests/benchmarks/ -v --benchmark-only
+```
+
+- **Vector search latency** (p50/p95/p99)
+- **BM25 indexing throughput**
+- **Hybrid retrieval end-to-end**
+- **Memory usage tracking**
+
+### P4: Developer Experience
+
+#### Enhanced Docstrings
+All public methods now include runnable examples:
+```python
+def retrieve(self, query: str, limit: int = 10) -> List[RetrievalResult]:
+    """
+    Retrieve relevant claims using hybrid search.
+
+    Example:
+        >>> retriever = HybridRetriever(storage)
+        >>> results = retriever.retrieve("machine learning frameworks")
+        >>> for r in results:
+        ...     print(f"{r.claim_id}: {r.score:.3f}")
+    """
+```
+
+#### Configuration Reference (`docs/CONFIG_REFERENCE.md`)
+Complete documentation of all configurable parameters:
+- Default values extracted from code
+- Valid ranges and choices
+- Environment variable overrides
+
+#### Async Variants (`src/knowledge/storage.py`)
+```python
+async with SQLiteGraphBackend(":memory:") as storage:
+    await storage.store_claim_async(claim)
+    result = await storage.get_claim_async(claim_id)
+```
+
+- **aiosqlite-based** async database operations
+- **Graceful fallback** when aiosqlite unavailable
+- **Backward compatible** - sync methods unchanged
 
 ---
 
@@ -48,159 +250,22 @@ A comprehensive multi-agent workflow framework implementing **Test-Driven Develo
 | Feature | Description |
 |---------|-------------|
 | **TDD Workflow** | Test-Driven Development with immutable tests |
-| **Multi-Agent Orchestration** | 22 specialized agents across 3 tiers (Opus/Sonnet/Haiku) |
-| **Real-time Monitoring** | Terminal TUI (Rich) and Web Dashboard with WebSocket updates |
-| **7-Phase Workflow** | SPEC → TEST_DESIGN → TEST_IMPL → IMPLEMENT → VALIDATE → REVIEW → DELIVER |
-| **Cost Governance** | Circuit breaker pattern with budget enforcement |
-| **Six-Layer Validation** | Static analysis, tests, TODO check, mock detection, integration, diff |
+| **Multi-Agent Orchestration** | 22 specialized agents across 3 tiers |
+| **Hybrid Retrieval** | BM25 + Vector + Graph fusion |
+| **Knowledge Graph** | Entity tracking with provenance |
+| **Real-time Monitoring** | Web Dashboard with WebSocket updates |
+| **Community Detection** | Leiden algorithm clustering |
+| **7-Phase Workflow** | SPEC → TEST → IMPLEMENT → VALIDATE → REVIEW |
+| **Cost Governance** | Circuit breaker with budget enforcement |
 
-### What's New in v2.6.0 - Robust Installation
+### Test Coverage
 
-The installer has been completely overhauled with comprehensive error handling, dependency verification, and user-friendly diagnostics.
-
-#### Installation Improvements
-- **Error Handling Framework** - Silent failures are now caught and reported with actionable suggestions
-- **Dependency Verification** - `rich` and `aiohttp` are verified after installation with automatic retry
-- **Health Check Summary** - Final summary shows status of all components (CLI, dependencies, PATH, agents)
-- **Non-Interactive Mode** - `--non-interactive` or `-y` flag for CI/CD pipelines
-- **Install Logging** - All events logged to `~/.claude/install.log` for debugging
-
-#### New Installer Features
-- **Pre-flight Checks** - Verifies directories exist and are writable before operations
-- **Retry Logic** - Automatic retry for pip install failures with clear error messages
-- **User Prompts** - On critical failures: Retry / Continue anyway / Abort options
-- **Step Consistency** - Fixed step numbering to show `[1/9]` through `[9/9]` consistently
-
-#### Usage
-```bash
-# Standard interactive installation
-./scripts/install.sh
-
-# Non-interactive installation (CI/CD)
-./scripts/install.sh --non-interactive
-
-# Force overwrite existing files
-./scripts/install.sh --force
-
-# Show help
-./scripts/install.sh --help
-```
-
-### What's New in v2.5.0 - Agent Optimization
-
-All 22 agent definitions upgraded to v2.4.0 with comprehensive quality improvements based on systematic prompt engineering analysis.
-
-#### Quality-First Enhancements
-- **5-Judge Panel Minimum** - Panel evaluations now require minimum 5 judges (quality floor), expandable to 7 for high-stakes tasks
-- **62+ New Constraints** - Standardized ALWAYS/NEVER format across all agents
-- **Evidence-Citing Requirements** - All panel judges must cite specific evidence for every finding
-- **Few-Shot Examples** - 18+ examples added to Tier 1 agents and all panel judges
-
-#### Safety Mechanisms
-- **Iteration Limits** - Orchestrator (5 rounds), Implementer (50 iterations), Critic (3 rounds), Web-search (10 queries)
-- **Test File Protection** - Implementer detects and rejects test file modifications during implementation
-- **Escalation Protocols** - Clear timeout handling, scope expansion checkpoints, and failure escalation paths
-- **Research Caching** - Documented caching pattern to reduce redundant research (20-30% savings)
-
-#### Workflow Improvements
-- **Standardized Handoff Schemas** - All researcher agents output structured JSON for synthesis
-- **Verification Gates** - Planner specs require panel review for high-complexity/security features
-- **Unresolvable Conflict Handling** - Synthesis explicitly marks conflicts that cannot be reconciled
-
-#### Panel Review
-All changes approved by 5-judge panel: **4.4/5 mean score, 5 PASS votes**
-
-### What's New in v2.4.x
-
-#### Collapsible Project Grouping (v2.4.1)
-- **Collapsible Project Groups** - Click project headers to expand/collapse agent lists
-- **Expand All / Collapse All** - Controls at the top of Active Sessions panel
-- **Enhanced Project Metrics** - Total tokens, cost, execution time, and time since last activity
-- **Project Status Indicators** - Visual status (active/idle/inactive) with color-coded dots
-- **Nested Scrolling** - Independent scrolling for projects container and agent lists
-- **State Persistence** - Collapse/expand states preserved during real-time updates
-
-#### Dynamic Viewport Height
-- **100vh Dashboard** - Fills entire browser viewport on any screen size (1080p to 4K)
-- **Flexbox Layout** - Panels grow proportionally to fill available space
-- **Responsive Scaling** - Adapts seamlessly across display resolutions
-
-#### UI Layout Improvements
-- **Optimized Grid** - 3-column layout with wider right pane for agent names (1fr 0.9fr 380px)
-- **Compact Statistics** - Panel sized to fit content only
-- **Color-Coded Models** - Opus (purple), Sonnet (blue), Haiku (green) badges
-
-#### Backend Enhancements
-- **New API Endpoint** - `GET /api/sessions/grouped` returns sessions with project aggregates
-- **Subagent Tracking** - Proper extraction and display of spawned subagent names
-- **Session Timing** - Accurate duration tracking via start_time field
-
-### What's New in v2.3
-
-- **Improved Token Counting** - Fixed accuracy by extracting content from multiple payload fields
-- **Project Grouping** - Dashboard sessions are now grouped by project for better organization
-- **Responsive Dashboard** - Better scaling from mobile (320px) to 4K (3840px) screens
-- **Dynamic Agent Sync** - Agents are now automatically discovered from `/agents/*.md` files
-- **Formatted Agent Names** - Agent names display properly formatted (capitalized, no hyphens)
-- **New API Endpoint** - `GET /api/agents` returns dynamically scanned agent registry
-
-### What's New in v2.2
-
-- **225 Unit Tests** - Comprehensive test coverage across 8 test modules
-- **Cross-Platform Documentation** - Improved Windows/macOS/Linux compatibility guidance
-- **Six-Layer Validation** - Unified validation terminology across all documentation
-- **Enhanced Docstrings** - Version information added to all source modules
-- **Standardized Agents** - Version and tier fields added to all agent definitions
-
----
-
-## TDD Philosophy
-
-The Agent Dashboard implements a strict Test-Driven Development workflow:
-
-### Core Principles
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    TDD CORE RULES                               │
-├─────────────────────────────────────────────────────────────────┤
-│  1. Tests define correctness - Code must pass ALL tests         │
-│  2. Tests are IMMUTABLE - After lock, tests CANNOT change       │
-│  3. NO TODOs - Production code must be complete                 │
-│  4. NO mocks in production - Mocks only in test files           │
-│  5. Auto-iterate - Keep implementing until ALL tests pass       │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### The TDD Cycle
-
-1. **Design the feature** - Define WHAT it does (SPEC phase)
-2. **Design tests** - Create test cases from specification (TEST_DESIGN phase)
-3. **Write tests FIRST** - Implement tests, they become IMMUTABLE (TEST_IMPL phase)
-4. **Implement code** - Must pass ALL tests, cannot modify tests (IMPLEMENT phase)
-5. **Validate** - Verify no TODOs, no mocks, all tests pass (VALIDATE phase)
-
-### TDD Workflow Diagram
-
-```
-SPEC → TEST_DESIGN → TEST_IMPL → IMPLEMENT → VALIDATE → REVIEW → DELIVER
-  │         │            │            │           │         │        │
-  ▼         ▼            ▼            ▼           ▼         ▼        ▼
-Define   Design      Write tests   Write code  Verify    Review   Ship
-WHAT     tests       (LOCK them)   (pass tests) TDD rules quality
-```
-
-### Test Immutability
-
-After the TEST_IMPL phase is approved, tests are **LOCKED**:
-
-- Tests CANNOT be modified
-- Tests CANNOT be deleted
-- Tests CANNOT be skipped
-- Implementation MUST make tests pass
-- If tests are wrong, start a NEW workflow cycle
-
-For detailed documentation, see [docs/WORKFLOW_FRAMEWORK.md](docs/WORKFLOW_FRAMEWORK.md).
+| Category | Tests | Status |
+|----------|-------|--------|
+| Core Modules | 249 | Passing |
+| NESY Modules | 536 | Passing |
+| P1-P4 Enhancements | 445 | Passing |
+| **Total** | **1,240** | **98.9%** |
 
 ---
 
@@ -210,134 +275,157 @@ For detailed documentation, see [docs/WORKFLOW_FRAMEWORK.md](docs/WORKFLOW_FRAME
 
 | Requirement | Version | Check Command |
 |-------------|---------|---------------|
-| Python | 3.9+ | `python3 --version` |
-| pip or uv | Latest | `pip3 --version` or `uv --version` |
-| Claude Code CLI | Latest | `claude --version` |
-
-### Terminal Support
-
-| Terminal | Platform | Support |
-|----------|----------|---------|
-| Bash | Linux, macOS, WSL | Full |
-| Zsh | macOS (default), Linux | Full |
-| Git Bash | Windows | Full |
-| WSL2 | Windows | Full |
-| PowerShell | Windows | Not supported (use WSL2/Git Bash) |
-| CMD.exe | Windows | Not supported (use WSL2/Git Bash) |
+| Python | 3.10+ | `python --version` |
+| pip | Latest | `pip --version` |
 
 ### Installation
 
-**Step 1: Clone and Install**
 ```bash
 # Clone the repository
 git clone https://github.com/Koplal/agent-dashboard.git
 cd agent-dashboard
 
-# Run the automated installer
-./scripts/install.sh
+# Switch to neuro-symbolic branch
+git checkout experiment/neuro-symbolic
 
-# Or for CI/CD (no prompts)
-./scripts/install.sh --non-interactive
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the dashboard
+python src/web_server.py
 ```
 
-**Step 2: Reload Your Shell** (required after first install)
-```bash
-source ~/.bashrc   # Bash
-# or
-source ~/.zshrc    # Zsh
-```
-
-**VS Code Integrated Terminal:**
-1. Open VS Code in the agent-dashboard directory
-2. Open terminal: `Ctrl+`` (backtick) or `Cmd+`` on macOS
-3. Select Bash/Zsh from terminal dropdown (not PowerShell)
-4. Run: `./scripts/install.sh`
-
-**Manual Installation:**
-```bash
-pip install rich aiohttp transformers tokenizers
-```
-
-### Launch the Dashboard
+### Verify Installation
 
 ```bash
-# Web dashboard (recommended)
-agent-dashboard --web
-# Open http://localhost:4200 in your browser
+# Run tests
+python -m pytest tests/ -v --tb=short
 
-# Terminal TUI dashboard
-agent-dashboard
-
-# Use a different port
-agent-dashboard --web --port 4201
+# Expected: 1,240 passed, 14 skipped
 ```
 
-### Quick Test
+### Quick Demo
 
-**Step 1: Start the Dashboard**
 ```bash
-# Terminal 1: Start the dashboard
-agent-dashboard --web
+# Start dashboard in Terminal 1
+python src/web_server.py
+
+# Run demo workflow in Terminal 2
+python scripts/demo_workflow.py
 ```
 
-**Step 2: Verify Installation**
+---
+
+## Knowledge Graph & Retrieval
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    KNOWLEDGE LAYER                               │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐           │
+│  │ BM25 Index   │  │ HNSW Vector  │  │ Graph Store  │           │
+│  │ (Keyword)    │  │ (Semantic)   │  │ (Structure)  │           │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘           │
+│         │                 │                 │                    │
+│         └────────────┬────┴────────────────┘                    │
+│                      │                                           │
+│              ┌───────▼───────┐                                   │
+│              │  RRF Fusion   │  (Reciprocal Rank Fusion)        │
+│              └───────┬───────┘                                   │
+│                      │                                           │
+│              ┌───────▼───────┐                                   │
+│              │  Re-Ranker    │  (Cross-Encoder, optional)       │
+│              └───────┬───────┘                                   │
+│                      │                                           │
+│              ┌───────▼───────┐                                   │
+│              │ Final Results │                                   │
+│              └───────────────┘                                   │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Usage Example
+
+```python
+from src.knowledge.bm25 import BM25Index
+from src.knowledge.embeddings import DualEmbedder
+from src.audit.provenance import EntityProvenanceTracker
+
+# 1. Create knowledge base
+bm25 = BM25Index()
+embedder = DualEmbedder()
+provenance = EntityProvenanceTracker()
+
+# 2. Add claims
+bm25.add_document("claim-001", "REST APIs should use proper HTTP methods")
+bm25.add_document("claim-002", "Use JWT for authentication")
+
+# 3. Search
+results = bm25.search("API authentication", limit=5)
+for doc_id, score in results:
+    print(f"  [{score:.3f}] {doc_id}")
+
+# 4. Track provenance
+from src.knowledge.graph import Entity, EntityType
+entity = Entity(name="JWT", entity_type=EntityType.OTHER)
+provenance.record(entity, EntityRole.SUBJECT, "claim-002")
+```
+
+---
+
+## Multi-Agent Demo Workflow
+
+The demo workflow (`scripts/demo_workflow.py`) demonstrates real multi-agent orchestration:
+
+### Workflow Phases
+
+```
+Phase 1: Strategic Planning (Opus)
+  └── PlannerAgent creates 3-phase implementation plan
+
+Phase 2: Parallel Research (Sonnet)
+  ├── researcher-api ─────┐
+  ├── researcher-database ┼── 3 agents in PARALLEL
+  └── researcher-security ┘
+
+Phase 3: Parallel Implementation (Sonnet)
+  ├── implementer-api ──────┐
+  ├── implementer-database ─┼── 3 agents in PARALLEL
+  └── implementer-auth ─────┘
+
+Phase 4: Parallel Validation (Haiku + Opus)
+  ├── validator ─┬── 2 agents in PARALLEL
+  └── critic ────┘
+
+Phase 5: Knowledge Synthesis (Opus)
+  └── SynthesisAgent compiles session knowledge
+```
+
+### Run the Demo
+
 ```bash
-# Terminal 2: Run diagnostics
-agent-dashboard doctor
+# Start dashboard
+python src/web_server.py
 
-# Expected output:
-# [1/6] Python
-#   [OK] Python 3.11.x
-# [2/6] Dependencies
-#   [OK] rich installed
-#   [OK] aiohttp 3.x.x
-# ...
-# All checks passed!
+# Run workflow (in another terminal)
+python scripts/demo_workflow.py
 ```
 
-**Step 3: Test Event Sending**
-```bash
-# Terminal 2: Send a test event
-agent-dashboard test
+### Expected Output
 
-# Expected output:
-# Test event sent successfully!
-#    Event type: PreToolUse
-#    Agent: test-agent
-#    Project: test-project
-
-# Verify in browser at http://localhost:4200
 ```
+Session ID: DEMO-20251227-XXXXXX
+Phases completed: 5
+Agents executed: 10 (parallel workflow)
+Knowledge claims: 17
+Entities tracked: 30
+Artifacts produced: 8
 
-**Step 4: Test with Claude Code**
-```bash
-# Terminal 2: Start Claude Code with agent identification
-AGENT_NAME=researcher AGENT_MODEL=sonnet claude
-
-# Events will appear in the dashboard in real-time
+SUCCESS CRITERIA: 7/7 passed
 ```
-
-### Verify Health Check
-```bash
-# Check server health
-curl http://localhost:4200/health
-# Expected: {"status": "ok"}
-
-# Check API endpoints
-curl http://localhost:4200/api/stats
-```
-
-### See It In Action
-
-Want to see how a simple prompt becomes a parallel multi-agent workflow?
-
-**Example:** Turn "Help me create a microcontroller-based environmental monitoring project" into:
-- 6 parallel workstreams with dependency management
-- 7 specialized agents (planner, implementer, test-writer, validator, critic, summarizer, orchestrator)
-- 42 TDD phase completions (6 components × 7 phases)
-- 45 minutes wall-clock time (vs ~121min sequential)
-
-See the [Complete Workflow Example](docs/WORKFLOW_FRAMEWORK.md#-end-to-end-example-from-prompt-to-parallel-execution)
 
 ---
 
@@ -345,13 +433,25 @@ See the [Complete Workflow Example](docs/WORKFLOW_FRAMEWORK.md#-end-to-end-examp
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                        AGENT DASHBOARD                               │
+│                        AGENT DASHBOARD v2.7.0                        │
 ├─────────────────────────────────────────────────────────────────────┤
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐     │
 │  │  Web Dashboard  │  │  Terminal TUI   │  │  REST API       │     │
 │  │  (port 4200)    │  │  (Rich)         │  │  + WebSocket    │     │
 │  └────────┬────────┘  └────────┬────────┘  └────────┬────────┘     │
 │           └────────────────────┼────────────────────┘               │
+│                                │                                     │
+│  ┌─────────────────────────────┴─────────────────────────────┐     │
+│  │                 KNOWLEDGE LAYER (v2.7.0)                   │     │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │     │
+│  │  │  BM25    │  │  HNSW    │  │  Graph   │  │ Embedder │   │     │
+│  │  │  Index   │  │  Vector  │  │  Store   │  │  Dual    │   │     │
+│  │  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │     │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │     │
+│  │  │Community │  │Provenance│  │Summarizer│  │ ReRanker │   │     │
+│  │  │ Leiden   │  │ Tracker  │  │Hierarchic│  │CrossEnc. │   │     │
+│  │  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │     │
+│  └────────────────────────────────────────────────────────────┘     │
 │                                │                                     │
 │  ┌─────────────────────────────┴─────────────────────────────┐     │
 │  │                    WORKFLOW ENGINE                         │     │
@@ -366,72 +466,9 @@ See the [Complete Workflow Example](docs/WORKFLOW_FRAMEWORK.md#-end-to-end-examp
 │  └────────────────────────────────────────────────────────────┘     │
 │                                │                                     │
 │  ┌─────────────────────────────┴─────────────────────────────┐     │
-│  │  SQLite Database │ Event Hooks │ Token Tracking (tiktoken)│     │
+│  │  SQLite Database │ Event Hooks │ Token Tracking           │     │
 │  └────────────────────────────────────────────────────────────┘     │
 └─────────────────────────────────────────────────────────────────────┘
-```
-
-### Data Flow
-
-```
-Claude Code Session
-    │
-    ├─► PreToolUse/PostToolUse Hooks
-    │       │
-    │       ▼
-    ├─► send_event.py (Token counting + cost estimation)
-    │       │
-    │       ▼
-    └─► Dashboard Server (http://localhost:4200)
-            │
-            ├─► SQLite Database (persist events)
-            ├─► WebSocket Broadcast (live updates)
-            └─► REST API (query data)
-```
-
-### Workflow: From Prompt to Parallel Execution
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         USER PROMPT                                      │
-│   "Help me create a microcontroller-based environmental monitoring"     │
-└─────────────────────────────────────┬───────────────────────────────────┘
-                                      │
-                                      ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    ORCHESTRATOR (Tier 1 - Opus)                         │
-│   • Analyzes prompt & gathers requirements                              │
-│   • Identifies components & dependencies                                │
-│   • Creates dependency graph                                            │
-│   • Allocates budget per component                                      │
-└─────────────────────────────────────┬───────────────────────────────────┘
-                                      │
-                    ┌─────────────────┼─────────────────┐
-                    ▼                 ▼                 ▼
-        ┌───────────────────┐ ┌───────────────────┐ ┌───────────────────┐
-        │   WORKTREE 1      │ │   WORKTREE 2      │ │   WORKTREE 3      │
-        │   hw-design       │ │   backend-api     │ │   dashboard       │
-        │   (planner)       │ │   (implementer)   │ │   (implementer)   │
-        │                   │ │                   │ │                   │
-        │ SPEC → TEST →     │ │ SPEC → TEST →     │ │ SPEC → TEST →     │
-        │ IMPL → VALIDATE   │ │ IMPL → VALIDATE   │ │ IMPL → VALIDATE   │
-        └─────────┬─────────┘ └─────────┬─────────┘ └─────────┬─────────┘
-                  │                     │                     │
-        ┌─────────▼─────────┐ ┌─────────▼─────────┐           │
-        │   WORKTREE 4      │ │   WORKTREE 5      │           │
-        │   firmware        │ │   alerting        │           │
-        │   (implementer)   │ │   (implementer)   │           │
-        └─────────┬─────────┘ └─────────┬─────────┘           │
-                  │                     │                     │
-                  └──────────┬──────────┴─────────────────────┘
-                             ▼
-              ┌─────────────────────────────────────┐
-              │         INTEGRATION                  │
-              │   (orchestrator - main worktree)    │
-              │   • Merge all branches              │
-              │   • End-to-end testing              │
-              │   • Final delivery                  │
-              └─────────────────────────────────────┘
 ```
 
 ---
@@ -440,517 +477,89 @@ Claude Code Session
 
 ### Tier 1 - Opus (Strategic/Quality) `$$$`
 
-| Agent | Symbol | Role | Description |
-|-------|--------|------|-------------|
-| `orchestrator` | ◆ | Coordinator | Multi-agent workflow coordination |
-| `synthesis` | ◆ | Combiner | Research output synthesizer |
-| `critic` | ◆ | Challenger | Quality assurance, devil's advocate |
-| `planner` | ◆ | Strategist | Read-only planning (PLAN MODE) |
+| Agent | Role | Description |
+|-------|------|-------------|
+| `orchestrator` | Coordinator | Multi-agent workflow coordination |
+| `synthesis` | Combiner | Research output synthesizer |
+| `critic` | Challenger | Quality assurance, devil's advocate |
+| `planner` | Strategist | Read-only planning (PLAN MODE) |
 
 ### Tier 2 - Sonnet (Analysis/Research) `$$`
 
-| Agent | Symbol | Role | Description |
-|-------|--------|------|-------------|
-| `researcher` | ● | Analyst | Documentation-based research |
-| `perplexity-researcher` | ● | Search | Real-time web search with citations |
-| `research-judge` | ● | Evaluator | Research quality scoring |
-| `claude-md-auditor` | ● | Auditor | Documentation file auditing |
-| `implementer` | ● | Builder | Execute approved plans (IMPLEMENT MODE) |
-
-### Panel Judges (Tier 2 - Sonnet) `$$`
-
-The Panel Judge system provides automated quality evaluation for non-testable work products. Judges are spawned in parallel by the panel-coordinator based on task risk scoring.
-
-| Agent | Symbol | Role | Description |
-|-------|--------|------|-------------|
-| `panel-coordinator` | ● | Coordinator | Orchestrates panels with automatic size selection |
-| `judge-technical` | ● | Tech Judge | Technical accuracy and feasibility |
-| `judge-completeness` | ● | Coverage Judge | Completeness and gap analysis |
-| `judge-practicality` | ● | Practicality Judge | Real-world usefulness and clarity |
-| `judge-adversarial` | ● | Attack Judge | Stress-testing and vulnerability finding |
-| `judge-user` | ● | User Judge | End-user perspective and experience |
+| Agent | Role | Description |
+|-------|------|-------------|
+| `researcher` | Analyst | Documentation-based research |
+| `perplexity-researcher` | Search | Real-time web search |
+| `implementer` | Builder | Execute approved plans |
+| `panel-coordinator` | Coordinator | Orchestrates judge panels |
+| `judge-*` | Evaluators | Technical, completeness, practicality |
 
 ### Tier 3 - Haiku (Execution/Routine) `$`
 
-| Agent | Symbol | Role | Description |
-|-------|--------|------|-------------|
-| `web-search-researcher` | ○ | Searcher | Broad web searches |
-| `summarizer` | ○ | Compressor | Output compression/distillation |
-| `test-writer` | ○ | Tester | Automated test generation |
-| `installer` | ○ | Setup | Installation and configuration |
-| `validator` | ○ | Validator | Four-layer validation (VALIDATE MODE) |
-
-### Visual Architecture
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│            TIER 1 - OPUS (Strategic/Quality)                 │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐          │
-│  │ orchestrator│  │  synthesis  │  │   critic    │          │
-│  │     ◆       │  │     ◆       │  │     ◆       │          │
-│  │ Coordinator │  │  Combiner   │  │  Challenger │          │
-│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘          │
-│         │      ┌─────────┴───┐            │                  │
-│         │      │   planner   │            │                  │
-│         │      │      ◆      │            │                  │
-│         │      └─────────────┘            │                  │
-└─────────┼────────────────────────────────┼──────────────────┘
-          │                                │
-┌─────────┼────────────────────────────────┼──────────────────┐
-│         │    TIER 2 - SONNET (Analysis)  │                  │
-│  ┌──────▼──────┐  ┌─────────────┐  ┌─────▼───────┐          │
-│  │  researcher │  │  perplexity │  │research-judge│         │
-│  │     ●       │  │     ●       │  │     ●       │          │
-│  └─────────────┘  └─────────────┘  └─────────────┘          │
-│  ┌─────────────┐  ┌─────────────┐                           │
-│  │ md-auditor  │  │ implementer │                           │
-│  │     ●       │  │     ●       │                           │
-│  └─────────────┘  └─────────────┘                           │
-└─────────────────────────────────────────────────────────────┘
-          │
-┌─────────┼───────────────────────────────────────────────────┐
-│         │    TIER 3 - HAIKU (Execution)                     │
-│  ┌──────▼──────┐  ┌─────────────┐  ┌─────────────┐          │
-│  │ web-search  │  │  summarizer │  │ test-writer │          │
-│  │     ○       │  │     ○       │  │     ○       │          │
-│  └─────────────┘  └─────────────┘  └─────────────┘          │
-│  ┌─────────────┐  ┌─────────────┐                           │
-│  │  installer  │  │  validator  │                           │
-│  │     ○       │  │     ○       │                           │
-│  └─────────────┘  └─────────────┘                           │
-└─────────────────────────────────────────────────────────────┘
-```
+| Agent | Role | Description |
+|-------|------|-------------|
+| `web-search-researcher` | Searcher | Broad web searches |
+| `summarizer` | Compressor | Output compression |
+| `test-writer` | Tester | Automated test generation |
+| `validator` | Validator | Six-layer validation |
 
 ---
 
-## Panel Judge Workflow
+## Manual Testing
 
-The Panel Judge system automatically scales quality evaluation based on task risk. It evaluates **non-testable work products** (plans, designs, documentation, decisions) where unit tests cannot verify correctness.
+### Test Infrastructure
 
-### Risk Scoring
-
-Tasks are scored on 4 factors to determine panel size:
-
-| Factor | Low | Medium | High |
-|--------|-----|--------|------|
-| **Reversibility** | Reversible (0) | - | Irreversible (4) |
-| **Blast Radius** | Internal (0) | Team (1), Org (2) | External (3) |
-| **Domain** | Business/Software (1) | - | Hardware/Mixed (2) |
-| **Impact** | Low (0) | Medium (1), High (2) | Critical (4) |
-
-### Panel Size Selection
-
-> **Quality-First Policy (v2.5.0):** Minimum panel size is now 5 judges. Panel cannot be reduced below 5 but can expand to 7 for high-stakes evaluations.
-
-| Risk Score | Panel Size | Judges |
-|------------|------------|--------|
-| 0-7 (Standard) | 5 judges | technical, completeness, practicality, adversarial, user |
-| 8+ (High Stakes) | 7 judges | + domain-expert, risk |
-
-### Workflow Sequence
+The project includes comprehensive manual testing infrastructure:
 
 ```
-1. TRIGGER → Task requires quality evaluation (non-testable work product)
-2. SCORE   → Calculate risk from metadata or infer from keywords
-3. SELECT  → Determine panel size (3, 5, or 7 judges)
-4. SPAWN   → Launch judges in PARALLEL (all receive identical input)
-5. EVALUATE → Each judge scores independently (max 500 tokens each)
-6. AGGREGATE → Collect verdicts, calculate consensus level
-7. VERDICT → Apply majority voting rules
-8. REPORT  → Generate audit trail with recommendations
+tests/
+├── fixtures/                    # Test data
+│   ├── minimal_kg.json         # 10 claims (smoke tests)
+│   ├── standard_kg.json        # 1,000 claims (integration)
+│   ├── large_kg.json           # 10,000 claims (performance)
+│   └── test_queries.json       # 100 queries with expected results
+
+scripts/manual_tests/
+├── run_smoke_tests.py          # Automated smoke runner
+├── run_performance_tests.py    # Performance benchmarks
+├── websocket_load_test.py      # WebSocket scalability
+└── check_test_environment.py   # Environment validation
+
+docs/testing/
+├── SMOKE_TEST_GUIDE.md         # Step-by-step procedures
+├── PERFORMANCE_TEST_GUIDE.md   # Performance testing
+├── TROUBLESHOOTING_GUIDE.md    # Common issues
+└── checklists/                 # Deployment checklists
 ```
 
-### Verdict Rules
-
-| Verdict | Condition |
-|---------|-----------|
-| **APPROVED** | Majority PASS, no FAIL votes |
-| **CONDITIONAL** | Majority PASS/CONDITIONAL, max 1 FAIL |
-| **REVISION REQUIRED** | Majority CONDITIONAL or 2+ FAILs |
-| **REJECTED** | Majority FAIL |
-
-### Override Policy
-
-- Users **CAN** escalate panel size (request 7 judges)
-- Users **CANNOT** downgrade below 5 judges (quality floor)
-- All overrides are logged for audit
-- Panel expansion is encouraged for complex or high-stakes evaluations
-
-### Triggering a Panel Evaluation
-
-Panel evaluations are triggered when:
-- A task is flagged as non-testable (plans, designs, documentation)
-- The orchestrator delegates quality review for critical decisions
-- A user explicitly requests panel evaluation via the API
+### Running Manual Tests
 
 ```bash
-# Example: Create a panel evaluation via API
-curl -X POST http://localhost:4200/api/panel \
-  -H "Content-Type: application/json" \
-  -d '{
-    "subject": "API redesign proposal",
-    "description": "Breaking change to authentication endpoints",
-    "metadata": {
-      "reversible": false,
-      "blast_radius": "external",
-      "domain": "software",
-      "impact": "high"
-    }
-  }'
+# 1. Verify environment
+python scripts/manual_tests/check_test_environment.py --verbose
+
+# 2. Run smoke tests (5 tests, ~15 min)
+python scripts/manual_tests/run_smoke_tests.py --verbose
+
+# 3. Run performance tests (4 tests)
+python scripts/manual_tests/run_performance_tests.py --verbose
+
+# 4. WebSocket load test (100 clients)
+python scripts/manual_tests/websocket_load_test.py --clients 100 --duration 30
 ```
 
----
-
-## Neurosymbolic Modules (v2.6.0)
-
-The experiment/neuro-symbolic branch introduces 9 advanced modules for formal verification, knowledge management, and learning capabilities.
-
-### Module Overview
-
-| Module | Directory | Purpose | Key Features |
-|--------|-----------|---------|--------------|
-| NESY-001 | `src/validators/` | Output Validation | Pydantic schemas, retry generation |
-| NESY-002 | `src/constraints/` | Grammar-Constrained Generation | Schema enforcement, tool_use |
-| NESY-003 | `src/judges/` | Heterogeneous Judge Panel | Diversified evaluation, consensus |
-| NESY-004 | `src/knowledge/` | Knowledge Graph | Entity extraction, semantic search |
-| NESY-005 | `src/verification/` | Z3 Constraint Solver | Formal verification, SMT solving |
-| NESY-006 | `src/ledger/` | Progress Tracking | Task ledger, loop detection |
-| NESY-007 | `src/specifications/` | Formal DSL | Agent behavior specification |
-| NESY-008 | `src/learning/` | Neurosymbolic Learning | Rule extraction, effectiveness |
-| NESY-009 | `src/audit/` | Audit Trail | Hash chains, compliance reports |
-
-### Quick Usage
-
-```python
-# NESY-001: Output Validation
-from src.validators import OutputValidator, create_pydantic_schema
-validator = OutputValidator(schema=MyOutputSchema)
-result = validator.validate(llm_output)
-
-# NESY-004: Knowledge Graph
-from src.knowledge import KnowledgeGraph
-kg = KnowledgeGraph(":memory:")
-kg.add_claim("Python is a programming language", source="manual")
-results = kg.search("programming")
-
-# NESY-007: Formal Specifications
-from src.specifications import SpecificationParser, SpecificationEnforcedAgent
-spec = SpecificationParser().parse_file("specs/researcher.spec")
-agent = SpecificationEnforcedAgent(wrapped_agent, spec)
-
-# NESY-009: Audit Trail
-from src.audit import AuditTrail
-trail = AuditTrail(storage_path="./audit.db")
-trail.log("task_completed", {"task_id": "123", "status": "success"})
-```
-
-For comprehensive documentation, see [docs/NESY-ARCHITECTURE.md](docs/NESY-ARCHITECTURE.md).
-
----
-
-## Repository Structure
-
-```
-agent-dashboard/
-├── agents/                         # Agent definitions (22 agents)
-│   ├── orchestrator.md             # ◆ Tier 1 - Strategic coordinator
-│   ├── synthesis.md                # ◆ Tier 1 - Research synthesizer
-│   ├── critic.md                   # ◆ Tier 1 - Devil's advocate
-│   ├── planner.md                  # ◆ Tier 1 - Read-only planner
-│   ├── researcher.md               # ● Tier 2 - Documentation research
-│   ├── perplexity-researcher.md    # ● Tier 2 - Real-time search
-│   ├── research-judge.md           # ● Tier 2 - Quality evaluation
-│   ├── claude-md-auditor.md        # ● Tier 2 - Doc auditing
-│   ├── implementer.md              # ● Tier 2 - Code execution
-│   ├── panel-coordinator.md        # ● Tier 2 - Panel orchestration
-│   ├── judge-technical.md          # ● Tier 2 - Technical accuracy
-│   ├── judge-completeness.md       # ● Tier 2 - Coverage evaluation
-│   ├── judge-practicality.md       # ● Tier 2 - Usefulness evaluation
-│   ├── judge-adversarial.md        # ● Tier 2 - Stress testing
-│   ├── judge-user.md               # ● Tier 2 - User perspective
-│   ├── web-search-researcher.md    # ○ Tier 3 - Web searches
-│   ├── summarizer.md               # ○ Tier 3 - Compression
-│   ├── test-writer.md              # ○ Tier 3 - Test generation
-│   ├── installer.md                # ○ Tier 3 - Setup tasks
-│   └── validator.md                # ○ Tier 3 - Validation stack
-│
-├── src/                            # Core Python modules
-│   ├── cli.py                      # Unified CLI interface
-│   ├── web_server.py               # Web dashboard + REST API
-│   ├── workflow_engine.py          # Multi-agent orchestration
-│   ├── token_counter.py            # Token counting with tiered fallback
-│   ├── validation.py               # Six-layer validation stack
-│   ├── compression_gate.py         # Token budgeting for handoffs
-│   ├── panel_selector.py           # Judge panel selection logic
-│   ├── synthesis_validator.py      # Synthesis output validation
-│   ├── audit/                      # NESY-009: Audit trail with hash chaining
-│   ├── constraints/                # NESY-002: Grammar-constrained generation
-│   ├── judges/                     # NESY-003: Heterogeneous judge panel
-│   ├── knowledge/                  # NESY-004: Knowledge graph layer
-│   ├── learning/                   # NESY-008: Neurosymbolic learning
-│   ├── ledger/                     # NESY-006: Progress ledger
-│   ├── schemas/                    # Pydantic output schemas
-│   ├── specifications/             # NESY-007: Formal specification DSL
-│   ├── validators/                 # NESY-001: Output validators
-│   └── verification/               # NESY-005: Z3 symbolic verification
-│
-├── specs/                          # Formal specification files (.spec)
-│   ├── researcher.spec             # Research agent constraints
-│   ├── code_reviewer.spec          # Code review constraints
-│   └── summarizer.spec             # Summarization constraints
-│
-├── dashboard/
-│   └── agent_monitor.py            # Terminal TUI dashboard (Rich)
-│
-├── hooks/
-│   └── send_event.py               # Event capture + token tracking
-│
-├── tests/                          # Test suite (9 test files)
-│   ├── test_workflow_engine.py     # Workflow engine tests (39)
-│   ├── test_compression_gate.py    # Compression gate tests (37)
-│   ├── test_synthesis_validator.py # Synthesis validator tests (32)
-│   ├── test_panel_selector.py      # Panel selection tests (31)
-│   ├── test_validation.py          # Base validation tests (31)
-│   ├── test_send_event.py          # Event hook tests (22)
-│   ├── test_cross_platform.py      # Cross-platform tests (20)
-│   ├── test_token_counter.py       # Token counting tests (24)
-│   ├── test_integration.py         # Integration tests (13)
-│   └── __init__.py
-│
-├── docs/                           # Documentation
-│   ├── EXAMPLE_USAGE.md            # Complete usage guide with examples
-│   ├── IMPLEMENTATION.md           # Complete deployment guide
-│   ├── WORKFLOW_FRAMEWORK.md       # Design patterns & governance
-│   └── PROMPT_ENGINEERING_RESEARCH.md  # Research analysis & evidence
-│
-├── scripts/
-│   └── install.sh                  # Automated installation
-│
-└── README.md                       # This file
-```
-
----
-
-## Dependencies
-
-### Required
-
-```
-rich>=13.0.0        # Terminal UI rendering
-aiohttp>=3.9.0      # Async web server + WebSocket
-```
-
-### Recommended
-
-```
-transformers>=4.35.0  # Claude tokenizer (recommended, ~95% accuracy)
-tokenizers>=0.15.0    # Required by transformers
-tiktoken>=0.5.0       # Fallback tokenizer (~70-85% accuracy)
-pytest>=7.0.0         # Testing framework (development)
-pytest-asyncio        # Async test support (development)
-```
-
----
-
-## Token Counting
-
-Agent Dashboard uses accurate Claude tokenization for cost estimation and budget governance.
-
-### Tokenizer Priority
-
-The system uses a tiered fallback approach:
-
-| Priority | Tokenizer | Accuracy | Install |
-|----------|-----------|----------|---------|
-| 1 | Xenova/claude-tokenizer | ~95%+ | `pip install transformers tokenizers` |
-| 2 | Anthropic API | 100% | `pip install anthropic` + API key |
-| 3 | tiktoken (fallback) | ~70-85% | `pip install tiktoken` |
-| 4 | Character estimation | ~60-70% | Built-in |
-
-### Check Tokenizer Status
-
-```bash
-agent-dashboard tokenizer
-```
-
-### Recommended Installation
-
-For best accuracy without API calls:
-```bash
-pip install transformers tokenizers
-```
-
-### Usage in Code
-
-```python
-from src.token_counter import count_tokens, estimate_cost, get_tokenizer_info
-
-# Count tokens
-tokens = count_tokens("Hello, world!")
-
-# Get cost estimate
-cost = estimate_cost(input_tokens=1000, output_tokens=500, model="claude-sonnet-4-5")
-
-# Check which tokenizer is active
-info = get_tokenizer_info()
-print(f"Using: {info.name} ({info.accuracy})")
-```
-
-### External Tools
-
-| Tool | Purpose | Installation |
-|------|---------|--------------|
-| Claude Code CLI | Agent integration | [Install Guide](https://docs.anthropic.com/claude-code) |
-| uv | Fast package manager | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
-| tmux | Background dashboard | `apt install tmux` or `brew install tmux` |
-
-### Installation Commands
-
-```bash
-# Using pip
-pip install rich aiohttp tiktoken
-
-# Using uv (recommended)
-uv pip install rich aiohttp tiktoken
-
-# Development dependencies
-pip install pytest pytest-asyncio
-```
-
----
-
-## ⚙️ Configuration
-
-### Claude Code Hooks (`~/.claude/settings.json`)
-
-> **Note:** The installer automatically creates and configures this file. This section is for reference only. If you skipped hook configuration during install, you can run `./scripts/install.sh` again.
-
-```json
-{
-  "hooks": {
-    "PreToolUse": [{
-      "matcher": ".*",
-      "hooks": [{
-        "type": "command",
-        "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type PreToolUse --agent-name ${AGENT_NAME:-claude} --model ${AGENT_MODEL:-sonnet}"
-      }]
-    }],
-    "PostToolUse": [{
-      "matcher": ".*",
-      "hooks": [{
-        "type": "command",
-        "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type PostToolUse --agent-name ${AGENT_NAME:-claude} --model ${AGENT_MODEL:-sonnet}"
-      }]
-    }],
-    "Stop": [{
-      "hooks": [{
-        "type": "command",
-        "command": "bash \"$HOME/.claude/dashboard/hooks/run_hook.sh\" --event-type Stop --agent-name ${AGENT_NAME:-claude}"
-      }]
-    }]
-  }
-}
-```
-
-### Environment Variables
-
-All environment variables are **optional** with sensible defaults.
-
-| Variable | Default | When to Set |
-|----------|---------|-------------|
-| `AGENT_DASHBOARD_URL` | `http://127.0.0.1:4200/events` | Only if using non-default port |
-| `AGENT_NAME` | `claude` | When running as a specific agent |
-| `AGENT_MODEL` | `sonnet` | When running as a specific agent |
-| `AGENT_PROJECT` | Auto-detected from git | Only if git detection fails |
-
-**Example (only needed for agent sessions):**
-```bash
-export AGENT_NAME="orchestrator"
-export AGENT_MODEL="opus"
-claude
-```
-
----
-
-## Workflow Engine
-
-### TDD Phases (Locked Gate Pattern)
-
-```
-SPEC → TEST_DESIGN → TEST_IMPL → IMPLEMENT → VALIDATE → REVIEW → DELIVER
-  │         │            │            │           │         │        │
-  ▼         ▼            ▼            ▼           ▼         ▼        ▼
-Approval  Approval   LOCK TESTS   All Pass    TDD Check  Review   Done
-                    (immutable)   Required    Required
-```
-
-| Phase | Agent | Model | Description | Checkpoint |
-|-------|-------|-------|-------------|------------|
-| SPEC | planner | Opus | Define WHAT the feature does (not how) | Approval required |
-| TEST_DESIGN | test-writer | Sonnet | Design test cases from specification | Approval required |
-| TEST_IMPL | test-writer | Haiku | Write tests (become IMMUTABLE) | **LOCK approval** |
-| IMPLEMENT | implementer | Sonnet | Write code to pass locked tests | Auto (all tests pass) |
-| VALIDATE | validator | Haiku | Run six-layer TDD validation | Auto (all pass) |
-| REVIEW | critic | Opus | Critical review, verify spec compliance | Approval required |
-| DELIVER | summarizer | Haiku | Generate summary, document limitations | None |
-
-### TDD Rules (Enforced)
-
-| Rule | Requirement | Enforced By |
-|------|-------------|-------------|
-| Tests define correctness | Code must pass ALL tests | validator |
-| Tests are IMMUTABLE | After lock, cannot change | workflow engine |
-| NO TODOs | Zero in production code | validator |
-| NO mocks in production | Only in test files | validator |
-
-### Cost Governance
-
-#### Model Pricing (per million tokens)
-
-| Model | Tier | Input | Output | Best For |
-|-------|------|-------|--------|----------|
-| Opus | 1 | $15.00 | $75.00 | Spec, review |
-| Sonnet | 2 | $3.00 | $15.00 | Test design, implementation |
-| Haiku | 3 | $0.25 | $1.25 | Test impl, validation |
-
-#### Circuit Breaker Thresholds
-
-| Threshold | Action |
-|-----------|--------|
-| 50% | First warning |
-| 75% | Second warning |
-| 90% | Final warning |
-| 100% | Circuit breaks (manual reset required) |
-
-### Six-Layer TDD Validation Stack
-
-| Layer | Check | Requirement |
-|-------|-------|-------------|
-| 1. Static Analysis | Type checking, linting | Zero errors |
-| 2. Test Suite | All tests execution | 100% passing |
-| 3. TODO/FIXME Check | Production code scan | Zero found |
-| 4. Mock Detection | Production code scan | Zero found |
-| 5. Integration Sandbox | Isolated execution | Pass or skip |
-| 6. Behavioral Diff | Human-readable changes | Complete |
-
-### CLI Usage
-
-```bash
-# Create workflow from task
-python3 src/workflow_engine.py from-task "Add user authentication"
-
-# Check budget status
-python3 src/workflow_engine.py budget
-
-# Generate governance document
-python3 src/workflow_engine.py governance <workflow_id> -o CLAUDE.md
-```
+### Test Results
+
+| Suite | Tests | Status |
+|-------|-------|--------|
+| Smoke Tests | 5/5 | PASS |
+| Performance Tests | 4/4 | PASS |
+| WebSocket Load | 100 clients | 51 events/sec |
+| Integration Tests | 5/5 | PASS |
 
 ---
 
 ## API Reference
-
-> **Rate Limits:** The local dashboard server has no rate limits. All endpoints accept unlimited requests. For production deployments, consider adding rate limiting via a reverse proxy (nginx, Caddy) if exposing the API externally.
 
 ### Core Endpoints
 
@@ -961,124 +570,32 @@ python3 src/workflow_engine.py governance <workflow_id> -o CLAUDE.md
 | `/api/events` | GET | Get recent events |
 | `/api/sessions` | GET | Get active sessions |
 | `/api/stats` | GET | Get statistics |
-| `/api/agents` | GET | Get registered agents (dynamically scanned) |
 | `/health` | GET | Health check |
 | `/ws` | WebSocket | Live updates |
 
-### Workflow Endpoints
+### Knowledge Endpoints (v2.7.0)
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/workflow` | POST | Create workflow from task |
-| `/api/workflow` | GET | List all workflows |
-| `/api/workflow/{id}` | GET | Get workflow status |
-| `/api/workflow/{id}/prompt` | GET | Get orchestrator prompt |
-| `/api/workflow/{id}/governance` | GET | Get CLAUDE.md governance |
-| `/api/budget` | GET | Get budget status |
-
-### Panel Judge Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/panel` | POST | Create panel evaluation for non-testable work |
-| `/api/panel/{id}` | GET | Get panel evaluation status and results |
-
-### Example Requests
-
-```bash
-# Health check
-curl http://localhost:4200/health
-
-# Create a workflow
-curl -X POST http://localhost:4200/api/workflow \
-  -H "Content-Type: application/json" \
-  -d '{"task": "Add user authentication", "budget": 2.0}'
-
-# Get budget status
-curl http://localhost:4200/api/budget
-
-# Send test event
-curl -X POST http://localhost:4200/events \
-  -H "Content-Type: application/json" \
-  -d '{
-    "agent_name": "orchestrator",
-    "event_type": "TaskStart",
-    "session_id": "test-123",
-    "project": "test-project",
-    "model": "opus",
-    "payload": {"task": "Test task"}
-  }'
-```
+| `/api/knowledge/search` | POST | Hybrid search |
+| `/api/knowledge/claims` | GET/POST | Manage claims |
+| `/api/knowledge/entities` | GET | Get tracked entities |
 
 ---
 
-## Dashboard Features
+## Configuration
 
-### Web Dashboard Layout
+### Environment Variables
 
-The web dashboard uses a responsive 3-column grid layout that fills the viewport:
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `AGENT_DASHBOARD_URL` | `http://127.0.0.1:4200` | Dashboard URL |
+| `AGENT_NAME` | `claude` | Agent identifier |
+| `AGENT_MODEL` | `sonnet` | Model tier |
 
-```
-+-----------------------------------------------------------------------------------+
-|                              Agent Dashboard Header                                |
-|  [Live] Uptime: 00:00:00  Port: 4200  [Restart] [Stop]                           |
-+-----------------------------------------------------------------------------------+
-|                          |                        |                               |
-|   Active Sessions (1fr)  |  Event Timeline (0.9fr)|  Statistics + Agents (380px) |
-|                          |                        |                               |
-|  +--------------------+  |  +------------------+  |  +------------------------+  |
-|  | [Expand] [Collapse]|  |  | 12:34:56 Tool... |  |  | Events: 1,234          |  |
-|  +--------------------+  |  | 12:34:55 Read... |  |  | Sessions: 12           |  |
-|  |                    |  |  | 12:34:54 Bash... |  |  | Tokens: 45.2K          |  |
-|  | > project-alpha    |  |  | ...              |  |  | Cost: $0.1234          |  |
-|  |   [3 agents] $0.05 |  |  +------------------+  |  | Active: 3              |  |
-|  |   +- orchestrator  |  |                        |  +------------------------+  |
-|  |   +- researcher    |  |                        |  |                        |  |
-|  |   +- implementer   |  |                        |  | Registered Agents      |  |
-|  |                    |  |                        |  | [Refresh]              |  |
-|  | v project-beta     |  |                        |  | > orchestrator [opus]  |  |
-|  |   (collapsed)      |  |                        |  | > researcher [sonnet]  |  |
-|  |                    |  |                        |  | > summarizer [haiku]   |  |
-|  +--------------------+  |                        |  +------------------------+  |
-|                          |                        |                               |
-+-----------------------------------------------------------------------------------+
-```
+### Configuration Reference
 
-**Grid Configuration:** `grid-template-columns: 1fr 0.9fr 380px`
-
-### Terminal TUI (`agent-dashboard`)
-
-- Real-time event timeline
-- Active session tracking
-- Token usage and cost monitoring
-- Agent tier visualization (diamond/circle/outline)
-- Color-coded agents
-
-### Web Dashboard (`agent-dashboard --web`)
-
-#### Core Features
-- WebSocket live updates
-- Interactive session cards
-- Event filtering by type/agent
-- 24-hour statistics
-
-#### Project Organization (v2.4)
-- **Collapsible Project Groups** - Click to expand/collapse agent lists per project
-- **Project Aggregates** - Total tokens, cost, execution time per project
-- **Expand/Collapse All** - Quick controls to manage all project groups
-- **Project Status Indicators** - Visual activity status (active/idle/inactive)
-- **Nested Scrolling** - Projects container and agent lists scroll independently
-
-#### Display Features
-- **Dynamic Viewport Height** - Dashboard fills 100vh, scales on any screen
-- **Dynamic Agent Registry** - Agents scanned from `/agents/*.md` files
-- **Responsive Design** - Scales from mobile (320px) to 4K (3840px)
-- **Formatted Names** - Agent names properly capitalized and formatted
-- **Color-Coded Model Badges** - Opus (purple), Sonnet (blue), Haiku (green)
-
-#### Dashboard Controls
-- **Restart Button** - Restart the dashboard server
-- **Shutdown Button** - Stop the dashboard server
+See `docs/CONFIG_REFERENCE.md` for complete parameter documentation.
 
 ---
 
@@ -1087,154 +604,25 @@ The web dashboard uses a responsive 3-column grid layout that fills the viewport
 ### Running Tests
 
 ```bash
-# Run all tests (785+ total including NESY modules)
-# Use 'python' on Windows, 'python3' on Linux/macOS
+# All tests
 python -m pytest tests/ -v
 
-# Run specific test file
-python -m pytest tests/test_workflow_engine.py -v
+# Specific module
+python -m pytest tests/test_bm25.py -v
 
-# Run with coverage
-python -m pytest tests/ --cov=src --cov=hooks --cov-report=html
+# With coverage
+python -m pytest tests/ --cov=src --cov-report=html
 ```
 
-> **Cross-Platform Note:** Use `python` on Windows (Git Bash/PowerShell), `python3` on Linux/macOS. Most modern Python installations alias both commands.
+### Test Categories
 
-### Test Coverage
-
-| File | Tests | Coverage Areas |
-|------|-------|----------------|
-| `test_workflow_engine.py` | 39 | Circuit breaker, tasks, workflows, TDD phases |
-| `test_compression_gate.py` | 37 | Compression gating, token estimation, handoff validation |
-| `test_synthesis_validator.py` | 32 | Synthesis validation, finding consolidation |
-| `test_panel_selector.py` | 31 | Panel selection, judge scoring, consensus |
-| `test_validation.py` | 31 | Base validation, handoff schema, validation actions |
-| `test_token_counter.py` | 24 | Token counting, tokenizer fallback, cost estimation |
-| `test_send_event.py` | 22 | Token estimation, cost calculation, event sending |
-| `test_cross_platform.py` | 20 | Cross-platform compatibility, Python detection |
-| `test_integration.py` | 13 | End-to-end integration, API endpoints |
-| **Core Total** | **249** | |
-
-#### NESY Module Tests (v2.6.0)
-
-| File | Tests | Coverage Areas |
-|------|-------|----------------|
-| `test_specifications.py` | 103 | DSL parsing, AST, specification enforcement |
-| `test_validators.py` | 68 | Pydantic validation, retry generation |
-| `test_learning.py` | 58 | Rule extraction, effectiveness tracking |
-| `test_knowledge.py` | 56 | Knowledge graph, semantic search |
-| `test_constraints.py` | 52 | Grammar constraints, tool schema |
-| `test_judges.py` | 48 | Judge panel, consensus calculation |
-| `test_ledger.py` | 45 | Task tracking, loop detection |
-| `test_audit.py` | 42 | Hash chains, compliance reports |
-| `test_verification.py` | 38 | Z3 solver, claim verification |
-| `test_schemas.py` | 26 | Output schemas, JSON generation |
-| **NESY Total** | **536** | |
-| **Grand Total** | **785+** | |
-
-### Verification Commands
-
-```bash
-# Verify imports (use 'python' on Windows, 'python3' on Linux/macOS)
-python -c "from src.workflow_engine import WorkflowEngine; print('OK')"
-
-# Test event sending (cross-platform)
-bash ~/.claude/dashboard/hooks/run_hook.sh --event-type PreToolUse --agent-name test
-
-# Direct Python (development only)
-python hooks/send_event.py --event-type PreToolUse --agent-name test
-
-# Check API health
-curl http://localhost:4200/health
-```
-
-> **Windows Users:** If `python` is not recognized, ensure Python is in your PATH or use the full path (e.g., `py -m pytest tests/ -v`).
-
----
-
-## Best Practices
-
-### Agent Selection
-
-| Task Type | Recommended Agent | Tier |
-|-----------|-------------------|------|
-| Complex planning | `planner` | Opus |
-| Research synthesis | `orchestrator` → `synthesis` | Opus |
-| Quality review | `critic` | Opus |
-| Code implementation | `implementer` | Sonnet |
-| Documentation research | `researcher` | Sonnet |
-| Real-time search | `perplexity-researcher` | Sonnet |
-| Test generation | `test-writer` | Haiku |
-| Validation | `validator` | Haiku |
-| Quick summaries | `summarizer` | Haiku |
-
-### Cost Optimization
-
-1. **Start with Haiku** for routine tasks (validation, summarization)
-2. **Use Sonnet** for implementation and research
-3. **Reserve Opus** for strategic planning and critical review
-4. **Monitor budget** via `/api/budget` endpoint
-
-### Workflow Execution
-
-1. **Always start with PLAN phase** - Read-only exploration first
-2. **Write tests before implementation** - TDD pattern
-3. **Validate after each change** - Six-layer validation stack
-4. **Use checkpoints** - Human approval at critical points
-
-### Monitoring
-
-1. **Keep dashboard running** during development
-2. **Review token usage** to optimize costs
-3. **Check critic findings** before accepting changes
-4. **Run auditor** regularly on documentation
-
----
-
-## Troubleshooting
-
-### Events Not Appearing
-
-```bash
-# 1. Check server is running
-curl http://localhost:4200/health
-
-# 2. Test event sending manually (cross-platform)
-bash ~/.claude/dashboard/hooks/run_hook.sh \
-  --event-type PreToolUse --agent-name test
-
-# Or direct Python (development only)
-# python3 ~/.claude/dashboard/hooks/send_event.py --event-type PreToolUse --agent-name test
-
-# 3. Check hook permissions
-chmod +x ~/.claude/dashboard/hooks/send_event.py
-```
-
-### Dashboard Won't Start
-
-```bash
-# 1. Check port availability
-lsof -i :4200
-
-# 2. Verify dependencies
-pip3 install rich aiohttp tiktoken
-
-# 3. Try alternative port
-agent-dashboard --web --port 4201
-```
-
-### Token Counting Issues
-
-```bash
-# Tiktoken falls back to character-based estimation if network restricted
-python3 -c "
-from hooks.send_event import estimate_tokens, _TIKTOKEN_AVAILABLE
-print(f'Tiktoken available: {_TIKTOKEN_AVAILABLE}')
-print(f'Test estimate: {estimate_tokens(\"Hello world\")} tokens')
-"
-```
-
-For more troubleshooting, see [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md#troubleshooting).
+| Category | Files | Tests |
+|----------|-------|-------|
+| Core | 9 | 249 |
+| NESY | 10 | 536 |
+| P1-P4 | 14 | 445 |
+| Benchmarks | 1 | 6 |
+| **Total** | **34** | **1,240** |
 
 ---
 
@@ -1242,46 +630,75 @@ For more troubleshooting, see [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md#tr
 
 | Document | Description |
 |----------|-------------|
-| [README.md](README.md) | Quick start and overview (this file) |
-| [docs/EXAMPLE_USAGE.md](docs/EXAMPLE_USAGE.md) | **Complete usage guide with examples and hook troubleshooting** |
-| [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) | Complete deployment guide with project integration |
-| [docs/WORKFLOW_FRAMEWORK.md](docs/WORKFLOW_FRAMEWORK.md) | Design patterns, governance, and validation architecture |
-| [docs/PROMPT_ENGINEERING_RESEARCH.md](docs/PROMPT_ENGINEERING_RESEARCH.md) | **Research analysis and evidence-based design decisions** |
-
-### Quick Links
-
-- **Getting Started**: [docs/EXAMPLE_USAGE.md](docs/EXAMPLE_USAGE.md) (recommended first read)
-- **Installation**: [Quick Start](#-quick-start) | [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md#installation)
-- **Configuration**: [Configuration](#-configuration) | [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md#configuration)
-- **Agent Setup**: [Agent Registry](#-agent-registry-20-agents) | [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md#agent-setup)
-- **API Reference**: [API Reference](#-api-reference) | [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md#api-reference)
-- **Workflow Engine**: [Workflow Engine](#-workflow-engine) | [docs/WORKFLOW_FRAMEWORK.md](docs/WORKFLOW_FRAMEWORK.md)
-- **Testing**: [Testing](#-testing) | [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md#testing)
-- **Hook Issues**: [docs/EXAMPLE_USAGE.md#troubleshooting-hooks](docs/EXAMPLE_USAGE.md#troubleshooting-hooks)
-- **Troubleshooting**: [Troubleshooting](#-troubleshooting) | [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md#troubleshooting)
+| [README.md](README.md) | This file |
+| [docs/CONFIG_REFERENCE.md](docs/CONFIG_REFERENCE.md) | Configuration parameters |
+| [docs/MANUAL_TESTING_STRATEGY.md](docs/MANUAL_TESTING_STRATEGY.md) | Manual test procedures |
+| [docs/testing/](docs/testing/) | Test guides and checklists |
+| [docs/NESY-ARCHITECTURE.md](docs/NESY-ARCHITECTURE.md) | Neurosymbolic module docs |
 
 ---
 
-## 📖 Glossary
+## Repository Structure (v2.7.0)
 
-| Term | Definition |
-|------|------------|
-| **Agent** | A named Claude session with a specific role (e.g., orchestrator, researcher). Used for dashboard monitoring and identification—does not change Claude's behavior. |
-| **Tier** | Model capability level: Tier 1 (Opus/strategic), Tier 2 (Sonnet/analysis), Tier 3 (Haiku/execution) |
-| **Workflow** | A structured task breakdown using TDD phases, created via the Workflow Engine API |
-| **Phase** | A stage in the TDD workflow: SPEC → TEST_DESIGN → TEST_IMPL → IMPLEMENT → VALIDATE → REVIEW → DELIVER |
-| **Hook** | A Claude Code callback that sends events to the dashboard when tools are used |
-| **Event** | A notification sent to the dashboard (PreToolUse, PostToolUse, UserPromptSubmit, Stop, SubagentStop) |
+```
+agent-dashboard/
+├── src/
+│   ├── knowledge/              # Knowledge graph layer
+│   │   ├── graph.py            # Entity, Claim, Graph types
+│   │   ├── storage.py          # SQLite backend + async
+│   │   ├── bm25.py             # BM25 index + hybrid retriever
+│   │   ├── embeddings.py       # Dual embedding strategy
+│   │   ├── retriever.py        # Hybrid vector-graph retriever
+│   │   ├── community.py        # Leiden community detection
+│   │   ├── hnsw_index.py       # HNSW vector index
+│   │   └── reranker.py         # Cross-encoder re-ranking
+│   ├── ledger/
+│   │   └── summarizer.py       # Hierarchical session summarizer
+│   ├── audit/
+│   │   └── provenance.py       # Entity-aware provenance
+│   ├── utils/
+│   │   └── tiered_token_counter.py  # Fallback token counting
+│   ├── visualization/
+│   │   └── embedding_viz.py    # Graph embedding visualization
+│   └── web_server.py           # Dashboard server
+├── tests/
+│   ├── test_bm25.py            # 54 tests
+│   ├── test_dual_embeddings.py # 36 tests
+│   ├── test_hybrid_retriever.py # 56 tests
+│   ├── test_summarizer.py      # 37 tests
+│   ├── test_entity_provenance.py # 48 tests
+│   ├── test_community.py       # 21 tests
+│   ├── test_hnsw_index.py      # 33 tests
+│   ├── test_tiered_token_counter.py # 29 tests
+│   ├── test_embedding_viz.py   # 21 tests
+│   ├── test_reranker.py        # 22 tests
+│   ├── benchmarks/             # Performance benchmarks
+│   └── fixtures/               # Test data
+├── scripts/
+│   ├── demo_workflow.py        # Multi-agent demo
+│   ├── install.py              # Cross-platform installer
+│   └── manual_tests/           # Manual test scripts
+├── docs/
+│   ├── testing/                # Test guides
+│   ├── CONFIG_REFERENCE.md     # Configuration docs
+│   └── MANUAL_TESTING_STRATEGY.md
+├── agents/                     # 22 agent definitions
+├── TEST_REPORT.html            # HTML test report
+├── TEST_REPORT.md              # Markdown test report
+└── README.md                   # This file
+```
 
 ---
 
-## Contributing
+## Version History
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/my-feature`)
-3. Make your changes
-4. Run tests (`python3 -m pytest tests/ -v`)
-5. Submit a pull request
+| Version | Date | Highlights |
+|---------|------|------------|
+| **2.7.0** | Dec 2024 | Hybrid retrieval, HNSW, Leiden, manual testing |
+| 2.6.0 | Dec 2024 | Robust installation, NESY modules |
+| 2.5.0 | Dec 2024 | 5-judge panel minimum, agent optimization |
+| 2.4.x | Dec 2024 | Collapsible projects, dynamic viewport |
+| 2.3.0 | Dec 2024 | Project grouping, responsive dashboard |
 
 ---
 
@@ -1291,55 +708,13 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-## Research References
-
-The agent prompts and workflow architecture are informed by systematic analysis of peer-reviewed prompt engineering research. See [docs/PROMPT_ENGINEERING_RESEARCH.md](docs/PROMPT_ENGINEERING_RESEARCH.md) for detailed analysis.
-
-### Validated Techniques (Implemented)
-
-| Technique | Research | Implementation |
-|-----------|----------|----------------|
-| **External Verification** | Huang et al., ICLR 2024 | critic, validator, research-judge, panel |
-| **Constraint-Based Prompting** | Multiple AI labs | 62+ ALWAYS/NEVER constraints |
-| **Few-Shot Examples** | Learn Prompting, ACL 2024 | 22+ examples across agents |
-| **Iteration Limits** | Shinn et al., NeurIPS 2023 | All agents have hard limits |
-| **Test-Driven Iteration** | Reflexion (NeurIPS 2023) | Implementer with test feedback |
-
-### Anti-Patterns Avoided
-
-| Pattern | Why Avoided | Research |
-|---------|-------------|----------|
-| **Self-Correction Loops** | Degrades without external feedback | ICLR 2024 |
-| **Tree of Thoughts** | 5-20x API cost, minimal benefit | NeurIPS 2024 |
-| **Elaborate Role Personas** | Examples outperform personas | Learn Prompting |
-| **Unbounded Iteration** | Diminishing returns after 2-3 cycles | Multiple studies |
-
-### Key Papers
-
-| Paper | Finding | Impact |
-|-------|---------|--------|
-| Huang et al., ICLR 2024 | LLMs cannot self-correct without external feedback | Validates external verification |
-| Katz et al., NeurIPS 2024 | ToT is prohibitively inefficient | Validates simpler patterns |
-| Shinn et al., NeurIPS 2023 | Reflexion requires external signals | Validates test-driven iteration |
-| **ReAct Prompting** | Yao et al. (2022), Princeton/Google | Agent tool use patterns |
-
-### Internal Analysis Documents
-
-| Document | Purpose |
-|----------|---------|
-| [Agent Optimization Report](AGENT_OPTIMIZATION_REPORT.md) | Systematic analysis of 22 agent prompts |
-| [Orchestrator Prompt](Research_Prompts/AGENT_OPTIMIZATION_ORCHESTRATOR_PROMPT.md) | Prompt used to analyze agent architecture |
-| [Critical Analysis Report](Research_Prompts/Prompt%20Engineering%20Reports/CRITICAL_ANALYSIS_COGNITIVE_ARCHITECTURES_REPORT.md) | Source verification of prompt engineering claims |
-
----
-
 ## Acknowledgments
 
-- [Claude Code Hooks Multi-Agent Observability](https://github.com/disler/claude-code-hooks-multi-agent-observability) - Inspiration for hooks-based monitoring
-- [Rich](https://github.com/Textualize/rich) - Beautiful terminal formatting
-- [Anthropic](https://anthropic.com) - Claude models and documentation
-- Academic researchers whose work informed the prompt engineering approach
+- [Anthropic](https://anthropic.com) - Claude models
+- [Rich](https://github.com/Textualize/rich) - Terminal formatting
+- [sentence-transformers](https://www.sbert.net/) - Embeddings
+- [python-igraph](https://igraph.org/python/) - Graph algorithms
 
 ---
 
-Built for quality-focused AI workflows
+**Built for quality-focused AI workflows with knowledge-enhanced retrieval.**
