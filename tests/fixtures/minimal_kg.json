@@ -1,0 +1,125 @@
+{
+  "metadata": {
+    "name": "minimal_kg",
+    "description": "Minimal knowledge graph for smoke tests (10 claims)",
+    "version": "1.0.0",
+    "created": "2025-12-26",
+    "seed": 42,
+    "claim_count": 10
+  },
+  "claims": [
+    {
+      "id": "claim_001",
+      "subject": "Python",
+      "predicate": "is_a",
+      "object": "programming_language",
+      "confidence": 0.99,
+      "source": "documentation",
+      "timestamp": "2025-01-15T10:00:00Z",
+      "metadata": {"topic": "programming", "verified": true}
+    },
+    {
+      "id": "claim_002",
+      "subject": "Python",
+      "predicate": "supports",
+      "object": "object_oriented_programming",
+      "confidence": 0.98,
+      "source": "documentation",
+      "timestamp": "2025-01-15T10:01:00Z",
+      "metadata": {"topic": "programming", "verified": true}
+    },
+    {
+      "id": "claim_003",
+      "subject": "machine_learning",
+      "predicate": "uses",
+      "object": "Python",
+      "confidence": 0.95,
+      "source": "research",
+      "timestamp": "2025-01-15T10:02:00Z",
+      "metadata": {"topic": "ml", "verified": true}
+    },
+    {
+      "id": "claim_004",
+      "subject": "TensorFlow",
+      "predicate": "is_a",
+      "object": "ml_framework",
+      "confidence": 0.99,
+      "source": "documentation",
+      "timestamp": "2025-01-15T10:03:00Z",
+      "metadata": {"topic": "ml", "verified": true}
+    },
+    {
+      "id": "claim_005",
+      "subject": "TensorFlow",
+      "predicate": "written_in",
+      "object": "Python",
+      "confidence": 0.97,
+      "source": "documentation",
+      "timestamp": "2025-01-15T10:04:00Z",
+      "metadata": {"topic": "ml", "verified": true}
+    },
+    {
+      "id": "claim_006",
+      "subject": "Flask",
+      "predicate": "is_a",
+      "object": "web_framework",
+      "confidence": 0.99,
+      "source": "documentation",
+      "timestamp": "2025-01-15T10:05:00Z",
+      "metadata": {"topic": "web", "verified": true}
+    },
+    {
+      "id": "claim_007",
+      "subject": "Flask",
+      "predicate": "written_in",
+      "object": "Python",
+      "confidence": 0.99,
+      "source": "documentation",
+      "timestamp": "2025-01-15T10:06:00Z",
+      "metadata": {"topic": "web", "verified": true}
+    },
+    {
+      "id": "claim_008",
+      "subject": "error_handling",
+      "predicate": "is_a",
+      "object": "best_practice",
+      "confidence": 0.90,
+      "source": "documentation",
+      "timestamp": "2025-01-15T10:07:00Z",
+      "metadata": {"topic": "programming", "verified": true}
+    },
+    {
+      "id": "claim_009",
+      "subject": "try_except",
+      "predicate": "implements",
+      "object": "error_handling",
+      "confidence": 0.95,
+      "source": "documentation",
+      "timestamp": "2025-01-15T10:08:00Z",
+      "metadata": {"topic": "programming", "verified": true}
+    },
+    {
+      "id": "claim_010",
+      "subject": "Python",
+      "predicate": "has_feature",
+      "object": "try_except",
+      "confidence": 0.99,
+      "source": "documentation",
+      "timestamp": "2025-01-15T10:09:00Z",
+      "metadata": {"topic": "programming", "verified": true}
+    }
+  ],
+  "entities": [
+    {"id": "Python", "type": "language", "properties": {"paradigm": "multi"}},
+    {"id": "TensorFlow", "type": "framework", "properties": {"domain": "ml"}},
+    {"id": "Flask", "type": "framework", "properties": {"domain": "web"}},
+    {"id": "machine_learning", "type": "concept", "properties": {}},
+    {"id": "error_handling", "type": "concept", "properties": {}},
+    {"id": "try_except", "type": "construct", "properties": {}}
+  ],
+  "relationships": [
+    {"source": "Python", "target": "TensorFlow", "type": "used_by"},
+    {"source": "Python", "target": "Flask", "type": "used_by"},
+    {"source": "machine_learning", "target": "TensorFlow", "type": "implemented_by"}
+  ]
+}

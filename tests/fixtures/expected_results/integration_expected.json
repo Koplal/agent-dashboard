@@ -1,0 +1,112 @@
+{
+  "metadata": {
+    "name": "integration_expected",
+    "description": "Expected results for integration test queries",
+    "version": "1.0.0",
+    "created": "2025-12-26",
+    "fixture": "standard_kg.json"
+  },
+  "results": {
+    "iq_001": {
+      "query": "Find all claims related to Python and machine learning",
+      "expected_behavior": {
+        "description": "Should retrieve claims connecting Python to ML ecosystem",
+        "min_results": 2,
+        "expected_topics": [
+          "programming",
+          "ml"
+        ],
+        "expected_entities": [
+          "Python",
+          "TensorFlow",
+          "machine_learning"
+        ]
+      },
+      "pass_criteria": {
+        "min_results": 2,
+        "max_latency_ms": 5000,
+        "must_span_topics": [
+          "programming",
+          "ml"
+        ]
+      }
+    },
+    "iq_002": {
+      "query": "What frameworks are written in Python?",
+      "expected_behavior": {
+        "description": "Should find relationship claims about Python frameworks",
+        "min_results": 2,
+        "expected_predicates": [
+          "written_in"
+        ],
+        "expected_subjects": [
+          "TensorFlow",
+          "Flask"
+        ]
+      },
+      "pass_criteria": {
+        "min_results": 2,
+        "max_latency_ms": 5000,
+        "must_include_predicate": "written_in"
+      }
+    },
+    "iq_003": {
+      "query": "Summarize the programming concepts",
+      "expected_behavior": {
+        "description": "Should aggregate programming-related claims",
+        "min_results": 3,
+        "expected_topics": [
+          "programming"
+        ]
+      },
+      "pass_criteria": {
+        "min_results": 3,
+        "max_latency_ms": 5000,
+        "topic_filter": "programming"
+      }
+    },
+    "iq_004": {
+      "query": "How does Python handle errors?",
+      "expected_behavior": {
+        "description": "Should find error handling implementation details",
+        "min_results": 1,
+        "expected_chain": [
+          "Python",
+          "try_except",
+          "error_handling"
+        ]
+      },
+      "pass_criteria": {
+        "min_results": 1,
+        "max_latency_ms": 5000,
+        "must_include_entity": "try_except"
+      }
+    },
+    "iq_005": {
+      "query": "Compare web and ML frameworks",
+      "expected_behavior": {
+        "description": "Should retrieve claims from both domains",
+        "min_results": 2,
+        "expected_topics": [
+          "web",
+          "ml"
+        ]
+      },
+      "pass_criteria": {
+        "min_results": 2,
+        "max_latency_ms": 5000,
+        "must_span_topics": [
+          "web",
+          "ml"
+        ]
+      }
+    }
+  },
+  "validation_rules": {
+    "latency_threshold_ms": 5000,
+    "min_result_count": 1,
+    "timeout_ms": 10000,
+    "require_source_tracking": true,
+    "require_confidence_scores": true
+  }
+}

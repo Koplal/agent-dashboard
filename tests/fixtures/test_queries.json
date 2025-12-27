@@ -1,0 +1,554 @@
+{
+  "metadata": {
+    "name": "test_queries",
+    "description": "100 test queries with expected results for validation",
+    "version": "1.0.0",
+    "created": "2025-12-26",
+    "query_count": 100
+  },
+  "smoke_queries": [
+    {
+      "id": "sq_001",
+      "query": "What is Python?",
+      "expected_claim_ids": [
+        "claim_001",
+        "claim_002"
+      ],
+      "min_results": 1,
+      "max_latency_ms": 2000,
+      "category": "basic"
+    },
+    {
+      "id": "sq_002",
+      "query": "machine learning frameworks",
+      "expected_claim_ids": [
+        "claim_003",
+        "claim_004",
+        "claim_005"
+      ],
+      "min_results": 1,
+      "max_latency_ms": 2000,
+      "category": "ml"
+    },
+    {
+      "id": "sq_003",
+      "query": "error handling best practices",
+      "expected_claim_ids": [
+        "claim_008",
+        "claim_009",
+        "claim_010"
+      ],
+      "min_results": 1,
+      "max_latency_ms": 2000,
+      "category": "programming"
+    },
+    {
+      "id": "sq_004",
+      "query": "web frameworks Python",
+      "expected_claim_ids": [
+        "claim_006",
+        "claim_007"
+      ],
+      "min_results": 1,
+      "max_latency_ms": 2000,
+      "category": "web"
+    },
+    {
+      "id": "sq_005",
+      "query": "TensorFlow programming language",
+      "expected_claim_ids": [
+        "claim_004",
+        "claim_005"
+      ],
+      "min_results": 1,
+      "max_latency_ms": 2000,
+      "category": "ml"
+    }
+  ],
+  "integration_queries": [
+    {
+      "id": "iq_001",
+      "query": "Find all claims related to Python and machine learning",
+      "expected_claim_ids": [
+        "claim_001",
+        "claim_002",
+        "claim_003",
+        "claim_005"
+      ],
+      "min_results": 2,
+      "max_latency_ms": 5000,
+      "category": "cross_domain"
+    },
+    {
+      "id": "iq_002",
+      "query": "What frameworks are written in Python?",
+      "expected_claim_ids": [
+        "claim_005",
+        "claim_007"
+      ],
+      "min_results": 2,
+      "max_latency_ms": 5000,
+      "category": "relationship"
+    },
+    {
+      "id": "iq_003",
+      "query": "Summarize the programming concepts",
+      "expected_claim_ids": [
+        "claim_001",
+        "claim_002",
+        "claim_008",
+        "claim_009",
+        "claim_010"
+      ],
+      "min_results": 3,
+      "max_latency_ms": 5000,
+      "category": "summary"
+    },
+    {
+      "id": "iq_004",
+      "query": "How does Python handle errors?",
+      "expected_claim_ids": [
+        "claim_009",
+        "claim_010"
+      ],
+      "min_results": 1,
+      "max_latency_ms": 5000,
+      "category": "relationship"
+    },
+    {
+      "id": "iq_005",
+      "query": "Compare web and ML frameworks",
+      "expected_claim_ids": [
+        "claim_004",
+        "claim_006"
+      ],
+      "min_results": 2,
+      "max_latency_ms": 5000,
+      "category": "comparison"
+    }
+  ],
+  "stress_queries": [
+    {
+      "id": "stq_001",
+      "query": "distributed systems architecture",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_002",
+      "query": "microservices patterns",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_003",
+      "query": "API design best practices",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_004",
+      "query": "database optimization techniques",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_005",
+      "query": "cloud native development",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_006",
+      "query": "containerization Docker Kubernetes",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_007",
+      "query": "CI/CD pipeline automation",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_008",
+      "query": "security authentication authorization",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_009",
+      "query": "performance monitoring observability",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_010",
+      "query": "event driven architecture",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_011",
+      "query": "functional programming paradigms",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_012",
+      "query": "reactive programming streams",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_013",
+      "query": "design patterns Gang of Four",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_014",
+      "query": "clean architecture SOLID principles",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_015",
+      "query": "domain driven design DDD",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_016",
+      "query": "test driven development TDD",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_017",
+      "query": "behavior driven development BDD",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_018",
+      "query": "agile scrum methodology",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_019",
+      "query": "DevOps culture practices",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_020",
+      "query": "site reliability engineering SRE",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_021",
+      "query": "machine learning neural networks",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_022",
+      "query": "deep learning transformers",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_023",
+      "query": "natural language processing NLP",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_024",
+      "query": "computer vision image recognition",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_025",
+      "query": "reinforcement learning agents",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_026",
+      "query": "data engineering pipelines",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_027",
+      "query": "feature engineering selection",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_028",
+      "query": "model deployment serving",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_029",
+      "query": "MLOps machine learning operations",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_030",
+      "query": "AB testing experimentation",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_031",
+      "query": "graph databases Neo4j",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_032",
+      "query": "time series databases",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_033",
+      "query": "NoSQL document stores",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_034",
+      "query": "distributed caching Redis",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_035",
+      "query": "message queues Kafka RabbitMQ",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_036",
+      "query": "serverless functions Lambda",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_037",
+      "query": "edge computing IoT",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_038",
+      "query": "blockchain smart contracts",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_039",
+      "query": "WebAssembly WASM performance",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_040",
+      "query": "GraphQL API design",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_041",
+      "query": "REST API versioning",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_042",
+      "query": "gRPC protocol buffers",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_043",
+      "query": "WebSocket real-time communication",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_044",
+      "query": "OAuth2 OpenID Connect",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_045",
+      "query": "JWT token authentication",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_046",
+      "query": "encryption cryptography TLS",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_047",
+      "query": "zero trust security model",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_048",
+      "query": "OWASP security vulnerabilities",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_049",
+      "query": "penetration testing security",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_050",
+      "query": "compliance GDPR HIPAA",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_051",
+      "query": "chaos engineering resilience",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_052",
+      "query": "load testing performance",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_053",
+      "query": "profiling optimization",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_054",
+      "query": "memory management garbage collection",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_055",
+      "query": "concurrency parallelism threads",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_056",
+      "query": "async await programming",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_057",
+      "query": "coroutines generators",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_058",
+      "query": "type systems static typing",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_059",
+      "query": "generics polymorphism",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    },
+    {
+      "id": "stq_060",
+      "query": "metaprogramming reflection",
+      "min_results": 0,
+      "max_latency_ms": 10000
+    }
+  ],
+  "edge_case_queries": [
+    {
+      "id": "ecq_001",
+      "query": "",
+      "expected_error": "empty_query",
+      "min_results": 0
+    },
+    {
+      "id": "ecq_002",
+      "query": "a",
+      "min_results": 0,
+      "max_latency_ms": 2000
+    },
+    {
+      "id": "ecq_003",
+      "query": "   ",
+      "expected_error": "whitespace_only",
+      "min_results": 0
+    },
+    {
+      "id": "ecq_004",
+      "query": "!@#$%^&*()",
+      "min_results": 0,
+      "max_latency_ms": 2000
+    },
+    {
+      "id": "ecq_005",
+      "query": "SELECT * FROM claims; DROP TABLE claims;--",
+      "min_results": 0,
+      "max_latency_ms": 2000
+    },
+    {
+      "id": "ecq_006",
+      "query": "<script>alert(xss)</script>",
+      "min_results": 0,
+      "max_latency_ms": 2000
+    },
+    {
+      "id": "ecq_007",
+      "query": "Python aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "expected_error": "query_too_long",
+      "min_results": 0
+    },
+    {
+      "id": "ecq_008",
+      "query": "unicode test mixed scripts",
+      "min_results": 0,
+      "max_latency_ms": 2000
+    },
+    {
+      "id": "ecq_009",
+      "query": "emoji test symbols",
+      "min_results": 0,
+      "max_latency_ms": 2000
+    },
+    {
+      "id": "ecq_010",
+      "query": "null undefined NaN Infinity",
+      "min_results": 0,
+      "max_latency_ms": 2000
+    }
+  ]
+}

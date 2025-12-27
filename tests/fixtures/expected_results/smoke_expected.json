@@ -1,0 +1,142 @@
+{
+  "metadata": {
+    "name": "smoke_expected",
+    "description": "Expected results for smoke test queries against minimal_kg.json",
+    "version": "1.0.0",
+    "created": "2025-12-26",
+    "fixture": "minimal_kg.json"
+  },
+  "results": {
+    "sq_001": {
+      "query": "What is Python?",
+      "expected_claims": [
+        {
+          "id": "claim_001",
+          "relevance": "high",
+          "reason": "Direct definition of Python"
+        },
+        {
+          "id": "claim_002",
+          "relevance": "high",
+          "reason": "Python feature/capability"
+        }
+      ],
+      "min_score": 0.5,
+      "pass_criteria": {
+        "min_results": 1,
+        "must_include": [
+          "claim_001"
+        ],
+        "max_latency_ms": 2000
+      }
+    },
+    "sq_002": {
+      "query": "machine learning frameworks",
+      "expected_claims": [
+        {
+          "id": "claim_003",
+          "relevance": "high",
+          "reason": "ML uses Python"
+        },
+        {
+          "id": "claim_004",
+          "relevance": "high",
+          "reason": "TensorFlow is ML framework"
+        },
+        {
+          "id": "claim_005",
+          "relevance": "medium",
+          "reason": "TensorFlow written in Python"
+        }
+      ],
+      "min_score": 0.4,
+      "pass_criteria": {
+        "min_results": 1,
+        "must_include": [
+          "claim_004"
+        ],
+        "max_latency_ms": 2000
+      }
+    },
+    "sq_003": {
+      "query": "error handling best practices",
+      "expected_claims": [
+        {
+          "id": "claim_008",
+          "relevance": "high",
+          "reason": "Error handling as best practice"
+        },
+        {
+          "id": "claim_009",
+          "relevance": "high",
+          "reason": "try_except implements error handling"
+        },
+        {
+          "id": "claim_010",
+          "relevance": "medium",
+          "reason": "Python has try_except"
+        }
+      ],
+      "min_score": 0.4,
+      "pass_criteria": {
+        "min_results": 1,
+        "must_include": [
+          "claim_008"
+        ],
+        "max_latency_ms": 2000
+      }
+    },
+    "sq_004": {
+      "query": "web frameworks Python",
+      "expected_claims": [
+        {
+          "id": "claim_006",
+          "relevance": "high",
+          "reason": "Flask is web framework"
+        },
+        {
+          "id": "claim_007",
+          "relevance": "high",
+          "reason": "Flask written in Python"
+        }
+      ],
+      "min_score": 0.5,
+      "pass_criteria": {
+        "min_results": 1,
+        "must_include": [
+          "claim_006"
+        ],
+        "max_latency_ms": 2000
+      }
+    },
+    "sq_005": {
+      "query": "TensorFlow programming language",
+      "expected_claims": [
+        {
+          "id": "claim_004",
+          "relevance": "high",
+          "reason": "TensorFlow definition"
+        },
+        {
+          "id": "claim_005",
+          "relevance": "high",
+          "reason": "TensorFlow language"
+        }
+      ],
+      "min_score": 0.5,
+      "pass_criteria": {
+        "min_results": 1,
+        "must_include": [
+          "claim_005"
+        ],
+        "max_latency_ms": 2000
+      }
+    }
+  },
+  "validation_rules": {
+    "latency_threshold_ms": 2000,
+    "min_result_count": 1,
+    "min_relevance_score": 0.3,
+    "timeout_ms": 5000
+  }
+}
