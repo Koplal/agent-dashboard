@@ -65,6 +65,23 @@ from .bm25 import (
     TokenizerConfig,
     Tokenizer,
 )
+from .community import (
+    # P2-001: Community Detection
+    CommunityConfig,
+    Community,
+    CommunityHierarchy,
+    CommunityDetectionResult,
+    CommunityDetector,
+    IGRAPH_AVAILABLE,
+    LEIDENALG_AVAILABLE,
+)
+from .hnsw_index import (
+    # P2-002: HNSW Index
+    HNSWConfig,
+    HNSWIndex,
+    CapacityError,
+    HNSWLIB_AVAILABLE,
+)
 
 
 __all__ = [
@@ -117,4 +134,17 @@ __all__ = [
     "HybridRetrieverV2",
     "TokenizerConfig",
     "Tokenizer",
+    # Community Detection (P2-001)
+    "CommunityConfig",
+    "Community",
+    "CommunityHierarchy",
+    "CommunityDetectionResult",
+    "CommunityDetector",
+    "IGRAPH_AVAILABLE",
+    "LEIDENALG_AVAILABLE",
+    # HNSW Index (P2-002)
+    "HNSWConfig",
+    "HNSWIndex",
+    "CapacityError",
+    "HNSWLIB_AVAILABLE",
 ]
