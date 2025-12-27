@@ -160,11 +160,26 @@ class GrammarConstrainedGenerator:
 
         logger.info(f"Loading model: {self.model_name}")
         try:
-            from outlines import models
-            self._model = models.transformers(
+            import outlines
+            from transformers import AutoModelForCausalLM, AutoTokenizer
+
+            # Determine device_map for transformers
+            device_map = "auto" if self.device == "auto" else self.device
+
+            # Load transformers model and tokenizer
+            hf_model = AutoModelForCausalLM.from_pretrained(
                 self.model_name,
-                device=self.device if self.device != "auto" else None,
+                device_map=device_map,
+                trust_remote_code=True,
             )
+            tokenizer = AutoTokenizer.from_pretrained(
+                self.model_name,
+                trust_remote_code=True,
+            )
+            self._tokenizer = tokenizer
+
+            # Wrap with Outlines
+            self._model = outlines.from_transformers(hf_model, tokenizer)
             logger.info(f"Model loaded: {self.model_name}")
         except Exception as e:
             logger.error(f"Failed to load model: {e}")
@@ -207,27 +222,20 @@ class GrammarConstrainedGenerator:
         try:
             self._load_model()
 
-            from outlines import generate
+            # New Outlines API (v1.x): model is directly callable
+            # model(prompt, schema, max_new_tokens=...) returns JSON string
+            json_str = self._model(prompt, schema, max_new_tokens=max_tokens)
 
-            generator = generate.json(self._model, schema)
+            # Validate with Pydantic
+            result = schema.model_validate_json(json_str)
 
-            # Generate with schema constraint
-            if temperature > 0:
-                result = generator(
-                    prompt,
-                    max_tokens=max_tokens,
-                    temperature=temperature,
-                )
-            else:
-                result = generator(prompt, max_tokens=max_tokens)
-
-            # Result is already validated by Outlines
             self.generations_succeeded += 1
             elapsed_ms = int((time.time() - start_time) * 1000)
 
             return LocalGenerationResult(
                 success=True,
                 output=result,
+                raw_text=json_str,
                 model_used=self.model_name,
                 generation_time_ms=elapsed_ms,
             )

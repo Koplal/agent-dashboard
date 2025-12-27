@@ -9,7 +9,7 @@ Version: 2.6.0
 import json
 import tempfile
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from src.ledger.task_ledger import (
@@ -28,7 +28,7 @@ class TestProgressEntry:
     def test_create_progress_entry(self):
         """Test basic progress entry creation."""
         entry = ProgressEntry(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             agent_id="test-agent",
             action_taken="Implemented feature X",
             outcome="success",
@@ -41,7 +41,7 @@ class TestProgressEntry:
     def test_progress_entry_with_artifacts(self):
         """Test progress entry with artifacts and blockers."""
         entry = ProgressEntry(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             agent_id="test-agent",
             action_taken="Wrote tests",
             outcome="partial",
@@ -78,7 +78,7 @@ class TestTaskLedger:
 
     def test_create_task_ledger(self):
         """Test basic task ledger creation."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         task = TaskLedger(
             task_id="TEST-001",
             phase="immediate",
@@ -97,7 +97,7 @@ class TestTaskLedger:
 
     def test_add_progress(self):
         """Test adding progress entries."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         task = TaskLedger(
             task_id="TEST-001",
             phase="immediate",
@@ -112,7 +112,7 @@ class TestTaskLedger:
         )
 
         entry = ProgressEntry(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             agent_id="test-agent",
             action_taken="Started work",
             outcome="in_progress",
@@ -124,7 +124,7 @@ class TestTaskLedger:
 
     def test_get_total_tokens(self):
         """Test token counting across progress entries."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         task = TaskLedger(
             task_id="TEST-001",
             phase="immediate",
@@ -140,7 +140,7 @@ class TestTaskLedger:
 
         for i in range(3):
             entry = ProgressEntry(
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(timezone.utc),
                 agent_id="test-agent",
                 action_taken=f"Action {i}",
                 outcome="success",
@@ -152,7 +152,7 @@ class TestTaskLedger:
 
     def test_task_ledger_serialization(self):
         """Test to_dict and from_dict round-trip."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         original = TaskLedger(
             task_id="TEST-001",
             phase="immediate",
@@ -230,7 +230,7 @@ class TestLedgerManager:
         )
 
         entry = ProgressEntry(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             agent_id="test-agent",
             action_taken="Made progress",
             outcome="success",
@@ -243,7 +243,7 @@ class TestLedgerManager:
     def test_add_progress_nonexistent_task(self, temp_ledger):
         """Test adding progress to nonexistent task raises error."""
         entry = ProgressEntry(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             agent_id="test-agent",
             action_taken="Made progress",
             outcome="success",
@@ -263,7 +263,7 @@ class TestLedgerManager:
         # Add 4 identical action-outcome pairs
         for _ in range(4):
             entry = ProgressEntry(
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(timezone.utc),
                 agent_id="test-agent",
                 action_taken="Same action",
                 outcome="Same outcome",
@@ -353,7 +353,7 @@ class TestLedgerManager:
                 objective="Test persistence",
             )
             entry = ProgressEntry(
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(timezone.utc),
                 agent_id="test-agent",
                 action_taken="Made progress",
                 outcome="success",
@@ -478,7 +478,7 @@ class TestRuntimeLedgerTracker:
         """Test task timeline generation."""
         # Add some progress
         entry = ProgressEntry(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             agent_id="test-agent",
             action_taken="Made progress",
             outcome="success",

@@ -13,6 +13,31 @@ from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
 
 
+def _outlines_available() -> bool:
+    """Check if Outlines package is available."""
+    try:
+        import outlines
+        return True
+    except ImportError:
+        return False
+
+
+def _local_model_available() -> bool:
+    """Check if all dependencies for local model generation are available.
+
+    Requires GPU (CUDA) for practical inference speed.
+    CPU-only inference takes 12+ minutes per generation.
+    """
+    try:
+        import outlines
+        import torch
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+        # Require CUDA for practical inference speed
+        return torch.cuda.is_available()
+    except ImportError:
+        return False
+
+
 # ============================================================================
 # TEST SCHEMAS
 # ============================================================================
@@ -591,8 +616,8 @@ class TestGrammarConstrainedGenerator:
         assert stats["generations_attempted"] == 0
 
     @pytest.mark.skipif(
-        True,  # Always skip - requires local model
-        reason="Requires local model and Outlines package"
+        not _local_model_available(),
+        reason="Requires Outlines + PyTorch + transformers (pip install outlines torch transformers)"
     )
     def test_json_generation_with_outlines(self):
         """Test JSON generation with Outlines (requires local model)."""

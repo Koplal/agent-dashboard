@@ -50,7 +50,7 @@ required:
   - next_steps: "recommended follow-up actions"
 ```
 
----
+--- 
 
 ## Phase 1: Quick Wins (Estimated: 1-2 days)
 
