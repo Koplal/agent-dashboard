@@ -20,19 +20,19 @@ A comprehensive multi-agent workflow framework implementing **Test-Driven Develo
 
 ## Table of Contents
 
-- [What's New in v2.7.0](#-whats-new-in-v270---knowledge-enhanced-retrieval)
-- [Features](#-features)
-- [Quick Start](#-quick-start)
-- [Knowledge Graph & Retrieval](#-knowledge-graph--retrieval)
-- [Multi-Agent Demo Workflow](#-multi-agent-demo-workflow)
-- [Architecture](#-architecture)
-- [Agent Registry](#-agent-registry-22-agents)
-- [Manual Testing](#-manual-testing)
-- [API Reference](#-api-reference)
-- [Configuration](#-configuration)
-- [Testing](#-testing)
-- [Documentation](#-documentation)
-- [License](#-license)
+- [What's New in v2.7.0](#whats-new-in-v270---knowledge-enhanced-retrieval)
+- [Features](#features)
+- [Quick Start](#quick-start)
+- [Knowledge Graph & Retrieval](#knowledge-graph--retrieval)
+- [Multi-Agent Demo Workflow](#multi-agent-demo-workflow)
+- [Architecture](#architecture)
+- [Agent Registry](#agent-registry-22-agents)
+- [Manual Testing](#manual-testing)
+- [API Reference](#api-reference)
+- [Configuration](#configuration)
+- [Testing](#testing)
+- [Documentation](#documentation)
+- [License](#license)
 
 ---
 
