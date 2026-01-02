@@ -168,6 +168,123 @@ update_status() {
 }
 
 # =============================================================================
+# PRE-INSTALLATION CHECK FUNCTIONS
+# =============================================================================
+
+# Check if Python package is installed and optionally meets minimum version
+# Usage: check_python_package "rich" "13.0.0"
+# Returns: 0 if installed with sufficient version, 1 otherwise
+check_python_package() {
+    local package="$1"
+    local min_version="${2:-}"
+
+    # Check if package is importable
+    if ! $PYTHON_CMD -c "import $package" 2>/dev/null; then
+        return 1  # Not installed
+    fi
+
+    # If no version requirement, just check import success
+    if [ -z "$min_version" ]; then
+        return 0
+    fi
+
+    # Get installed version
+    local installed_version=$($PYTHON_CMD -c "import $package; print(getattr($package, '__version__', '0.0.0'))" 2>/dev/null)
+
+    # Compare versions using Python
+    if $PYTHON_CMD -c "
+from packaging.version import Version
+try:
+    exit(0 if Version('$installed_version') >= Version('$min_version') else 1)
+except:
+    # If packaging not available, do simple string comparison
+    exit(0)
+" 2>/dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Install package only if not already installed or version is insufficient
+# Usage: install_if_needed "rich" "13.0.0" "terminal UI"
+install_if_needed() {
+    local package="$1"
+    local min_version="${2:-}"
+    local description="${3:-$package}"
+
+    if check_python_package "$package" "$min_version"; then
+        local version=$($PYTHON_CMD -c "import $package; print(getattr($package, '__version__', 'installed'))" 2>/dev/null)
+        echo -e "  ${GREEN}[OK]${NC} $package $version ($description) - already installed"
+        log_message "$package already installed: $version"
+        return 0
+    fi
+
+    echo "  Installing $package..."
+    log_message "Installing $package (min version: ${min_version:-any})"
+    return 1  # Signal that installation is needed
+}
+
+# Safely copy file with existence check
+# Usage: safe_copy "source_path" "dest_path" "description"
+safe_copy() {
+    local src="$1"
+    local dst="$2"
+    local description="${3:-$(basename "$src")}"
+
+    if [ ! -f "$src" ]; then
+        show_error "$SEVERITY_WARNING" "E010" \
+            "Source file not found: $src" \
+            "Ensure repository is complete or re-clone"
+        log_message "Source file missing: $src"
+        return 1
+    fi
+
+    if cp "$src" "$dst" 2>/dev/null; then
+        echo -e "  ${GREEN}[OK]${NC} $description"
+        log_message "Copied: $src -> $dst"
+        return 0
+    else
+        show_error "$SEVERITY_WARNING" "E011" \
+            "Failed to copy: $src" \
+            "Check write permissions for $dst"
+        log_message "Copy failed: $src -> $dst"
+        return 1
+    fi
+}
+
+# Check network connectivity to PyPI before package installation
+# Usage: check_pypi_connectivity
+# Returns: 0 if reachable, 1 otherwise
+check_pypi_connectivity() {
+    # Try curl first (most common)
+    if command -v curl &> /dev/null; then
+        if curl -sf --max-time 5 https://pypi.org/simple/ > /dev/null 2>&1; then
+            return 0
+        fi
+    fi
+
+    # Fallback to wget
+    if command -v wget &> /dev/null; then
+        if wget -q --spider --timeout=5 https://pypi.org/simple/ 2>/dev/null; then
+            return 0
+        fi
+    fi
+
+    # Fallback to Python urllib
+    if $PYTHON_CMD -c "
+import urllib.request
+import socket
+socket.setdefaulttimeout(5)
+urllib.request.urlopen('https://pypi.org/simple/')
+" 2>/dev/null; then
+        return 0
+    fi
+
+    return 1
+}
+
+# =============================================================================
 # DIRECTORY CONFIGURATION
 # =============================================================================
 INSTALL_DIR="$HOME/.claude/dashboard"
@@ -456,21 +573,16 @@ echo -e "  ${GREEN}[OK]${NC} $BIN_DIR"
 # =============================================================================
 echo -e "\n${BLUE}[6/9] Installing dashboard files...${NC}"
 
-# Core Python modules
-cp "$SCRIPT_DIR/dashboard/agent_monitor.py" "$INSTALL_DIR/"
-echo -e "  ${GREEN}[OK]${NC} agent_monitor.py (Terminal TUI)"
+# Core Python modules - using safe_copy with existence checks
+safe_copy "$SCRIPT_DIR/dashboard/agent_monitor.py" "$INSTALL_DIR/" "agent_monitor.py (Terminal TUI)" || true
 
-cp "$SCRIPT_DIR/src/web_server.py" "$INSTALL_DIR/"
-echo -e "  ${GREEN}[OK]${NC} web_server.py (Web dashboard)"
+safe_copy "$SCRIPT_DIR/src/web_server.py" "$INSTALL_DIR/" "web_server.py (Web dashboard)" || true
 
-cp "$SCRIPT_DIR/src/cli.py" "$INSTALL_DIR/"
-echo -e "  ${GREEN}[OK]${NC} cli.py (CLI interface)"
+safe_copy "$SCRIPT_DIR/src/cli.py" "$INSTALL_DIR/" "cli.py (CLI interface)" || true
 
-cp "$SCRIPT_DIR/src/workflow_engine.py" "$INSTALL_DIR/"
-echo -e "  ${GREEN}[OK]${NC} workflow_engine.py (Workflow orchestration)"
+safe_copy "$SCRIPT_DIR/src/workflow_engine.py" "$INSTALL_DIR/" "workflow_engine.py (Workflow orchestration)" || true
 
-cp "$SCRIPT_DIR/hooks/send_event.py" "$INSTALL_DIR/hooks/"
-echo -e "  ${GREEN}[OK]${NC} hooks/send_event.py (Event capture)"
+safe_copy "$SCRIPT_DIR/hooks/send_event.py" "$INSTALL_DIR/hooks/" "hooks/send_event.py (Event capture)" || true
 
 # Create cross-platform hook wrapper
 cat > "$INSTALL_DIR/hooks/run_hook.sh" << 'HOOK_WRAPPER_EOF'
@@ -588,10 +700,10 @@ if [ -d "$SCRIPT_DIR/commands" ]; then
     COMMAND_COUNT=0
     for cmd_file in "$SCRIPT_DIR/commands"/*.md; do
         if [ -f "$cmd_file" ]; then
-            cp "$cmd_file" "$COMMANDS_DIR/"
             cmd_name=$(basename "$cmd_file" .md)
-            echo -e "  ${GREEN}[OK]${NC} /${cmd_name}"
-            ((COMMAND_COUNT++))
+            if safe_copy "$cmd_file" "$COMMANDS_DIR/" "/${cmd_name}"; then
+                ((COMMAND_COUNT++))
+            fi
         fi
     done
     echo -e "  ${GREEN}[OK]${NC} Installed $COMMAND_COUNT slash commands"
@@ -838,6 +950,17 @@ fi
 # =============================================================================
 echo -e "\n${BLUE}[9/9] Installing Python dependencies...${NC}"
 
+# Check network connectivity before attempting package installation
+echo "  Checking network connectivity..."
+if check_pypi_connectivity; then
+    echo -e "  ${GREEN}[OK]${NC} PyPI is reachable"
+else
+    show_error "$SEVERITY_WARNING" "E012" \
+        "Cannot reach PyPI (pypi.org)" \
+        "Check network connection. Installation may fail."
+    log_message "PyPI connectivity check failed"
+fi
+
 # Core dependencies installation function
 install_core_deps() {
     if [ "$IN_VENV" = true ]; then
@@ -931,14 +1054,37 @@ verify_and_retry_install() {
     esac
 }
 
-# Install core dependencies first
-echo "  Installing core dependencies..."
-if [ "$PKG_MANAGER" = "uv" ]; then
-    uv pip install --system rich aiohttp 2>/dev/null || \
-    uv pip install rich aiohttp 2>/dev/null || \
-    install_core_deps
-else
-    install_core_deps
+# Install core dependencies first (with pre-installation checks)
+echo "  Checking core dependencies..."
+
+# Check and install 'rich' if needed
+if ! install_if_needed "rich" "13.0.0" "terminal UI"; then
+    if [ "$PKG_MANAGER" = "uv" ]; then
+        uv pip install --system rich 2>/dev/null || \
+        uv pip install rich 2>/dev/null || \
+        ($PYTHON_CMD -m pip install --quiet rich 2>/dev/null || $PYTHON_CMD -m pip install rich)
+    else
+        if [ "$IN_VENV" = true ]; then
+            $PYTHON_CMD -m pip install --quiet rich 2>/dev/null || $PYTHON_CMD -m pip install rich
+        else
+            $PYTHON_CMD -m pip install --quiet --user rich 2>/dev/null || $PYTHON_CMD -m pip install --user rich
+        fi
+    fi
+fi
+
+# Check and install 'aiohttp' if needed
+if ! install_if_needed "aiohttp" "3.9.0" "web server"; then
+    if [ "$PKG_MANAGER" = "uv" ]; then
+        uv pip install --system aiohttp 2>/dev/null || \
+        uv pip install aiohttp 2>/dev/null || \
+        ($PYTHON_CMD -m pip install --quiet aiohttp 2>/dev/null || $PYTHON_CMD -m pip install aiohttp)
+    else
+        if [ "$IN_VENV" = true ]; then
+            $PYTHON_CMD -m pip install --quiet aiohttp 2>/dev/null || $PYTHON_CMD -m pip install aiohttp
+        else
+            $PYTHON_CMD -m pip install --quiet --user aiohttp 2>/dev/null || $PYTHON_CMD -m pip install --user aiohttp
+        fi
+    fi
 fi
 
 # Verify dependencies after installation
@@ -964,26 +1110,40 @@ tokenizer_choice=${tokenizer_choice:-1}
 
 case $tokenizer_choice in
     1)
-        echo "  Installing HuggingFace transformers..."
-        if [ "$PKG_MANAGER" = "uv" ]; then
-            uv pip install --system transformers tokenizers 2>/dev/null || \
-            uv pip install transformers tokenizers 2>/dev/null || \
-            install_tokenizer "transformers"
+        # Check if transformers is already installed
+        if check_python_package "transformers"; then
+            tf_version=$($PYTHON_CMD -c "import transformers; print(transformers.__version__)" 2>/dev/null)
+            echo -e "  ${GREEN}[OK]${NC} transformers $tf_version (HuggingFace tokenizer) - already installed"
         else
-            install_tokenizer "transformers"
+            echo "  Installing HuggingFace transformers..."
+            if [ "$PKG_MANAGER" = "uv" ]; then
+                uv pip install --system transformers tokenizers 2>/dev/null || \
+                uv pip install transformers tokenizers 2>/dev/null || \
+                install_tokenizer "transformers"
+            else
+                install_tokenizer "transformers"
+            fi
+            # Verify installation succeeded
+            verify_and_retry_install "transformers" "HuggingFace tokenizer"
         fi
-        echo -e "  ${GREEN}[OK]${NC} transformers + tokenizers (Claude tokenizer)"
         ;;
     2)
-        echo "  Installing tiktoken..."
-        if [ "$PKG_MANAGER" = "uv" ]; then
-            uv pip install --system tiktoken 2>/dev/null || \
-            uv pip install tiktoken 2>/dev/null || \
-            install_tokenizer "tiktoken"
+        # Check if tiktoken is already installed
+        if check_python_package "tiktoken"; then
+            tk_version=$($PYTHON_CMD -c "import tiktoken; print(tiktoken.__version__)" 2>/dev/null)
+            echo -e "  ${GREEN}[OK]${NC} tiktoken $tk_version (legacy tokenizer) - already installed"
         else
-            install_tokenizer "tiktoken"
+            echo "  Installing tiktoken..."
+            if [ "$PKG_MANAGER" = "uv" ]; then
+                uv pip install --system tiktoken 2>/dev/null || \
+                uv pip install tiktoken 2>/dev/null || \
+                install_tokenizer "tiktoken"
+            else
+                install_tokenizer "tiktoken"
+            fi
+            # Verify installation succeeded
+            verify_and_retry_install "tiktoken" "legacy tokenizer"
         fi
-        echo -e "  ${GREEN}[OK]${NC} tiktoken (legacy tokenizer)"
         ;;
     *)
         echo -e "  ${YELLOW}[SKIP]${NC} Tokenizer installation skipped"
