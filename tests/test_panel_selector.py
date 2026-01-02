@@ -355,12 +355,24 @@ class TestAuditLogging:
 
             # Check database
             import sqlite3
-            with sqlite3.connect(db_path) as conn:
+            conn = sqlite3.connect(db_path)
+            try:
                 cursor = conn.execute("SELECT COUNT(*) FROM panel_selections")
                 count = cursor.fetchone()[0]
                 assert count == 1
+            finally:
+                conn.close()
         finally:
-            os.unlink(db_path)
+            # Clean up selector to release db connection
+            del selector
+            # On Windows, file locks may persist briefly - retry deletion
+            import time
+            for _ in range(3):
+                try:
+                    os.unlink(db_path)
+                    break
+                except PermissionError:
+                    time.sleep(0.1)
 
 
 # ============================================================================
