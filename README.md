@@ -628,10 +628,20 @@ python -m pytest tests/ --cov=src --cov-report=html
 
 ## Documentation
 
+### Quick Links
+
+| Guide | Description |
+|-------|-------------|
+| [Web Portal Guide](docs/WEB_PORTAL_GUIDE.md) | Complete web dashboard usage guide |
+| [Memory Architecture](docs/MEMORY_ARCHITECTURE.md) | Database locations, schemas, and verification |
+| [Example Usage](docs/EXAMPLE_USAGE.md) | Step-by-step workflow examples |
+| [Multi-Project Guide](docs/Agent%20dashboard%20multi%20project%20guide.md) | Project isolation and context switching |
+
+### Reference Documentation
+
 | Document | Description |
 |----------|-------------|
 | [README.md](README.md) | This file |
-| [Multi-Project Guide](docs/Agent%20dashboard%20multi%20project%20guide.md) | Deploy agent-dashboard across multiple isolated projects |
 | [docs/CONFIG_REFERENCE.md](docs/CONFIG_REFERENCE.md) | Configuration parameters |
 | [docs/MANUAL_TESTING_STRATEGY.md](docs/MANUAL_TESTING_STRATEGY.md) | Manual test procedures |
 | [docs/testing/](docs/testing/) | Test guides and checklists |
